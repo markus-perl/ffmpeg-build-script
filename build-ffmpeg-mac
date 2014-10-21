@@ -41,7 +41,7 @@ download () {
 		
 		printf " ... Done\n"
 		
-		if ! tar -xvf "$PACKAGES/$2" -C "$PACKAGES" &> /dev/null; then
+		if ! tar -xvf "$PACKAGES/$2" -C "$PACKAGES" 2>/dev/null >/dev/null; then
 			echo "Failed to extract $2";
 			exit 1
 		fi
