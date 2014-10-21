@@ -155,8 +155,12 @@ if build "xvidcore"; then
 	cd build/generic 
 	execute ./configure --prefix=${WORKSPACE} --disable-shared --enable-static
 	execute make -j 4
-	execute make install 
-	execute rm ${WORKSPACE}/lib/libxvidcore.4.dylib
+	execute make install
+
+	if [ -f ${WORKSPACE}/lib/libxvidcore.4.dylib ]; then
+	    execute rm ${WORKSPACE}/lib/libxvidcore.4.dylib
+	fi
+	
 	build_done "xvidcore"
 fi
 
