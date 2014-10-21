@@ -12,6 +12,7 @@ Requirements
 
 Usage
 ------
+
 ```
 ./build-ffmpeg-mac --help       Display usage information
 ./build-ffmpeg-mac --build      Starts the build process
@@ -20,12 +21,16 @@ Usage
 
 Contact
 -------
+
 * Github: [http://www.github.com/markus-perl](http://www.github.com/markus-perl)
 * E-Mail: markus (at) www-factory.de
 
+
 Tested on
 ---------
+
 * Mac OSX 10.9 64Bit XCode 6.1
+
 
 Example
 -------
