@@ -31,7 +31,7 @@ download () {
 	if [ ! -f "$PACKAGES/$2" ]; then
 		
 		printf "Downloading $1"
-		curl --silent -o "$PACKAGES/$2" "$1"
+		curl -L --silent -o "$PACKAGES/$2" "$1"
 		EXITCODE=$?
 		if [ $EXITCODE -ne 0 ]; then
 			echo ""
@@ -249,7 +249,7 @@ if build "x265"; then
 fi
 
 if build "fdk_aac"; then
-	download "http://netcologne.dl.sourceforge.net/project/opencore-amr/fdk-aac/fdk-aac-0.1.3.tar.gz" "fdk-aac-0.1.3.tar.gz"
+	download "http://downloads.sourceforge.net/project/opencore-amr/fdk-aac/fdk-aac-0.1.3.tar.gz" "fdk-aac-0.1.3.tar.gz"
 	cd $PACKAGES/fdk-aac*
 	execute ./configure --prefix=${WORKSPACE} --disable-shared --enable-static
 	execute make -j 4
@@ -269,11 +269,12 @@ execute make install
 echo ""
 echo "Building done. The binary can be found here: $WORKSPACE/bin/ffmpeg"
 echo ""
-read -r -p "Install the binary to your /usr/bin/folder? [Y/n] " response
+read -r -p "Install the binary to your /usr/bin/ folder? [Y/n] " response
 
 case $response in
     [yY][eE][sS]|[yY])
         sudo cp "$WORKSPACE/bin/ffmpeg" "/usr/bin/ffmpeg"
+        sudo cp "$WORKSPACE/bin/ffprobe" "/usr/bin/ffprobe"
         echo "Done. ffmpeg is now installed to your system"
         ;;
 esac
