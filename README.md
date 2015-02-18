@@ -19,9 +19,9 @@ Usage
 ------
 
 ```
-./build-ffmpeg-mac --help       Display usage information
-./build-ffmpeg-mac --build      Starts the build process
-./build-ffmpeg-mac --cleanup    Remove all working dirs
+./build-ffmpeg --help       Display usage information
+./build-ffmpeg --build      Starts the build process
+./build-ffmpeg --cleanup    Remove all working dirs
 ```
 
 Contact
@@ -35,7 +35,7 @@ Tested on
 ---------
 
 * Mac OSX 10.9 64Bit XCode 6.1
-
+* Debian 7.5
 
 Example
 -------
