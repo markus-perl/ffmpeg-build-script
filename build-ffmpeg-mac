@@ -249,7 +249,7 @@ if build "x265"; then
 fi
 
 if build "fdk_aac"; then
-	download "http://downloads.sourceforge.net/project/opencore-amr/fdk-aac/fdk-aac-0.1.3.tar.gz" "fdk-aac-0.1.3.tar.gz"
+	download "http://ftp.cc.uoc.gr/mirrors/linux/lfs/LFS/7.6/f/fdk-aac-0.1.3.tar.gz" "fdk-aac-0.1.3.tar.gz"
 	cd $PACKAGES/fdk-aac*
 	execute ./configure --prefix=${WORKSPACE} --disable-shared --enable-static
 	execute make -j 4
