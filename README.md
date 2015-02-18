@@ -1,13 +1,18 @@
 build-ffmpeg-mac
 ==========
 
-This ffmpeg build script provides an easy way for building ffmpeg on OSX with non-free codecs included.
+This build script provides an easy way to build ffmpeg on OSX and Linux with non-free codecs included.
 
 
-Requirements
+Requirements OSX
 ------------
 
 * XCode 5.x or greater
+
+Requirements Linux
+------------
+
+* build-essentials installed
 
 
 Usage
