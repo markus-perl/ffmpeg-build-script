@@ -237,7 +237,7 @@ if build "vid_stab"; then
 fi
 
 if build "x265"; then
-	download "https://bitbucket.org/multicoreware/x265/get/1.3.tar.gz" "x265-1.3.tar.gz"
+	download "https://bitbucket.org/multicoreware/x265/get/1.5.tar.gz" "x265-1.5.tar.gz"
 	cd $PACKAGES/multicoreware*
 	cd source
 	execute cmake -DCMAKE_INSTALL_PREFIX:PATH=${WORKSPACE} -DENABLE_SHARED=NO .
@@ -249,7 +249,9 @@ if build "x265"; then
 fi
 
 if build "fdk_aac"; then
+	# download "http://downloads.sourceforge.net/project/opencore-amr/fdk-aac/fdk-aac-0.1.3.tar.gz" "fdk-aac-0.1.3.tar.gz"
 	download "http://ftp.cc.uoc.gr/mirrors/linux/lfs/LFS/7.6/f/fdk-aac-0.1.3.tar.gz" "fdk-aac-0.1.3.tar.gz"
+	
 	cd $PACKAGES/fdk-aac*
 	execute ./configure --prefix=${WORKSPACE} --disable-shared --enable-static
 	execute make -j 4
@@ -259,7 +261,7 @@ fi
 
 
 build "ffmpeg"
-download "http://ffmpeg.org/releases/ffmpeg-2.4.2.tar.bz2" "ffmpeg-2.4.2.tar.bz2"
+download "http://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2 " "ffmpeg-snapshot.tar.bz2 "
 cd $PACKAGES/ffmpeg*
 CFLAGS="-I$WORKSPACE/include" LDFLAGS="-L$WORKSPACE/lib" 
 execute ./configure  --arch=64 --prefix=${WORKSPACE} --extra-cflags="-I$WORKSPACE/include" --extra-ldflags="-L$WORKSPACE/lib" --extra-version=static --disable-debug --disable-shared --enable-static --extra-cflags=--static --disable-ffplay --disable-ffserver --disable-doc --enable-version3 --enable-libvpx --enable-libmp3lame --enable-libtheora --enable-libvorbis --enable-libx264 --enable-avfilter --enable-gpl --enable-libopencore_amrwb --enable-libopencore_amrnb --enable-nonfree --enable-filters --enable-libvidstab --enable-libx265 --enable-runtime-cpudetect --enable-libfdk-aac
