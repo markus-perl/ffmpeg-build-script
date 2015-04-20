@@ -41,7 +41,7 @@ Example
 -------
 
 ```
-user@localhost:~/dev/mac/build-ffmpeg-mac$ ./build-ffmpeg-mac --build
+user@localhost:~/dev/mac/ffmpeg-build-script$ ./build-ffmpeg --build
 
 building yasm
 =======================
