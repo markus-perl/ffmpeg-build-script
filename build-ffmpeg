@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # http://www.github.com/markus-perl
-# Version 0.1
+# Version 0.2
 
 CWD=`pwd`
 PACKAGES="$CWD/packages" 
@@ -237,10 +237,10 @@ if build "vid_stab"; then
 fi
 
 if build "x265"; then
-	download "https://bitbucket.org/multicoreware/x265/get/1.6.tar.gz" "x265-1.6.tar.gz"
-	cd $PACKAGES/multicoreware*
+	download "https://bitbucket.org/multicoreware/x265/downloads/x265_1.7.tar.gz" "x265-1.7.tar.gz"
+	cd $PACKAGES/x265_1.7
 	cd source
-	execute cmake -DCMAKE_INSTALL_PREFIX:PATH=${WORKSPACE} -DENABLE_SHARED=NO .
+	execute cmake -DCMAKE_INSTALL_PREFIX:PATH=${WORKSPACE}  -DENABLE_SHARED:bool=off $PACKAGES/x265_1.7/source 
 	execute make -j 4
 	execute make install
 	sed "s/-lx265/-lx265 -lstdc++/g" "$WORKSPACE/lib/pkgconfig/x265.pc" > "$WORKSPACE/lib/pkgconfig/x265.pc.tmp"
