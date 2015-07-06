@@ -240,7 +240,7 @@ if build "x265"; then
 	download "https://bitbucket.org/multicoreware/x265/downloads/x265_1.7.tar.gz" "x265-1.7.tar.gz"
 	cd $PACKAGES/x265_1.7
 	cd source
-	execute cmake -DCMAKE_INSTALL_PREFIX:PATH=${WORKSPACE}  -DENABLE_SHARED:bool=off $PACKAGES/x265_1.7/source 
+	execute cmake -DCMAKE_INSTALL_PREFIX:PATH=${WORKSPACE} -DENABLE_SHARED:bool=off . 
 	execute make -j 4
 	execute make install
 	sed "s/-lx265/-lx265 -lstdc++/g" "$WORKSPACE/lib/pkgconfig/x265.pc" > "$WORKSPACE/lib/pkgconfig/x265.pc.tmp"
