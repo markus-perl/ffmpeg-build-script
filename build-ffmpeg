@@ -259,6 +259,19 @@ if build "fdk_aac"; then
 	build_done "fdk_aac"
 fi
 
+if build "frei0r"; then
+	download "https://files.dyne.org/frei0r/snapshots/frei0r-snapshot-27-01-15.tar.gz" "frei0r-snapshot-27-01-15.tar.gz"
+		
+	cd $PACKAGES/frei0r*
+	perl -p -i -e "s/OpenCV\" OFF/OpenCV\" ON/" CMakeLists.txt 
+	execute cmake -DCMAKE_INSTALL_PREFIX:PATH=${WORKSPACE}/bin/ .
+	#execute cmake -DCMAKE_INSTALL_PREFIX:PATH=${WORKSPACE} . 
+	execute make -s install
+	for file in ${WORKSPACE}/bin/frei0r-1/*.so ; do
+		cp $file "${file%.*}.dylib"
+	done
+	build_done "frei0r"
+fi
 
 build "ffmpeg"
 download "http://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2 " "ffmpeg-snapshot.tar.bz2 "
@@ -272,6 +285,7 @@ echo ""
 echo "Building done. The binary can be found here: $WORKSPACE/bin/ffmpeg"
 echo ""
 read -r -p "Install the binary to your /usr/bin/ folder? [Y/n] " response
+echo "Run export FREI0R_PATH=(wherever you copy your ffmpeg binary dir)/frei0r-1"
 
 case $response in
     [yY][eE][sS]|[yY])
