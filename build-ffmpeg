@@ -296,7 +296,9 @@ case $response in
 esac
 
 echo ""
-read -r -p "Copy frei0r plugins to your /usr/local/lib folder (needed for ffmpeg to find them, unless you manually copy elsewhere and export FREI0R_PATH) [Y/n] " response
+echo "The frei0r plugins can be found here: $WORKSPACE/lib/ in a folder named \"frei0r-1\""
+echo ""
+read -r -p "Copy frei0r plugins to your /usr/local/lib/frei0r-1 folder (needed for ffmpeg to find them, unless you manually copy elsewhere and export FREI0R_PATH) [Y/n] " response
 -
 - case $response in
 -     [yY][eE][sS]|[yY])
