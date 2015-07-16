@@ -166,7 +166,8 @@ fi
 
 
 if build "x264"; then
-	download "ftp://ftp.videolan.org/pub/x264/snapshots/last_x264.tar.bz2" "last_x264.tar.bz2"
+	# download "ftp://ftp.videolan.org/pub/x264/snapshots/last_x264.tar.bz2" "last_x264.tar.bz2" if firewall allows ftp
+	download "http://ftp.videolan.org/pub/x264/snapshots/last_x264.tar.bz2" "last_x264.tar.bz2"
 	cd $PACKAGES/x264-snapshot-* 
 	execute ./configure --prefix=${WORKSPACE} --disable-shared --enable-static
 	execute make -j 4
@@ -260,18 +261,18 @@ if build "fdk_aac"; then
 fi
 
 if build "frei0r"; then
-	download "https://files.dyne.org/frei0r/snapshots/frei0r-snapshot-27-01-15.tar.gz" "frei0r-snapshot-27-01-15.tar.gz"
-		
-	cd $PACKAGES/frei0r*
-	perl -p -i -e "s/OpenCV\" OFF/OpenCV\" ON/" CMakeLists.txt 
-	execute cmake -DCMAKE_INSTALL_PREFIX:PATH=${WORKSPACE}/bin/ .
-	#execute cmake -DCMAKE_INSTALL_PREFIX:PATH=${WORKSPACE} . 
-	execute make -s install
-	for file in ${WORKSPACE}/bin/frei0r-1/*.so ; do
-		cp $file "${file%.*}.dylib"
-	done
-	build_done "frei0r"
-fi
+-       download "https://files.dyne.org/frei0r/snapshots/frei0r-snapshot-27-01-15.tar.gz" "frei0r-snapshot-27-01-15.tar.gz"
+-
+-       cd $PACKAGES/frei0r*
+-       perl -p -i -e "s/OpenCV\" OFF/OpenCV\" ON/" CMakeLists.txt
+-       execute cmake -DCMAKE_INSTALL_PREFIX:PATH=${WORKSPACE} .
+-       #execute cmake -DCMAKE_INSTALL_PREFIX:PATH=${WORKSPACE} .
+-       execute make -s install
+-       for file in ${WORKSPACE}/lib/frei0r-1/*.so ; do
+-               cp $file "${file%.*}.dylib"
+-       done
+-       build_done "frei0r"
+- fi
 
 build "ffmpeg"
 download "http://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2 " "ffmpeg-snapshot.tar.bz2 "
@@ -285,7 +286,6 @@ echo ""
 echo "Building done. The binary can be found here: $WORKSPACE/bin/ffmpeg"
 echo ""
 read -r -p "Install the binary to your /usr/bin/ folder? [Y/n] " response
-echo "Run export FREI0R_PATH=(wherever you copy your ffmpeg binary dir)/frei0r-1"
 
 case $response in
     [yY][eE][sS]|[yY])
@@ -294,3 +294,13 @@ case $response in
         echo "Done. ffmpeg is now installed to your system"
         ;;
 esac
+
+echo ""
+read -r -p "Copy frei0r plugins to your /usr/local/lib folder (needed for ffmpeg to find them, unless you manually copy elsewhere and export FREI0R_PATH) [Y/n] " response
+-
+- case $response in
+-     [yY][eE][sS]|[yY])
+-         sudo cp -Rv "$WORKSPACE/lib/frei0r-1" "/usr/local/lib/"
+-         echo "Done. frei0r plugins are now installed to your system"
+-         ;;
+- esac
