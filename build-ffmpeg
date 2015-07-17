@@ -1,7 +1,8 @@
 #!/bin/sh
 
+# forked from:
 # http://www.github.com/markus-perl
-# Version 0.2
+# Version 0.2 (my version 0.3)
 
 CWD=`pwd`
 PACKAGES="$CWD/packages" 
@@ -166,7 +167,8 @@ fi
 
 
 if build "x264"; then
-	download "ftp://ftp.videolan.org/pub/x264/snapshots/last_x264.tar.bz2" "last_x264.tar.bz2"
+	# download "ftp://ftp.videolan.org/pub/x264/snapshots/last_x264.tar.bz2" "last_x264.tar.bz2" if firewall allows ftp
+	download "http://ftp.videolan.org/pub/x264/snapshots/last_x264.tar.bz2" "last_x264.tar.bz2"
 	cd $PACKAGES/x264-snapshot-* 
 	execute ./configure --prefix=${WORKSPACE} --disable-shared --enable-static
 	execute make -j 4
@@ -259,24 +261,50 @@ if build "fdk_aac"; then
 	build_done "fdk_aac"
 fi
 
+if build "frei0r"; then
+       download "https://files.dyne.org/frei0r/snapshots/frei0r-snapshot-27-01-15.tar.gz" "frei0r-snapshot-27-01-15.tar.gz"
+
+       cd $PACKAGES/frei0r*
+       perl -p -i -e "s/OpenCV\" OFF/OpenCV\" ON/" CMakeLists.txt
+       execute cmake -DCMAKE_INSTALL_PREFIX:PATH=${WORKSPACE} .
+       #execute cmake -DCMAKE_INSTALL_PREFIX:PATH=${WORKSPACE} .
+       execute make -s install
+       for file in ${WORKSPACE}/lib/frei0r-1/*.so ; do
+               cp $file "${file%.*}.dylib"
+       done
+       build_done "frei0r"
+fi
 
 build "ffmpeg"
 download "http://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2 " "ffmpeg-snapshot.tar.bz2 "
 cd $PACKAGES/ffmpeg*
 CFLAGS="-I$WORKSPACE/include" LDFLAGS="-L$WORKSPACE/lib" 
-execute ./configure  --arch=64 --prefix=${WORKSPACE} --extra-cflags="-I$WORKSPACE/include" --extra-ldflags="-L$WORKSPACE/lib" --extra-version=static --disable-debug --disable-shared --enable-static --extra-cflags=--static --disable-ffplay --disable-ffserver --disable-doc --enable-version3 --enable-libvpx --enable-libmp3lame --enable-libtheora --enable-libvorbis --enable-libx264 --enable-avfilter --enable-gpl --enable-libopencore_amrwb --enable-libopencore_amrnb --enable-nonfree --enable-filters --enable-libvidstab --enable-libx265 --enable-runtime-cpudetect --enable-libfdk-aac
+execute ./configure  --arch=64 --prefix=${WORKSPACE} --extra-cflags="-I$WORKSPACE/include" --extra-ldflags="-L$WORKSPACE/lib" --extra-version=static --disable-debug --disable-shared --enable-static --extra-cflags=--static --disable-ffplay --disable-ffserver --disable-doc --enable-version3 --enable-libvpx --enable-libmp3lame --enable-libtheora --enable-libvorbis --enable-libx264 --enable-avfilter --enable-gpl --enable-libopencore_amrwb --enable-libopencore_amrnb --enable-nonfree --enable-filters --enable-libvidstab --enable-libx265 --enable-runtime-cpudetect --enable-libfdk-aac --enable-frei0r
 execute make -j 4
 execute make install
 
 echo ""
 echo "Building done. The binary can be found here: $WORKSPACE/bin/ffmpeg"
 echo ""
-read -r -p "Install the binary to your /usr/bin/ folder? [Y/n] " response
+# Modified to copy to local/bin as /usr/bin is write protected on some systems
+read -r -p "Install the binary to your /usr/local/bin/ folder (may prompt for sudo pass)? [Y/n] " response
 
 case $response in
     [yY][eE][sS]|[yY])
-        sudo cp "$WORKSPACE/bin/ffmpeg" "/usr/bin/ffmpeg"
-        sudo cp "$WORKSPACE/bin/ffprobe" "/usr/bin/ffprobe"
+        sudo cp "$WORKSPACE/bin/ffmpeg" "/usr/local/bin/ffmpeg"
+        sudo cp "$WORKSPACE/bin/ffprobe" "/usr/local/bin/ffprobe"
         echo "Done. ffmpeg is now installed to your system"
         ;;
+esac
+
+echo ""
+echo "The frei0r plugins can be found here: $WORKSPACE/lib/ in a folder named \"frei0r-1\""
+echo ""
+read -r -p "Copy frei0r plugins to your /usr/local/lib/frei0r-1 folder (needed for ffmpeg to find them, unless you manually copy elsewhere and export FREI0R_PATH) [Y/n] " response
+
+case $response in
+     [yY][eE][sS]|[yY])
+         sudo cp -Rv "$WORKSPACE/lib/frei0r-1" "/usr/local/lib/"
+         echo "Done. frei0r plugins are now installed to your system"
+         ;;
 esac
