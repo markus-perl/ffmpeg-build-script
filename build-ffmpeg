@@ -1,7 +1,8 @@
 #!/bin/sh
 
+# forked from:
 # http://www.github.com/markus-perl
-# Version 0.2
+# Version 0.2 (my version 0.3)
 
 CWD=`pwd`
 PACKAGES="$CWD/packages" 
@@ -285,12 +286,13 @@ execute make install
 echo ""
 echo "Building done. The binary can be found here: $WORKSPACE/bin/ffmpeg"
 echo ""
-read -r -p "Install the binary to your /usr/bin/ folder? [Y/n] " response
+# Modified to copy to local/bin as /usr/bin is write protected on some systems
+read -r -p "Install the binary to your /usr/local/bin/ folder (may prompt for sudo pass)? [Y/n] " response
 
 case $response in
     [yY][eE][sS]|[yY])
-        sudo cp "$WORKSPACE/bin/ffmpeg" "/usr/bin/ffmpeg"
-        sudo cp "$WORKSPACE/bin/ffprobe" "/usr/bin/ffprobe"
+        sudo cp "$WORKSPACE/bin/ffmpeg" "/usr/local/bin/ffmpeg"
+        sudo cp "$WORKSPACE/bin/ffprobe" "/usr/local/bin/ffprobe"
         echo "Done. ffmpeg is now installed to your system"
         ;;
 esac
