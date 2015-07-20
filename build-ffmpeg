@@ -132,8 +132,9 @@ if build "opencore"; then
 fi
 
 if build "libvpx"; then
-	download "http://webm.googlecode.com/files/libvpx-v1.3.0.tar.bz2" "libvpx-v1.3.0.tar.bz2" 
-	cd $PACKAGES/libvpx-v1.3.0 
+	download "http://storage.googleapis.com/downloads.webmproject.org/releases/webm/libvpx-1.4.0.tar.bz2" "libvpx-1.4.0.tar.bz2" 
+	cd $PACKAGES/libvpx* 
+	sed   -e 's/cp -p/cp/' -i build/make/Makefile
 	execute ./configure --prefix=${WORKSPACE} --disable-unit-tests --disable-shared
 	execute make -j 4
 	execute make install
