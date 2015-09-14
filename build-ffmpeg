@@ -123,7 +123,7 @@ fi
 
 
 if build "opencore"; then
-	download "http://garr.dl.sourceforge.net/project/opencore-amr/opencore-amr/opencore-amr-0.1.3.tar.gz" "opencore-amr-0.1.3.tar.gz"
+	download "http://downloads.sourceforge.net/project/opencore-amr/opencore-amr/opencore-amr-0.1.3.tar.gz?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fopencore-amr%2Ffiles%2Fopencore-amr%2F&ts=1442256558&use_mirror=netassist" "opencore-amr-0.1.3.tar.gz"
 	cd $PACKAGES/opencore-amr-0.1.3 
 	execute ./configure --prefix=${WORKSPACE} --disable-shared --enable-static 
 	execute make -j 4 
