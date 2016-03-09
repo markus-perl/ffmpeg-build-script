@@ -123,7 +123,7 @@ fi
 
 
 if build "opencore"; then
-	download "http://downloads.sourceforge.net/project/opencore-amr/opencore-amr/opencore-amr-0.1.3.tar.gz?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fopencore-amr%2Ffiles%2Fopencore-amr%2F&ts=1442256558&use_mirror=netassist" "opencore-amr-0.1.3.tar.gz"
+	download "http://downloads.sourceforge.net/project/opencore-amr/opencore-amr/opencore-amr-0.1.3.tar.gz" "opencore-amr-0.1.3.tar.gz"
 	cd $PACKAGES/opencore-amr-0.1.3 
 	execute ./configure --prefix=${WORKSPACE} --disable-shared --enable-static 
 	execute make -j 4 
@@ -238,8 +238,8 @@ if build "vid_stab"; then
 fi
 
 if build "x265"; then
-	download "https://bitbucket.org/multicoreware/x265/downloads/x265_1.9.tar.gz" "x265-1.9.tar.gz"
-	cd $PACKAGES/x265_1.9
+	download "https://bitbucket.org/multicoreware/x265/get/1.6.tar.gz" "x265-1.9.tar.gz"
+	cd $PACKAGES/multicoreware*
 	cd source
 	execute cmake -DCMAKE_INSTALL_PREFIX:PATH=${WORKSPACE} -DENABLE_SHARED:bool=off . 
 	execute make -j 4
@@ -250,8 +250,7 @@ if build "x265"; then
 fi
 
 if build "fdk_aac"; then
-	# download "http://downloads.sourceforge.net/project/opencore-amr/fdk-aac/fdk-aac-0.1.3.tar.gz" "fdk-aac-0.1.3.tar.gz"
-	download "http://downloads.sourceforge.net/project/opencore-amr/fdk-aac/fdk-aac-0.1.4.tar.gz?r=https%3A%2F%2Fsourceforge.net%2Fprojects%2Fopencore-amr%2Ffiles%2Ffdk-aac%2F&ts=1457561564&use_mirror=kent" "fdk-aac-0.1.4.tar.gz"
+	download "http://downloads.sourceforge.net/project/opencore-amr/fdk-aac/fdk-aac-0.1.4.tar.gz" "fdk-aac-0.1.4.tar.gz"
 	
 	cd $PACKAGES/fdk-aac*
 	execute ./configure --prefix=${WORKSPACE} --disable-shared --enable-static
