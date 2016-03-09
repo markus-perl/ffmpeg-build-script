@@ -238,7 +238,7 @@ if build "vid_stab"; then
 fi
 
 if build "x265"; then
-	download "https://bitbucket.org/multicoreware/x265/get/1.6.tar.gz" "x265-1.9.tar.gz"
+	download "https://bitbucket.org/multicoreware/x265/get/1.9.tar.gz" "x265-1.9.tar.gz"
 	cd $PACKAGES/multicoreware*
 	cd source
 	execute cmake -DCMAKE_INSTALL_PREFIX:PATH=${WORKSPACE} -DENABLE_SHARED:bool=off . 
