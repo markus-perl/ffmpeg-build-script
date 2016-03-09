@@ -187,8 +187,8 @@ fi
 
 
 if build "libvorbis"; then
-	download "http://downloads.xiph.org/releases/vorbis/libvorbis-1.4.0.tar.gz" "libvorbis-1.4.0.tar.gz"
-	cd $PACKAGES/libvorbis-1.4.0
+	download "http://downloads.xiph.org/releases/vorbis/libvorbis-1.3.5.tar.gz" "libvorbis-1.3.5.tar.gz"
+	cd $PACKAGES/libvorbis-1.3.5
 	execute ./configure --prefix=${WORKSPACE} --with-ogg-libraries=${WORKSPACE}/lib --with-ogg-includes=${WORKSPACE}/include/ --enable-static --disable-shared --disable-oggtest
 	execute make -j 4
 	execute make install
