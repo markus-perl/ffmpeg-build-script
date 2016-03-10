@@ -1,7 +1,7 @@
-#!/bin/sh
+#!/bin/bash
 
-# http://www.github.com/markus-perl
-# Version 0.2
+# https://github.com/markus-perl/ffmpeg-build-script
+# Version 0.3
 
 CWD=`pwd`
 PACKAGES="$CWD/packages" 
@@ -24,13 +24,12 @@ remove_dir () {
 	if [ -d $1 ]; then
 		rm -r "$1"
 	fi	
-
 }
 
 download () {
 	if [ ! -f "$PACKAGES/$2" ]; then
 		
-		printf "Downloading $1"
+		echo "Downloading $1"
 		curl -L --silent -o "$PACKAGES/$2" "$1"
 		EXITCODE=$?
 		if [ $EXITCODE -ne 0 ]; then
@@ -39,7 +38,7 @@ download () {
 			exit 1
 		fi
 		
-		printf " ... Done\n"
+		echo " ... Done"
 		
 		if ! tar -xvf "$PACKAGES/$2" -C "$PACKAGES" 2>/dev/null >/dev/null; then
 			echo "Failed to extract $2";
@@ -59,7 +58,6 @@ execute () {
         echo "Failed to Execute $@" >&2
         exit 1
     fi
-	
 }
 
 build () {
@@ -73,16 +71,21 @@ build () {
 		return 1
 	fi
 	
-	
-	
 	return 0
 }
+
+command_exists() {
+    if ! [ -x "$(command -v $1)" ]; then
+        return 1
+    fi
+
+    return 0
+}
+
 
 build_done () {
 	touch "$PACKAGES/$1.done"
 }
-
-
 
 case "$1" in
 "--cleanup")
@@ -103,14 +106,21 @@ case "$1" in
     ;;
 esac
 
-
-
 make_dir $PACKAGES
 make_dir $WORKSPACE
 make_dir $CMPL
 
 export PATH=${WORKSPACE}/bin:$PATH
 
+if ! command_exists "make"; then
+    echo "make not installed.";
+    exit 1
+fi
+
+if ! command_exists "g++"; then
+    echo "g++ not installed.";
+    exit 1
+fi
 
 if build "yasm"; then
 	download "http://www.tortall.net/projects/yasm/releases/yasm-1.3.0.tar.gz" "yasm-1.3.0.tar.gz"
@@ -120,7 +130,6 @@ if build "yasm"; then
 	execute make install
 	build_done "yasm"
 fi
-
 
 if build "opencore"; then
 	download "http://downloads.sourceforge.net/project/opencore-amr/opencore-amr/opencore-amr-0.1.3.tar.gz?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fopencore-amr%2Ffiles%2Fopencore-amr%2F&ts=1442256558&use_mirror=netassist" "opencore-amr-0.1.3.tar.gz"
@@ -132,8 +141,8 @@ if build "opencore"; then
 fi
 
 if build "libvpx"; then
-	download "http://storage.googleapis.com/downloads.webmproject.org/releases/webm/libvpx-1.4.0.tar.bz2" "libvpx-1.4.0.tar.bz2" 
-	cd $PACKAGES/libvpx* 
+    download "https://github.com/webmproject/libvpx/archive/v1.5.0.tar.gz" "libvpx-1.5.0.tar.gz"
+    cd $PACKAGES/libvpx*
 	sed   -e 's/cp -p/cp/' -i build/make/Makefile
 	execute ./configure --prefix=${WORKSPACE} --disable-unit-tests --disable-shared
 	execute make -j 4
@@ -165,7 +174,6 @@ if build "xvidcore"; then
 	build_done "xvidcore"
 fi
 
-
 if build "x264"; then
 	download "ftp://ftp.videolan.org/pub/x264/snapshots/last_x264.tar.bz2" "last_x264.tar.bz2"
 	cd $PACKAGES/x264-snapshot-* 
@@ -185,10 +193,9 @@ if build "libogg"; then
 	build_done "libogg"
 fi
 
-
 if build "libvorbis"; then
-	download "http://downloads.xiph.org/releases/vorbis/libvorbis-1.3.4.tar.gz" "libvorbis-1.3.4.tar.gz"
-	cd $PACKAGES/libvorbis-1.3.4 
+	download "http://downloads.xiph.org/releases/vorbis/libvorbis-1.3.5.tar.gz" "libvorbis-1.3.5.tar.gz"
+	cd $PACKAGES/libvorbis-1.3.5
 	execute ./configure --prefix=${WORKSPACE} --with-ogg-libraries=${WORKSPACE}/lib --with-ogg-includes=${WORKSPACE}/include/ --enable-static --disable-shared --disable-oggtest
 	execute make -j 4
 	execute make install
@@ -208,8 +215,8 @@ if build "libtheora"; then
 fi
 
 if build "pkg-config"; then
-	download "http://pkgconfig.freedesktop.org/releases/pkg-config-0.28.tar.gz" "pkg-config-0.28.tar.gz"
-	cd $PACKAGES/pkg-config-0.28 
+	download "http://pkgconfig.freedesktop.org/releases/pkg-config-0.29.1.tar.gz" "pkg-config-0.29.1.tar.gz"
+	cd $PACKAGES/pkg-config-0.29.1
 	execute ./configure --silent --prefix=${WORKSPACE} --with-pc-path=${WORKSPACE}/lib/pkgconfig --with-internal-glib
 	execute make -j 4
 	execute make install
@@ -217,7 +224,7 @@ if build "pkg-config"; then
 fi
 
 if build "cmake"; then
-	download "http://www.cmake.org/files/v3.0/cmake-3.0.2.tar.gz" "cmake-3.0.2.tar.gz"
+	download "https://cmake.org/files/v3.5/cmake-3.5.0.tar.gz" "cmake-3.5.0.tar.gz"
 	cd $PACKAGES/cmake* 
 	rm Modules/FindJava.cmake
 	perl -p -i -e "s/get_filename_component.JNIPATH/#get_filename_component(JNIPATH/g" Tests/CMakeLists.txt 
@@ -238,7 +245,7 @@ if build "vid_stab"; then
 fi
 
 if build "x265"; then
-	download "https://bitbucket.org/multicoreware/x265/downloads/x265_1.9.tar.gz" "x265-1.7.tar.gz"
+	download "https://bitbucket.org/multicoreware/x265/downloads/x265_1.9.tar.gz" "x265-1.9.tar.gz"
 	cd $PACKAGES/x265_1.9
 	cd source
 	execute cmake -DCMAKE_INSTALL_PREFIX:PATH=${WORKSPACE} -DENABLE_SHARED:bool=off . 
@@ -250,8 +257,7 @@ if build "x265"; then
 fi
 
 if build "fdk_aac"; then
-	# download "http://downloads.sourceforge.net/project/opencore-amr/fdk-aac/fdk-aac-0.1.3.tar.gz" "fdk-aac-0.1.3.tar.gz"
-	download "http://ftp.cc.uoc.gr/mirrors/linux/lfs/LFS/7.6/f/fdk-aac-0.1.3.tar.gz" "fdk-aac-0.1.3.tar.gz"
+	download "http://downloads.sourceforge.net/project/opencore-amr/fdk-aac/fdk-aac-0.1.4.tar.gz?r=https%3A%2F%2Fsourceforge.net%2Fprojects%2Fopencore-amr%2Ffiles%2Ffdk-aac%2F&ts=1457561564&use_mirror=kent" "fdk-aac-0.1.4.tar.gz"
 	
 	cd $PACKAGES/fdk-aac*
 	execute ./configure --prefix=${WORKSPACE} --disable-shared --enable-static
@@ -269,15 +275,20 @@ execute ./configure  --arch=64 --prefix=${WORKSPACE} --extra-cflags="-I$WORKSPAC
 execute make -j 4
 execute make install
 
+INSTALL_FOLDER="/usr/bin"
+if [[ "$OSTYPE" == "darwin"* ]]; then
+INSTALL_FOLDER="/usr/local/bin"
+fi
+
 echo ""
 echo "Building done. The binary can be found here: $WORKSPACE/bin/ffmpeg"
 echo ""
-read -r -p "Install the binary to your /usr/bin/ folder? [Y/n] " response
+read -r -p "Install the binary to your $INSTALL_FOLDER folder? [Y/n] " response
 
 case $response in
     [yY][eE][sS]|[yY])
-        sudo cp "$WORKSPACE/bin/ffmpeg" "/usr/bin/ffmpeg"
-        sudo cp "$WORKSPACE/bin/ffprobe" "/usr/bin/ffprobe"
+        sudo cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
+        sudo cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
         echo "Done. ffmpeg is now installed to your system"
         ;;
 esac
