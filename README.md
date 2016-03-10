@@ -34,8 +34,8 @@ Contact
 Tested on
 ---------
 
-* Mac OSX 10.9 64Bit XCode 6.1
-* Debian 7.5
+* Mac OSX 10.11 64Bit XCode 7.*
+* Debian 8.3
 
 Example
 -------
