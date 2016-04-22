@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # https://github.com/markus-perl/ffmpeg-build-script
-# Version 0.3
+# Version 0.4
 
 CWD=`pwd`
 PACKAGES="$CWD/packages" 
@@ -10,6 +10,16 @@ CC=clang
 LDFLAGS="-L${WORKSPACE}/lib -lm" 
 CFLAGS="-I${WORKSPACE}/include"
 PKG_CONFIG_PATH="${WORKSPACE}/lib/pkgconfig"
+
+# Speed up the process
+# Env Var NUMJOBS overrides automatic detection
+    MJOBS=$NUMJOBS
+elif [ -f /proc/cpuinfo ]; then
+    MJOBS=`grep processor /proc/cpuinfo | wc -l`
+else
+    MJOBS=4
+fi
+echo "Using $MJOBS make jobs simultaneously."
 
 make_dir () {
 	if [ ! -d $1 ]; then
@@ -126,7 +136,7 @@ if build "yasm"; then
 	download "http://www.tortall.net/projects/yasm/releases/yasm-1.3.0.tar.gz" "yasm-1.3.0.tar.gz"
 	cd $PACKAGES/yasm-1.3.0
 	execute ./configure --prefix=${WORKSPACE} 
-	execute make -j 4 
+	execute make -j $MJOBS 
 	execute make install
 	build_done "yasm"
 fi
@@ -135,7 +145,7 @@ if build "opencore"; then
 	download "http://downloads.sourceforge.net/project/opencore-amr/opencore-amr/opencore-amr-0.1.3.tar.gz?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fopencore-amr%2Ffiles%2Fopencore-amr%2F&ts=1442256558&use_mirror=netassist" "opencore-amr-0.1.3.tar.gz"
 	cd $PACKAGES/opencore-amr-0.1.3 
 	execute ./configure --prefix=${WORKSPACE} --disable-shared --enable-static 
-	execute make -j 4 
+	execute make -j $MJOBS
 	execute make install
 	build_done "opencore"
 fi
@@ -145,7 +155,7 @@ if build "libvpx"; then
     cd $PACKAGES/libvpx*
 	sed   -e 's/cp -p/cp/' -i build/make/Makefile
 	execute ./configure --prefix=${WORKSPACE} --disable-unit-tests --disable-shared
-	execute make -j 4
+	execute make -j $MJOBS
 	execute make install
 	build_done "libvpx"
 fi
@@ -154,7 +164,7 @@ if build "lame"; then
 	download "http://kent.dl.sourceforge.net/project/lame/lame/3.99/lame-3.99.5.tar.gz" "lame-3.99.5.tar.gz" 
 	cd $PACKAGES/lame-3.99.5
 	execute ./configure --prefix=${WORKSPACE} --disable-shared --enable-static
-	execute make -j 4
+	execute make -j $MJOBS
 	execute make install
 	build_done "lame"
 fi
@@ -164,7 +174,7 @@ if build "xvidcore"; then
 	cd $PACKAGES/xvidcore 
 	cd build/generic 
 	execute ./configure --prefix=${WORKSPACE} --disable-shared --enable-static
-	execute make -j 4
+	execute make -j $MJOBS
 	execute make install
 
 	if [ -f ${WORKSPACE}/lib/libxvidcore.4.dylib ]; then
@@ -178,7 +188,7 @@ if build "x264"; then
 	download "ftp://ftp.videolan.org/pub/x264/snapshots/last_x264.tar.bz2" "last_x264.tar.bz2"
 	cd $PACKAGES/x264-snapshot-* 
 	execute ./configure --prefix=${WORKSPACE} --disable-shared --enable-static
-	execute make -j 4
+	execute make -j $MJOBS
 	execute make install
 	execute make install-lib-static
 	build_done "x264"
@@ -188,7 +198,7 @@ if build "libogg"; then
 	download "http://downloads.xiph.org/releases/ogg/libogg-1.3.2.tar.gz" "libogg-1.3.2.tar.gz"
 	cd $PACKAGES/libogg-1.3.2
 	execute ./configure --prefix=${WORKSPACE} --disable-shared --enable-static
-	execute make -j 4
+	execute make -j $MJOBS
 	execute make install
 	build_done "libogg"
 fi
@@ -197,7 +207,7 @@ if build "libvorbis"; then
 	download "http://downloads.xiph.org/releases/vorbis/libvorbis-1.3.5.tar.gz" "libvorbis-1.3.5.tar.gz"
 	cd $PACKAGES/libvorbis-1.3.5
 	execute ./configure --prefix=${WORKSPACE} --with-ogg-libraries=${WORKSPACE}/lib --with-ogg-includes=${WORKSPACE}/include/ --enable-static --disable-shared --disable-oggtest
-	execute make -j 4
+	execute make -j $MJOBS
 	execute make install
 	build_done "libvorbis"
 fi
@@ -209,7 +219,7 @@ if build "libtheora"; then
 	chmod +x configure.patched
 	mv configure.patched configure
 	execute ./configure --prefix=${WORKSPACE} --with-ogg-libraries=${WORKSPACE}/lib --with-ogg-includes=${WORKSPACE}/include/ --with-vorbis-libraries=${WORKSPACE}/lib --with-vorbis-includes=${WORKSPACE}/include/ --enable-static --disable-shared --disable-oggtest --disable-vorbistest --disable-examples --disable-asm
-	execute make -j 4
+	execute make -j $MJOBS
 	execute make install
 	build_done "libtheora"
 fi
@@ -218,7 +228,7 @@ if build "pkg-config"; then
 	download "http://pkgconfig.freedesktop.org/releases/pkg-config-0.29.1.tar.gz" "pkg-config-0.29.1.tar.gz"
 	cd $PACKAGES/pkg-config-0.29.1
 	execute ./configure --silent --prefix=${WORKSPACE} --with-pc-path=${WORKSPACE}/lib/pkgconfig --with-internal-glib
-	execute make -j 4
+	execute make -j $MJOBS
 	execute make install
 	build_done "pkg-config"
 fi
@@ -230,7 +240,7 @@ if build "cmake"; then
 	perl -p -i -e "s/get_filename_component.JNIPATH/#get_filename_component(JNIPATH/g" Tests/CMakeLists.txt 
 	perl -p -i -e "s/get_filename_component.JNIPATH/#get_filename_component(JNIPATH/g" Tests/CMakeLists.txt 
 	execute ./configure --prefix=${WORKSPACE} 
-	execute make -j 4
+	execute make -j $MJOBS
 	execute make install
 	build_done "cmake"
 fi
@@ -249,7 +259,7 @@ if build "x265"; then
 	cd $PACKAGES/x265_1.9
 	cd source
 	execute cmake -DCMAKE_INSTALL_PREFIX:PATH=${WORKSPACE} -DENABLE_SHARED:bool=off . 
-	execute make -j 4
+	execute make -j $MJOBS
 	execute make install
 	sed "s/-lx265/-lx265 -lstdc++/g" "$WORKSPACE/lib/pkgconfig/x265.pc" > "$WORKSPACE/lib/pkgconfig/x265.pc.tmp"
 	mv "$WORKSPACE/lib/pkgconfig/x265.pc.tmp" "$WORKSPACE/lib/pkgconfig/x265.pc"
@@ -261,7 +271,7 @@ if build "fdk_aac"; then
 	
 	cd $PACKAGES/fdk-aac*
 	execute ./configure --prefix=${WORKSPACE} --disable-shared --enable-static
-	execute make -j 4
+	execute make -j $MJOBS
 	execute make install
 	build_done "fdk_aac"
 fi
@@ -272,7 +282,7 @@ download "http://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2 " "ffmpeg-snapshot.
 cd $PACKAGES/ffmpeg*
 CFLAGS="-I$WORKSPACE/include" LDFLAGS="-L$WORKSPACE/lib" 
 execute ./configure  --arch=64 --prefix=${WORKSPACE} --extra-cflags="-I$WORKSPACE/include" --extra-ldflags="-L$WORKSPACE/lib" --extra-version=static --disable-debug --disable-shared --enable-static --extra-cflags=--static --disable-ffplay --disable-ffserver --disable-doc --enable-version3 --enable-libvpx --enable-libmp3lame --enable-libtheora --enable-libvorbis --enable-libx264 --enable-avfilter --enable-gpl --enable-libopencore_amrwb --enable-libopencore_amrnb --enable-nonfree --enable-filters --enable-libvidstab --enable-libx265 --enable-runtime-cpudetect --enable-libfdk-aac
-execute make -j 4
+execute make -j $MJOBS
 execute make install
 
 INSTALL_FOLDER="/usr/bin"
