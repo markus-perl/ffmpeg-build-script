@@ -235,7 +235,7 @@ if build "pkg-config"; then
 fi
 
 if build "cmake"; then
-	download "https://cmake.org/files/v3.5/cmake-3.5.0.tar.gz" "cmake-3.5.0.tar.gz"
+	download "https://cmake.org/files/v3.5/cmake-3.5.2.tar.gz" "cmake-3.5.2.tar.gz"
 	cd $PACKAGES/cmake*  || exit
 	rm Modules/FindJava.cmake
 	perl -p -i -e "s/get_filename_component.JNIPATH/#get_filename_component(JNIPATH/g" Tests/CMakeLists.txt 
@@ -281,7 +281,51 @@ build "ffmpeg"
 download "http://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2 " "ffmpeg-snapshot.tar.bz2 "
 cd $PACKAGES/ffmpeg* || exit
 CFLAGS="-I$WORKSPACE/include" LDFLAGS="-L$WORKSPACE/lib" 
-execute ./configure  --arch=64 --prefix=${WORKSPACE} --extra-cflags="-I$WORKSPACE/include" --extra-ldflags="-L$WORKSPACE/lib" --extra-version=static --disable-debug --disable-shared --enable-static --extra-cflags=--static --disable-ffplay --disable-ffserver --disable-doc --enable-version3 --enable-libvpx --enable-libmp3lame --enable-libtheora --enable-libvorbis --enable-libx264 --enable-avfilter --enable-gpl --enable-libopencore_amrwb --enable-libopencore_amrnb --enable-nonfree --enable-filters --enable-libvidstab --enable-libx265 --enable-runtime-cpudetect --enable-libfdk-aac
+execute ./configure  --arch=64 --prefix=${WORKSPACE} --extra-cflags="-I$WORKSPACE/include" --extra-ldflags="-L$WORKSPACE/lib" \
+	--extra-version=static \
+	--extra-cflags=--static \
+	--enable-static \
+	--disable-debug \
+	--disable-shared \
+	--disable-ffplay \
+	--disable-ffserver \
+	--disable-doc \
+	--enable-gpl \
+	--enable-version3 \
+	--enable-nonfree \
+	--enable-pthreads \
+	--enable-libvpx \
+	--enable-libmp3lame \
+	--enable-libtheora \
+	--enable-libvorbis \
+	--enable-libx264 \
+	--enable-libx265 \
+	--enable-runtime-cpudetect \
+	--enable-libfdk-aac \
+	--enable-avfilter \
+	--enable-libopencore_amrwb \
+	--enable-libopencore_amrnb \
+	--enable-filters \
+	--enable-libvidstab 
+	# enable all filters
+	# enable AAC de/encoding via libfdk-aac [no]
+	# enable detecting cpu capabilities at runtime (smaller binary)
+	# enable HEVC encoding via x265 [no]
+	# enable H.264 encoding via x264 [no]
+	# enable Vorbis en/decoding via libvorbis, native implementation exists [no]
+	# enable Theora encoding via libtheora [no]
+	# enable MP3 encoding via libmp3lame [no]
+	# enable VP8 and VP9 de/encoding via libvpx [no]
+	# enable pthreads [autodetect]
+	# allow use of nonfree code, the resulting libs and binaries will be unredistributable [no]
+	# upgrade (L)GPL to version 3 [no]
+	# allow use of GPL code, the resulting libs and binaries will be under GPL [no]
+	# do not build documentation
+	# disable ffserver build
+	# disable ffplay build
+	# build static libraries [no]
+	# disable debugging symbols
+	# disable build shared libraries [no]
 execute make -j $MJOBS
 execute make install
 
