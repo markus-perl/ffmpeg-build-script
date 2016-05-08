@@ -1,4 +1,4 @@
-build-ffmpeg-mac
+build-ffmpeg
 ==========
 
 This build script provides an easy way to build ffmpeg on OSX and Linux with non-free codecs included.

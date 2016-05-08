@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # https://github.com/markus-perl/ffmpeg-build-script
-# Version 0.4
 
+VERSION=0.5
 CWD=$(pwd)
 PACKAGES="$CWD/packages" 
 WORKSPACE="$CWD/workspace"
@@ -17,10 +17,11 @@ if [[ -n $NUMJOBS ]]; then
     MJOBS=$NUMJOBS
 elif [[ -f /proc/cpuinfo ]]; then
     MJOBS=$(grep -c processor /proc/cpuinfo)
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+	MJOBS=$(sysctl -n machdep.cpu.thread_count)
 else
     MJOBS=4
 fi
-echo "Using $MJOBS make jobs simultaneously."
 
 make_dir () {
 	if [ ! -d $1 ]; then
@@ -98,11 +99,16 @@ build_done () {
 	touch "$PACKAGES/$1.done"
 }
 
+echo "ffmpeg-build-script v$VERSION"
+echo "========================="
+echo ""
+
 case "$1" in
 "--cleanup")
 	remove_dir $PACKAGES
 	remove_dir $WORKSPACE
 	echo "Cleanup done"
+	echo ""
 	exit 0
     ;;
 "--build")
@@ -113,9 +119,12 @@ case "$1" in
     echo "   --build: start building process"
     echo "   --cleanup: remove all working dirs"
     echo "   --help: show this help"
+    echo ""
     exit 0
     ;;
 esac
+
+echo "Using $MJOBS make jobs simultaneously."
 
 make_dir $PACKAGES
 make_dir $WORKSPACE
