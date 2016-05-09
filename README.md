@@ -17,6 +17,26 @@ Requirements Linux
 * build-essentials installed
 * Debian >= Wheezy, Ubuntu => Trusty, other Distros might work too
 
+Installation
+------------
+
+### Quick install and run
+
+Open your command line and run (needs curl to be installed):
+
+```
+bash <(curl -s https://raw.githubusercontent.com/markus-perl/ffmpeg-build-script/master/web-install.sh)
+```
+This command downloads the build script and automatically starts the build process.
+
+### Normal installation
+
+```
+git clone https://github.com/markus-perl/ffmpeg-build-script.git
+cd ffmpeg-build-script
+./ffmpeg-build-script --help
+```
+
 Usage
 ------
 

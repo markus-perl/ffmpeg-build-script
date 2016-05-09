@@ -142,6 +142,11 @@ if ! command_exists "g++"; then
     exit 1
 fi
 
+if ! command_exists "curl"; then
+    echo "curl not installed.";
+    exit 1
+fi
+
 if build "yasm"; then
 	download "http://www.tortall.net/projects/yasm/releases/yasm-1.3.0.tar.gz" "yasm-1.3.0.tar.gz"
 	cd $PACKAGES/yasm-1.3.0 || exit
