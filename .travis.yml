@@ -1,0 +1,9 @@
+before_install:
+	- sudo apt-get update -qq
+	- sudo apt-get install -qq build-essential
+
+script:
+	SKIPINSTALL=yes ./build-ffmpeg --build
+
+after_script:
+	- ./build-ffmpeg --cleanup

@@ -72,12 +72,8 @@ execute () {
     fi
 }
 
-exists () {
-  command -v "$1" >/dev/null 2>&1
-}
 
 build () {
-
 	echo ""
 	echo "building $1"
 	echo "======================="
@@ -351,15 +347,20 @@ echo ""
 echo "Building done. The binary can be found here: $WORKSPACE/bin/ffmpeg"
 echo ""
 
-if exists "sudo"; then
 
-	read -r -p "Install the binary to your $INSTALL_FOLDER folder? [Y/n] " response
+if [[ ! $SKIPINSTALL == "yes" ]]; then
+	if command_exists "sudo"; then
 
-	case $response in
-    	[yY][eE][sS]|[yY])
-        	sudo cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
-        	sudo cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
-        	echo "Done. ffmpeg is now installed to your system"
-        	;;
-	esac
+		read -r -p "Install the binary to your $INSTALL_FOLDER folder? [Y/n] " response
+
+		case $response in
+    		[yY][eE][sS]|[yY])
+        		sudo cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
+        		sudo cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
+        		echo "Done. ffmpeg is now installed to your system"
+        		;;
+		esac
+	fi
 fi
+
+exit 0
