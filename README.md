@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/markus-perl/ffmpeg-build-script.svg?branch=master)](https://travis-ci.org/markus-perl/ffmpeg-build-script)
+
 build-ffmpeg
 ==========
 
@@ -13,7 +15,7 @@ Requirements Linux
 ------------
 
 * build-essentials installed
-
+* Debian >= Wheezy, Ubuntu => Trusty, other Distros might work too
 
 Usage
 ------
