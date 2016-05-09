@@ -50,7 +50,7 @@ download () {
 			exit 1
 		fi
 		
-		echo " ... Done"
+		echo "... Done"
 		
 		if ! tar -xvf "$PACKAGES/$2" -C "$PACKAGES" 2>/dev/null >/dev/null; then
 			echo "Failed to extract $2";
@@ -111,7 +111,7 @@ case "$1" in
 "--cleanup")
 	remove_dir $PACKAGES
 	remove_dir $WORKSPACE
-	echo "Cleanup done"
+	echo "Cleanup done."
 	echo ""
 	exit 0
     ;;
@@ -184,7 +184,7 @@ if build "lame"; then
 fi
 
 if build "xvidcore"; then
-	download "http://downloads.xvid.org/downloads/xvidcore-1.3.3.tar.gz" "xvidcore-1.3.3.tar.gz"
+	download "http://downloads.xvid.org/downloads/xvidcore-1.3.4.tar.gz" "xvidcore-1.3.4.tar.gz"
 	cd $PACKAGES/xvidcore  || exit
 	cd build/generic  || exit
 	execute ./configure --prefix=${WORKSPACE} --disable-shared --enable-static
