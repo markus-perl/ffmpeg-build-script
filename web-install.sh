@@ -25,7 +25,11 @@ if ! command_exists "curl"; then
     exit 1
 fi
 
-echo "Creating ffmpeg build directory $TARGET"
+echo "ffmpeg-build-script-downloader v0.1"
+echo "========================================="
+echo ""
+
+echo "First we create the ffmpeg build directory $TARGET"
 make_dir $TARGET
 cd $TARGET
 
