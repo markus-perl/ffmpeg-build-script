@@ -25,9 +25,12 @@ if ! command_exists "curl"; then
     exit 1
 fi
 
-echo "Creating ffmpeg build directory"
+echo "Creating ffmpeg build directory $TARGET"
 make_dir $TARGET
 cd $TARGET
+
+echo "Now we download and execute the build script"
+echo ""
 
 bash <(curl -s https://raw.githubusercontent.com/markus-perl/ffmpeg-build-script/master/build-ffmpeg) --build
 
