@@ -3,8 +3,21 @@
 build-ffmpeg
 ==========
 
-This build script provides an easy way to build ffmpeg on OSX and Linux with non-free codecs included.
+This build script provides an easy way to build a static ffmpeg on **OSX** and **Linux** with **non-free codecs** included.
 
+## Supported Codecs
+* x264: H.264 (MPEG-4 AVC)
+* x265: H.265 Video Codec
+* fdk_aac: Fraunhofer FDK AAC Codec 
+* xvidcore: MPEG-4 video coding standard
+* webm: WebM is a video file format
+* mp3: MPEG-1 or MPEG-2 Audio Layer III
+* ogg: Free, open container format
+* vorbis: Lossy audio compression format
+* theora: Free lossy video compression forma
+
+## Continuos Integration
+ffmpeg-build-script is rockstable. Every commit runs against Linux and OSX with https://travis-ci.org just to make sure everything works as expected.
 
 Requirements OSX
 ------------
@@ -13,9 +26,16 @@ Requirements OSX
 
 Requirements Linux
 ------------
-
-* build-essentials installed
 * Debian >= Wheezy, Ubuntu => Trusty, other Distros might work too
+* build-essentials installed:
+
+```
+# Debian and Ubuntu
+sudo apt-get install build-essential curl
+
+# Fedora
+sudo dnf install @development-tools
+```
 
 Installation
 ------------
@@ -29,7 +49,7 @@ bash <(curl -s https://raw.githubusercontent.com/markus-perl/ffmpeg-build-script
 ```
 This command downloads the build script and automatically starts the build process.
 
-### Normal installation
+### Common installation
 
 ```
 git clone https://github.com/markus-perl/ffmpeg-build-script.git
