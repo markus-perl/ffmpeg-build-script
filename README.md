@@ -25,7 +25,7 @@ Installation
 Open your command line and run (needs curl to be installed):
 
 ```
-bash <(curl -s https://raw.githubusercontent.com/markus-perl/ffmpeg-build-script/master/web-install.sh)
+bash <(curl -s https://raw.githubusercontent.com/markus-perl/ffmpeg-build-script/master/web-install.sh?v1)
 ```
 This command downloads the build script and automatically starts the build process.
 
