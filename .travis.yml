@@ -8,8 +8,8 @@ matrix:
       osx_image: xcode7.2
 
 before_install:
-    - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update -qq
-    - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -qq build-essential
+    - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update -qq; fi
+    - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -qq build-essential; fi
 
 script:
     - SKIPINSTALL=yes ./build-ffmpeg --build
