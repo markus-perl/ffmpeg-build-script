@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1553" height="257" viewBox="0 0 1553 257">
+  <defs>
+    <style>
+      .cls-1, .cls-3 {
+        font-size: 38.743px;
+        font-family: Muli;
+        font-weight: 300;
+      }
+
+      .cls-1 {
+        fill: #828080;
+        font-style: italic;
+      }
+
+      .cls-2, .cls-3 {
+        fill: #377d2b;
+      }
+
+      .cls-2 {
+        fill-opacity: 0.35;
+      }
+    </style>
+  </defs>
+  <text id="FFmpeg-build-script" class="cls-1" transform="translate(191.653 176.531) scale(3.627)">FFmpeg-build-script</text>
+  <rect id="Rounded_Rectangle_1" data-name="Rounded Rectangle 1" class="cls-2" x="119" y="72" width="39" height="110" rx="4" ry="4"/>
+  <text id="_" data-name="$" class="cls-3" transform="translate(39.675 170.031) scale(3.042)">$</text>
+</svg>

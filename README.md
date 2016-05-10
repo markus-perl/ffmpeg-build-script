@@ -1,5 +1,10 @@
 [![Build Status](https://travis-ci.org/markus-perl/ffmpeg-build-script.svg?branch=master)](https://travis-ci.org/markus-perl/ffmpeg-build-script)
 
+<p align="center">
+  <img style="width:400px;max-width:100%;float:right" src="https://raw.github.com/markus-perl/ffmpeg-build-script/master/ffmpeg-build-script.svg" alt=""/>
+  <div style="clear:both"></div>
+</p>
+
 build-ffmpeg
 ==========
 
