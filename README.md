@@ -11,7 +11,7 @@ This build script provides an easy way to build a static ffmpeg on **OSX** and *
 
 [![How-To build FFmpeg on OSX](http://img.youtube.com/vi/Z9p3mM757cM/0.jpg)](http://www.youtube.com/watch?v=Z9p3mM757cM "How-To build FFmpeg on OSX")
 
-*How-To build and install FFmpeg on OSX*
+*Youtube: How-To build and install FFmpeg on OSX*
 
 ## Supported Codecs
 * x264: H.264 (MPEG-4 AVC)
