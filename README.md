@@ -1,9 +1,7 @@
 [![Build Status](https://travis-ci.org/markus-perl/ffmpeg-build-script.svg?branch=master)](https://travis-ci.org/markus-perl/ffmpeg-build-script)
 
-<p align="center">
-  <img style="max-width:60%" src="https://raw.github.com/markus-perl/ffmpeg-build-script/master/ffmpeg-build-script.png" alt=""/>
-  <div style="clear:both"></div>
-</p>
+![Image of Yaktocat](https://raw.github.com/markus-perl/ffmpeg-build-script/master/ffmpeg-build-script.png)
+
 
 build-ffmpeg
 ==========
