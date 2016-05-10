@@ -8,6 +8,11 @@ build-ffmpeg
 
 This build script provides an easy way to build a static ffmpeg on **OSX** and **Linux** with **non-free codecs** included.
 
+
+[![How-To build FFmpeg on OSX](http://img.youtube.com/vi/Z9p3mM757cM/0.jpg)](http://www.youtube.com/watch?v=Z9p3mM757cM "How-To build FFmpeg on OSX")
+
+*How-To build and install FFmpeg on OSX*
+
 ## Supported Codecs
 * x264: H.264 (MPEG-4 AVC)
 * x265: H.265 Video Codec
@@ -17,7 +22,7 @@ This build script provides an easy way to build a static ffmpeg on **OSX** and *
 * mp3: MPEG-1 or MPEG-2 Audio Layer III
 * ogg: Free, open container format
 * vorbis: Lossy audio compression format
-* theora: Free lossy video compression forma
+* theora: Free lossy video compression format
 
 ## Continuos Integration
 ffmpeg-build-script is rockstable. Every commit runs against Linux and OSX with https://travis-ci.org just to make sure everything works as expected.
