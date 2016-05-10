@@ -43,6 +43,15 @@ download () {
 		
 		echo "Downloading $1"
 		curl -L --silent -o "$PACKAGES/$2" "$1"
+		
+		EXITCODE=$?
+		if [ $EXITCODE -ne 0 ]; then
+			echo ""
+			echo "Failed to download $1. Exitcode $EXITCODE. Retrying in 10 seconds";
+			sleep 10
+			curl -L --silent -o "$PACKAGES/$2" "$1"
+		fi
+		
 		EXITCODE=$?
 		if [ $EXITCODE -ne 0 ]; then
 			echo ""
@@ -62,7 +71,13 @@ download () {
 
 execute () {
 	echo "$ $*"
-	OUTPUT="$($@ 2>&1)"
+	
+	if [[ ! $VERBOSE == "yes" ]]; then
+		OUTPUT="$($@ 2>&1)"
+	else
+		$@
+	fi
+	
 	
 	if [ $? -ne 0 ]; then
         echo "$OUTPUT"
