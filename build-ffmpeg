@@ -2,7 +2,7 @@
 
 # https://github.com/markus-perl/ffmpeg-build-script
 
-VERSION=0.6
+VERSION=0.7
 CWD=$(pwd)
 PACKAGES="$CWD/packages" 
 WORKSPACE="$CWD/workspace"
@@ -215,7 +215,7 @@ if build "xvidcore"; then
 fi
 
 if build "x264"; then
-	download "ftp://ftp.videolan.org/pub/x264/snapshots/last_x264.tar.bz2" "last_x264.tar.bz2"
+	download "ftp://ftp.videolan.org/pub/x264/snapshots/x264-snapshot-20161027-2245-stable.tar.bz2" "last_x264.tar.bz2"
 	cd $PACKAGES/x264-snapshot-* || exit
 	execute ./configure --prefix=${WORKSPACE} --disable-shared --enable-static
 	execute make -j $MJOBS
@@ -285,8 +285,8 @@ if build "vid_stab"; then
 fi
 
 if build "x265"; then
-	download "https://bitbucket.org/multicoreware/x265/downloads/x265_1.9.tar.gz" "x265-1.9.tar.gz"
-	cd $PACKAGES/x265_1.9 || exit
+	download "https://bitbucket.org/multicoreware/x265/downloads/x265_2.1.tar.gz" "x265-2.1.tar.gz"
+	cd $PACKAGES/x265_* || exit
 	cd source || exit
 	execute cmake -DCMAKE_INSTALL_PREFIX:PATH=${WORKSPACE} -DENABLE_SHARED:bool=off . 
 	execute make -j $MJOBS
