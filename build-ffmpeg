@@ -78,7 +78,6 @@ execute () {
 		$@
 	fi
 	
-	
 	if [ $? -ne 0 ]; then
         echo "$OUTPUT"
         echo ""
@@ -280,7 +279,7 @@ if build "vid_stab"; then
 	cd $PACKAGES/georgmartius-vid* || exit
 	perl -p -i -e "s/vidstab SHARED/vidstab STATIC/" CMakeLists.txt 
 	execute cmake -DCMAKE_INSTALL_PREFIX:PATH=${WORKSPACE} . 
-	execute make -s install
+	execute make install
 	build_done "vid_stab"
 fi
 
