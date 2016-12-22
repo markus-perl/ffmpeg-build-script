@@ -78,7 +78,6 @@ Contact
 -------
 
 * Github: [http://www.github.com/markus-perl](http://www.github.com/markus-perl)
-* E-Mail: markus (at) www-factory.de
 
 
 Tested on
