@@ -2,7 +2,7 @@
 
 # https://github.com/markus-perl/ffmpeg-build-script
 
-VERSION=0.7
+VERSION=0.8
 CWD=$(pwd)
 PACKAGES="$CWD/packages" 
 WORKSPACE="$CWD/workspace"
@@ -171,8 +171,8 @@ if build "yasm"; then
 fi
 
 if build "opencore"; then
-	download "http://downloads.sourceforge.net/project/opencore-amr/opencore-amr/opencore-amr-0.1.3.tar.gz?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fopencore-amr%2Ffiles%2Fopencore-amr%2F&ts=1442256558&use_mirror=netassist" "opencore-amr-0.1.3.tar.gz"
-	cd $PACKAGES/opencore-amr-0.1.3 || exit
+	download "http://downloads.sourceforge.net/project/opencore-amr/opencore-amr/opencore-amr-0.1.5.tar.gz?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fopencore-amr%2Ffiles%2Fopencore-amr%2F&ts=1442256558&use_mirror=netassist" "opencore-amr-0.1.5.tar.gz"
+	cd $PACKAGES/opencore-amr-0.1.5 || exit
 	execute ./configure --prefix=${WORKSPACE} --disable-shared --enable-static 
 	execute make -j $MJOBS
 	execute make install
@@ -214,7 +214,7 @@ if build "xvidcore"; then
 fi
 
 if build "x264"; then
-	download "ftp://ftp.videolan.org/pub/x264/snapshots/x264-snapshot-20161027-2245-stable.tar.bz2" "last_x264.tar.bz2"
+	download "ftp://ftp.videolan.org/pub/x264/snapshots/x264-snapshot-20170328-2245.tar.bz2" "last_x264.tar.bz2"
 	cd $PACKAGES/x264-snapshot-* || exit
 	execute ./configure --prefix=${WORKSPACE} --disable-shared --enable-static
 	execute make -j $MJOBS
@@ -284,7 +284,7 @@ if build "vid_stab"; then
 fi
 
 if build "x265"; then
-	download "https://bitbucket.org/multicoreware/x265/downloads/x265_2.1.tar.gz" "x265-2.1.tar.gz"
+	download "https://bitbucket.org/multicoreware/x265/downloads/x265_2.3.tar.gz" "x265-2.3tar.gz"
 	cd $PACKAGES/x265_* || exit
 	cd source || exit
 	execute cmake -DCMAKE_INSTALL_PREFIX:PATH=${WORKSPACE} -DENABLE_SHARED:bool=off . 
@@ -296,7 +296,7 @@ if build "x265"; then
 fi
 
 if build "fdk_aac"; then
-	download "http://downloads.sourceforge.net/project/opencore-amr/fdk-aac/fdk-aac-0.1.4.tar.gz?r=https%3A%2F%2Fsourceforge.net%2Fprojects%2Fopencore-amr%2Ffiles%2Ffdk-aac%2F&ts=1457561564&use_mirror=kent" "fdk-aac-0.1.4.tar.gz"
+	download "http://downloads.sourceforge.net/project/opencore-amr/fdk-aac/fdk-aac-0.1.5.tar.gz?r=https%3A%2F%2Fsourceforge.net%2Fprojects%2Fopencore-amr%2Ffiles%2Ffdk-aac%2F&ts=1457561564&use_mirror=kent" "fdk-aac-0.1.5.tar.gz"
 	cd $PACKAGES/fdk-aac* || exit
 	execute ./configure --prefix=${WORKSPACE} --disable-shared --enable-static
 	execute make -j $MJOBS
