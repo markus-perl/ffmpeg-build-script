@@ -216,7 +216,7 @@ fi
 if build "x264"; then
 	download "ftp://ftp.videolan.org/pub/x264/snapshots/x264-snapshot-20170328-2245.tar.bz2" "last_x264.tar.bz2"
 	cd $PACKAGES/x264-snapshot-* || exit
-	execute ./configure --prefix=${WORKSPACE} --disable-shared --enable-static
+	execute ./configure --prefix=${WORKSPACE} --disable-asm --enable-static
 	execute make -j $MJOBS
 	execute make install
 	execute make install-lib-static
@@ -306,7 +306,7 @@ fi
 
 
 build "ffmpeg"
-download "http://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2" "ffmpeg-snapshot.tar.bz2"
+download "http://ffmpeg.org/releases/ffmpeg-2.8.13.tar.bz2" "ffmpeg-snapshot.tar.bz2"
 cd $PACKAGES/ffmpeg* || exit
 CFLAGS="-I$WORKSPACE/include" LDFLAGS="-L$WORKSPACE/lib" 
 execute ./configure  --arch=64 --prefix=${WORKSPACE} --extra-cflags="-I$WORKSPACE/include" --extra-ldflags="-L$WORKSPACE/lib" \
