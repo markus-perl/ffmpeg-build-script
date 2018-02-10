@@ -181,7 +181,7 @@ fi
 
 if build "libvpx"; then
     download "https://github.com/webmproject/libvpx/archive/v1.7.0.tar.gz" "libvpx-1.7.0.tar.gz"
-    cd $PACKAGES/libvpx* || exit
+    cd $PACKAGES/libvpx-0* || exit
     
     if [[ "$OSTYPE" == "darwin"* ]]; then
         echo "Applying Darwin patch"
