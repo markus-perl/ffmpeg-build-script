@@ -2,7 +2,7 @@
 
 # https://github.com/markus-perl/ffmpeg-build-script
 
-VERSION=0.9
+VERSION=0.8
 CWD=$(pwd)
 PACKAGES="$CWD/packages" 
 WORKSPACE="$CWD/workspace"
@@ -231,7 +231,6 @@ fi
 if build "x264"; then
 	download "ftp://ftp.videolan.org/pub/x264/snapshots/x264-snapshot-20180209-2245.tar.bz2" "last_x264.tar.bz2"
 	cd $PACKAGES/x264-snapshot-20180209-2245 || exit
-	export CXXFLAGS="$CXXFLAGS -fPIC"
 	execute ./configure --prefix=${WORKSPACE} --enable-static
 	execute make -j $MJOBS
 	execute make install
