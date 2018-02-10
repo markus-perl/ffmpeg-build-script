@@ -229,8 +229,8 @@ if build "nasm"; then
 fi
 
 if build "x264"; then
-	download "ftp://ftp.videolan.org/pub/x264/snapshots/x264-snapshot-20180209-2245.tar.bz2" "last_x264.tar.bz2"
-	cd $PACKAGES/x264-snapshot-20180209-2245 || exit
+	download "ftp://ftp.videolan.org/pub/x264/snapshots/x264-snapshot-20170328-2245.tar.bz2" "last_x264.tar.bz2"
+	cd $PACKAGES/x264-snapshot-* || exit
 	execute ./configure --prefix=${WORKSPACE} --enable-static
 	execute make -j $MJOBS
 	execute make install
