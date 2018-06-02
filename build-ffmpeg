@@ -2,7 +2,7 @@
 
 # https://github.com/markus-perl/ffmpeg-build-script
 
-VERSION=0.9
+VERSION=1.0
 CWD=$(pwd)
 PACKAGES="$CWD/packages" 
 WORKSPACE="$CWD/workspace"
@@ -71,12 +71,8 @@ download () {
 
 execute () {
 	echo "$ $*"
-	
-	if [[ ! $VERBOSE == "yes" ]]; then
-		OUTPUT="$($@ 2>&1)"
-	else
-		$@
-	fi
+
+	OUTPUT=$($@ 2>&1)
 	
 	if [ $? -ne 0 ]; then
         echo "$OUTPUT"
@@ -85,7 +81,6 @@ execute () {
         exit 1
     fi
 }
-
 
 build () {
 	echo ""
@@ -142,7 +137,6 @@ echo "Using $MJOBS make jobs simultaneously."
 
 make_dir $PACKAGES
 make_dir $WORKSPACE
-make_dir $CMPL
 
 export PATH=${WORKSPACE}/bin:$PATH
 
@@ -168,6 +162,15 @@ if build "yasm"; then
 	execute make -j $MJOBS 
 	execute make install
 	build_done "yasm"
+fi
+
+if build "nasm"; then
+	download "http://www.nasm.us/pub/nasm/releasebuilds/2.13.03/nasm-2.13.03.tar.gz" "nasm.tar.gz"
+	cd $PACKAGES/nasm-2.13.03 || exit
+	execute ./configure --prefix=${WORKSPACE} --disable-shared --enable-static
+	execute make -j $MJOBS
+	execute make install
+	build_done "nasm"
 fi
 
 if build "opencore"; then
@@ -219,20 +222,17 @@ if build "xvidcore"; then
 	build_done "xvidcore"
 fi
 
-if build "nasm"; then
-	download "http://www.nasm.us/pub/nasm/releasebuilds/2.13.03/nasm-2.13.03.tar.gz" "nasm.tar.gz"
-	cd $PACKAGES/nasm-2.13.03 || exit
-	execute ./configure --prefix=${WORKSPACE} --disable-shared --enable-static
-	execute make -j $MJOBS
-	execute make install
-	build_done "nasm"
-fi
-
 if build "x264"; then
-	download "ftp://ftp.videolan.org/pub/x264/snapshots/x264-snapshot-20170328-2245.tar.bz2" "last_x264.tar.bz2"
+	download "ftp://ftp.videolan.org/pub/x264/snapshots/x264-snapshot-20180531-2245.tar.bz2" "last_x264.tar.bz2"
 	cd $PACKAGES/x264-snapshot-* || exit
-	execute ./configure --prefix=${WORKSPACE} --enable-static
-	execute make -j $MJOBS
+
+	if [[ "$OSTYPE" == "linux-gnu" ]]; then
+		execute ./configure --prefix=${WORKSPACE} --enable-static --enable-pic CXXFLAGS="-fPIC"
+    else
+        execute ./configure --prefix=${WORKSPACE} --enable-static --enable-pic
+    fi
+
+    execute make -j $MJOBS
 	execute make install
 	execute make install-lib-static
 	build_done "x264"
@@ -248,8 +248,8 @@ if build "libogg"; then
 fi
 
 if build "libvorbis"; then
-	download "http://downloads.xiph.org/releases/vorbis/libvorbis-1.3.5.tar.gz" "libvorbis-1.3.5.tar.gz"
-	cd $PACKAGES/libvorbis-1.3.5 || exit
+	download "http://downloads.xiph.org/releases/vorbis/libvorbis-1.3.6.tar.gz" "libvorbis-1.3.6.tar.gz"
+	cd $PACKAGES/libvorbis-1.3.6 || exit
 	execute ./configure --prefix=${WORKSPACE} --with-ogg-libraries=${WORKSPACE}/lib --with-ogg-includes=${WORKSPACE}/include/ --enable-static --disable-shared --disable-oggtest
 	execute make -j $MJOBS
 	execute make install
@@ -269,8 +269,8 @@ if build "libtheora"; then
 fi
 
 if build "pkg-config"; then
-	download "http://pkgconfig.freedesktop.org/releases/pkg-config-0.29.1.tar.gz" "pkg-config-0.29.1.tar.gz"
-	cd $PACKAGES/pkg-config-0.29.1 || exit
+	download "http://pkgconfig.freedesktop.org/releases/pkg-config-0.29.2.tar.gz" "pkg-config-0.29.2.tar.gz"
+	cd $PACKAGES/pkg-config-0.29.2 || exit
 	execute ./configure --silent --prefix=${WORKSPACE} --with-pc-path=${WORKSPACE}/lib/pkgconfig --with-internal-glib
 	execute make -j $MJOBS
 	execute make install
@@ -278,8 +278,8 @@ if build "pkg-config"; then
 fi
 
 if build "cmake"; then
-	download "https://cmake.org/files/v3.5/cmake-3.5.2.tar.gz" "cmake-3.5.2.tar.gz"
-	cd $PACKAGES/cmake*  || exit
+	download "https://cmake.org/files/v3.11/cmake-3.11.3.tar.gz" "cmake-3.11.3.tar.gz"
+	cd $PACKAGES/cmake-3.11.3  || exit
 	rm Modules/FindJava.cmake
 	perl -p -i -e "s/get_filename_component.JNIPATH/#get_filename_component(JNIPATH/g" Tests/CMakeLists.txt 
 	perl -p -i -e "s/get_filename_component.JNIPATH/#get_filename_component(JNIPATH/g" Tests/CMakeLists.txt 
@@ -299,7 +299,7 @@ if build "vid_stab"; then
 fi
 
 if build "x265"; then
-	download "https://bitbucket.org/multicoreware/x265/downloads/x265_2.6.tar.gz" "x265-2.6.tar.gz"
+	download "https://bitbucket.org/multicoreware/x265/downloads/x265_2.8.tar.gz" "x265-2.8.tar.gz"
 	cd $PACKAGES/x265_* || exit
 	cd source || exit
 	execute cmake -DCMAKE_INSTALL_PREFIX:PATH=${WORKSPACE} -DENABLE_SHARED:bool=off . 
@@ -311,8 +311,8 @@ if build "x265"; then
 fi
 
 if build "fdk_aac"; then
-	download "http://downloads.sourceforge.net/project/opencore-amr/fdk-aac/fdk-aac-0.1.5.tar.gz?r=https%3A%2F%2Fsourceforge.net%2Fprojects%2Fopencore-amr%2Ffiles%2Ffdk-aac%2F&ts=1457561564&use_mirror=kent" "fdk-aac-0.1.5.tar.gz"
-	cd $PACKAGES/fdk-aac* || exit
+	download "http://downloads.sourceforge.net/project/opencore-amr/fdk-aac/fdk-aac-0.1.6.tar.gz?r=https%3A%2F%2Fsourceforge.net%2Fprojects%2Fopencore-amr%2Ffiles%2Ffdk-aac%2F&ts=1457561564&use_mirror=kent" "fdk-aac-0.1.6.tar.gz"
+	cd $PACKAGES/fdk-aac-0.1.6 || exit
 	execute ./configure --prefix=${WORKSPACE} --disable-shared --enable-static
 	execute make -j $MJOBS
 	execute make install
@@ -321,17 +321,19 @@ fi
 
 
 build "ffmpeg"
-download "http://ffmpeg.org/releases/ffmpeg-3.4.1.tar.bz2" "ffmpeg-snapshot.tar.bz2"
-cd $PACKAGES/ffmpeg* || exit
-CFLAGS="-I$WORKSPACE/include" LDFLAGS="-L$WORKSPACE/lib" 
-execute ./configure  --arch=64 --prefix=${WORKSPACE} --extra-cflags="-I$WORKSPACE/include" --extra-ldflags="-L$WORKSPACE/lib" \
-	--extra-version=static \
-	--extra-cflags=--static \
+download "http://ffmpeg.org/releases/ffmpeg-4.0.tar.bz2" "ffmpeg-snapshot.tar.bz2"
+cd $PACKAGES/ffmpeg-4.0 || exit
+./configure \
+    --pkgconfigdir="$WORKSPACE/lib/pkgconfig" \
+    --prefix=${WORKSPACE} \
+    --pkg-config-flags="--static" \
+    --extra-cflags="-I$WORKSPACE/include" \
+    --extra-ldflags="-L$WORKSPACE/lib" \
+    --extra-libs="-lpthread -lm" \
 	--enable-static \
 	--disable-debug \
 	--disable-shared \
 	--disable-ffplay \
-	--disable-ffserver \
 	--disable-doc \
 	--enable-gpl \
 	--enable-version3 \
@@ -349,7 +351,7 @@ execute ./configure  --arch=64 --prefix=${WORKSPACE} --extra-cflags="-I$WORKSPAC
 	--enable-libopencore_amrwb \
 	--enable-libopencore_amrnb \
 	--enable-filters \
-	--enable-libvidstab 
+	--enable-libvidstab
 	# enable all filters
 	# enable AAC de/encoding via libfdk-aac [no]
 	# enable detecting cpu capabilities at runtime (smaller binary)

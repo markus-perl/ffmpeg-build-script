@@ -13,6 +13,12 @@ The FFmpeg build script provides an easy way to build a static ffmpeg on **OSX**
 
 *Youtube: How-To build and install FFmpeg on OSX*
 
+## Disclaimer
+Use this script at your own risk. I maintain this script in my spare time. 
+Please do not file bug reports for systems other than Debian 9 and macOS 10.13
+because I don't have the resources and the time to maintain other systems.
+
+
 ## Supported Codecs
 * x264: H.264 (MPEG-4 AVC)
 * x265: H.265 Video Codec
@@ -39,7 +45,7 @@ Requirements Linux
 
 ```
 # Debian and Ubuntu
-sudo apt-get install build-essential curl
+sudo apt-get install build-essential curl g++
 
 # Fedora
 sudo dnf install @development-tools
@@ -83,8 +89,8 @@ Contact
 Tested on
 ---------
 
-* Mac OSX 10.11 64Bit XCode 7.*
-* Debian 8.3
+* Mac OSX 10.13 64Bit XCode 9.3
+* Debian 9.4
 
 Example
 -------
