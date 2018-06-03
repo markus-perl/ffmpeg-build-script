@@ -14,7 +14,7 @@ before_install:
 script:
     - export SKIPINSTALL=yes
     - export VERBOSE=yes
-    - travis_wait 50 ./build-ffmpeg --build
+    - travis_wait 50 ./.travis-build.sh
 
 after_script:
     - ./build-ffmpeg --cleanup
