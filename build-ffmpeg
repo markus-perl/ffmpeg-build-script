@@ -223,7 +223,7 @@ if build "xvidcore"; then
 fi
 
 if build "x264"; then
-	download "ftp://ftp.videolan.org/pub/x264/snapshots/x264-snapshot-20180531-2245.tar.bz2" "last_x264.tar.bz2"
+	download "http://ftp.videolan.org/pub/x264/snapshots/x264-snapshot-20180531-2245.tar.bz2" "last_x264.tar.bz2"
 	cd $PACKAGES/x264-snapshot-* || exit
 
 	if [[ "$OSTYPE" == "linux-gnu" ]]; then
