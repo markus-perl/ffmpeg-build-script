@@ -12,7 +12,7 @@ before_install:
     - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -qq build-essential curl; fi
 
 script:
-    - SKIPINSTALL=yes VERBOSE=yes ./build-ffmpeg --build
+    - travis_wait 50 SKIPINSTALL=yes VERBOSE=yes ./build-ffmpeg --build
 
 after_script:
     - ./build-ffmpeg --cleanup
