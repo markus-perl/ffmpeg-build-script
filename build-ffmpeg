@@ -4,10 +4,10 @@
 
 VERSION=1.0
 CWD=$(pwd)
-PACKAGES="$CWD/packages" 
+PACKAGES="$CWD/packages"
 WORKSPACE="$CWD/workspace"
 CC=clang
-LDFLAGS="-L${WORKSPACE}/lib -lm" 
+LDFLAGS="-L${WORKSPACE}/lib -lm"
 CFLAGS="-I${WORKSPACE}/include"
 PKG_CONFIG_PATH="${WORKSPACE}/lib/pkgconfig"
 
@@ -25,25 +25,25 @@ fi
 
 make_dir () {
 	if [ ! -d $1 ]; then
-		if ! mkdir $1; then			
+		if ! mkdir $1; then
 			printf "\n Failed to create dir %s" "$1";
 			exit 1
 		fi
-	fi	
+	fi
 }
 
 remove_dir () {
 	if [ -d $1 ]; then
 		rm -r "$1"
-	fi	
+	fi
 }
 
 download () {
 	if [ ! -f "$PACKAGES/$2" ]; then
-		
+
 		echo "Downloading $1"
 		curl -L --silent -o "$PACKAGES/$2" "$1"
-		
+
 		EXITCODE=$?
 		if [ $EXITCODE -ne 0 ]; then
 			echo ""
@@ -51,21 +51,21 @@ download () {
 			sleep 10
 			curl -L --silent -o "$PACKAGES/$2" "$1"
 		fi
-		
+
 		EXITCODE=$?
 		if [ $EXITCODE -ne 0 ]; then
 			echo ""
 			echo "Failed to download $1. Exitcode $EXITCODE";
 			exit 1
 		fi
-		
+
 		echo "... Done"
-		
+
 		if ! tar -xvf "$PACKAGES/$2" -C "$PACKAGES" 2>/dev/null >/dev/null; then
 			echo "Failed to extract $2";
 			exit 1
 		fi
-		
+
 	fi
 }
 
@@ -73,7 +73,7 @@ execute () {
 	echo "$ $*"
 
 	OUTPUT=$($@ 2>&1)
-	
+
 	if [ $? -ne 0 ]; then
         echo "$OUTPUT"
         echo ""
@@ -86,12 +86,12 @@ build () {
 	echo ""
 	echo "building $1"
 	echo "======================="
-	
+
 	if [ -f "$PACKAGES/$1.done" ]; then
 		echo "$1 already built. Remove $PACKAGES/$1.done lockfile to rebuild it."
 		return 1
 	fi
-	
+
 	return 0
 }
 
@@ -159,7 +159,7 @@ if build "yasm"; then
 	download "http://www.tortall.net/projects/yasm/releases/yasm-1.3.0.tar.gz" "yasm-1.3.0.tar.gz"
 	cd $PACKAGES/yasm-1.3.0 || exit
 	execute ./configure --prefix=${WORKSPACE}
-	execute make -j $MJOBS 
+	execute make -j $MJOBS
 	execute make install
 	build_done "yasm"
 fi
@@ -176,7 +176,7 @@ fi
 if build "opencore"; then
 	download "http://downloads.sourceforge.net/project/opencore-amr/opencore-amr/opencore-amr-0.1.5.tar.gz?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fopencore-amr%2Ffiles%2Fopencore-amr%2F&ts=1442256558&use_mirror=netassist" "opencore-amr-0.1.5.tar.gz"
 	cd $PACKAGES/opencore-amr-0.1.5 || exit
-	execute ./configure --prefix=${WORKSPACE} --disable-shared --enable-static 
+	execute ./configure --prefix=${WORKSPACE} --disable-shared --enable-static
 	execute make -j $MJOBS
 	execute make install
 	build_done "opencore"
@@ -185,13 +185,13 @@ fi
 if build "libvpx"; then
     download "https://github.com/webmproject/libvpx/archive/v1.7.0.tar.gz" "libvpx-1.7.0.tar.gz"
     cd $PACKAGES/libvpx-*0 || exit
-    
+
     if [[ "$OSTYPE" == "darwin"* ]]; then
         echo "Applying Darwin patch"
         sed "s/,--version-script//g" build/make/Makefile > build/make/Makefile.patched
         sed "s/-Wl,--no-undefined -Wl,-soname/-Wl,-undefined,error -Wl,-install_name/g" build/make/Makefile.patched > build/make/Makefile
     fi
-    
+
 	execute ./configure --prefix=${WORKSPACE} --disable-unit-tests --disable-shared
 	execute make -j $MJOBS
 	execute make install
@@ -218,12 +218,12 @@ if build "xvidcore"; then
 	if [[ -f ${WORKSPACE}/lib/libxvidcore.4.dylib ]]; then
 	    execute rm "${WORKSPACE}/lib/libxvidcore.4.dylib"
 	fi
-	
+
 	build_done "xvidcore"
 fi
 
 if build "x264"; then
-	download "http://ftp.videolan.org/pub/x264/snapshots/x264-snapshot-20180531-2245.tar.bz2" "last_x264.tar.bz2"
+	download "http://ftp.videolan.org/pub/x264/snapshots/x264-snapshot-20181204-2245-stable.tar.bz2" "last_x264.tar.bz2"
 	cd $PACKAGES/x264-snapshot-* || exit
 
 	if [[ "$OSTYPE" == "linux-gnu" ]]; then
@@ -281,9 +281,9 @@ if build "cmake"; then
 	download "https://cmake.org/files/v3.11/cmake-3.11.3.tar.gz" "cmake-3.11.3.tar.gz"
 	cd $PACKAGES/cmake-3.11.3  || exit
 	rm Modules/FindJava.cmake
-	perl -p -i -e "s/get_filename_component.JNIPATH/#get_filename_component(JNIPATH/g" Tests/CMakeLists.txt 
-	perl -p -i -e "s/get_filename_component.JNIPATH/#get_filename_component(JNIPATH/g" Tests/CMakeLists.txt 
-	execute ./configure --prefix=${WORKSPACE} 
+	perl -p -i -e "s/get_filename_component.JNIPATH/#get_filename_component(JNIPATH/g" Tests/CMakeLists.txt
+	perl -p -i -e "s/get_filename_component.JNIPATH/#get_filename_component(JNIPATH/g" Tests/CMakeLists.txt
+	execute ./configure --prefix=${WORKSPACE}
 	execute make -j $MJOBS
 	execute make install
 	build_done "cmake"
@@ -292,17 +292,17 @@ fi
 if build "vid_stab"; then
 	download "https://codeload.github.com/georgmartius/vid.stab/legacy.tar.gz/release-0.98b" "vid.stab-0.98b-transcode-1.1-binary-x86_64.tgz"
 	cd $PACKAGES/georgmartius-vid* || exit
-	perl -p -i -e "s/vidstab SHARED/vidstab STATIC/" CMakeLists.txt 
-	execute cmake -DCMAKE_INSTALL_PREFIX:PATH=${WORKSPACE} . 
+	perl -p -i -e "s/vidstab SHARED/vidstab STATIC/" CMakeLists.txt
+	execute cmake -DCMAKE_INSTALL_PREFIX:PATH=${WORKSPACE} .
 	execute make install
 	build_done "vid_stab"
 fi
 
 if build "x265"; then
-	download "https://bitbucket.org/multicoreware/x265/downloads/x265_2.8.tar.gz" "x265-2.8.tar.gz"
+	download "https://bitbucket.org/multicoreware/x265/downloads/x265_2.9.tar.gz" "x265-2.9.tar.gz"
 	cd $PACKAGES/x265_* || exit
 	cd source || exit
-	execute cmake -DCMAKE_INSTALL_PREFIX:PATH=${WORKSPACE} -DENABLE_SHARED:bool=off . 
+	execute cmake -DCMAKE_INSTALL_PREFIX:PATH=${WORKSPACE} -DENABLE_SHARED:bool=off .
 	execute make -j $MJOBS
 	execute make install
 	sed "s/-lx265/-lx265 -lstdc++/g" "$WORKSPACE/lib/pkgconfig/x265.pc" > "$WORKSPACE/lib/pkgconfig/x265.pc.tmp"
@@ -321,8 +321,8 @@ fi
 
 
 build "ffmpeg"
-download "http://ffmpeg.org/releases/ffmpeg-4.0.1.tar.bz2" "ffmpeg-snapshot.tar.bz2"
-cd $PACKAGES/ffmpeg-4.0.1 || exit
+download "http://ffmpeg.org/releases/ffmpeg-4.1.tar.bz2" "ffmpeg-snapshot.tar.bz2"
+cd $PACKAGES/ffmpeg-4.1 || exit
 ./configure \
     --pkgconfigdir="$WORKSPACE/lib/pkgconfig" \
     --prefix=${WORKSPACE} \
