@@ -22,6 +22,7 @@ because I don't have the resources and the time to maintain other systems.
 ## Supported Codecs
 * x264: H.264 (MPEG-4 AVC)
 * x265: H.265 Video Codec
+* aom: AV1 Video Codec (Experimental and very slow!)
 * fdk_aac: Fraunhofer FDK AAC Codec 
 * xvidcore: MPEG-4 video coding standard
 * webm: WebM is a video file format

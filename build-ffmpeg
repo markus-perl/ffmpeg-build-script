@@ -2,7 +2,7 @@
 
 # https://github.com/markus-perl/ffmpeg-build-script
 
-VERSION=1.0
+VERSION=1.1
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
 WORKSPACE="$CWD/workspace"
@@ -10,6 +10,7 @@ CC=clang
 LDFLAGS="-L${WORKSPACE}/lib -lm"
 CFLAGS="-I${WORKSPACE}/include"
 PKG_CONFIG_PATH="${WORKSPACE}/lib/pkgconfig"
+ADDITIONAL_CONFIGURE_OPTIONS=""
 
 # Speed up the process
 # Env Var NUMJOBS overrides automatic detection
@@ -19,6 +20,7 @@ elif [[ -f /proc/cpuinfo ]]; then
     MJOBS=$(grep -c processor /proc/cpuinfo)
 elif [[ "$OSTYPE" == "darwin"* ]]; then
 	MJOBS=$(sysctl -n machdep.cpu.thread_count)
+	ADDITIONAL_CONFIGURE_OPTIONS="--enable-videotoolbox"
 else
     MJOBS=4
 fi
@@ -39,17 +41,25 @@ remove_dir () {
 }
 
 download () {
-	if [ ! -f "$PACKAGES/$2" ]; then
+
+	DOWNLOAD_PATH=$PACKAGES;
+		
+	if [ ! -z "$3" ]; then
+		mkdir -p $PACKAGES/$3
+		DOWNLOAD_PATH=$PACKAGES/$3
+	fi;
+
+	if [ ! -f "$DOWNLOAD_PATH/$2" ]; then
 
 		echo "Downloading $1"
-		curl -L --silent -o "$PACKAGES/$2" "$1"
+		curl -L --silent -o "$DOWNLOAD_PATH/$2" "$1"
 
 		EXITCODE=$?
 		if [ $EXITCODE -ne 0 ]; then
 			echo ""
 			echo "Failed to download $1. Exitcode $EXITCODE. Retrying in 10 seconds";
 			sleep 10
-			curl -L --silent -o "$PACKAGES/$2" "$1"
+			curl -L --silent -o "$DOWNLOAD_PATH/$2" "$1"
 		fi
 
 		EXITCODE=$?
@@ -61,7 +71,7 @@ download () {
 
 		echo "... Done"
 
-		if ! tar -xvf "$PACKAGES/$2" -C "$PACKAGES" 2>/dev/null >/dev/null; then
+		if ! tar -xvf "$DOWNLOAD_PATH/$2" -C "$DOWNLOAD_PATH" 2>/dev/null >/dev/null; then
 			echo "Failed to extract $2";
 			exit 1
 		fi
@@ -223,7 +233,7 @@ if build "xvidcore"; then
 fi
 
 if build "x264"; then
-	download "http://ftp.videolan.org/pub/x264/snapshots/x264-snapshot-20181204-2245-stable.tar.bz2" "last_x264.tar.bz2"
+	download "http://ftp.videolan.org/pub/x264/snapshots/x264-snapshot-20190204-2245-stable.tar.bz2" "last_x264.tar.bz2"
 	cd $PACKAGES/x264-snapshot-* || exit
 
 	if [[ "$OSTYPE" == "linux-gnu" ]]; then
@@ -299,7 +309,7 @@ if build "vid_stab"; then
 fi
 
 if build "x265"; then
-	download "https://bitbucket.org/multicoreware/x265/downloads/x265_2.9.tar.gz" "x265-2.9.tar.gz"
+	download "https://bitbucket.org/multicoreware/x265/downloads/x265_3.0.tar.gz" "x265-3.0.tar.gz"
 	cd $PACKAGES/x265_* || exit
 	cd source || exit
 	execute cmake -DCMAKE_INSTALL_PREFIX:PATH=${WORKSPACE} -DENABLE_SHARED:bool=off .
@@ -319,11 +329,22 @@ if build "fdk_aac"; then
 	build_done "fdk_aac"
 fi
 
+if build "av1"; then
+	download "https://aomedia.googlesource.com/aom/+archive/52ea88fd18719bac1acfa6847f834ae6d2ae136f.tar.gz" "av1.tar.gz" "av1"
+	cd $PACKAGES/av1 || exit
+	mkdir -p $PACKAGES/aom_build
+	cd $PACKAGES/aom_build
+	execute cmake -DCMAKE_INSTALL_PREFIX:PATH=${WORKSPACE} $PACKAGES/av1
+	execute make -j $MJOBS
+	execute make install
+	build_done "av1"
+fi
+
 
 build "ffmpeg"
 download "http://ffmpeg.org/releases/ffmpeg-4.1.tar.bz2" "ffmpeg-snapshot.tar.bz2"
 cd $PACKAGES/ffmpeg-4.1 || exit
-./configure \
+./configure $ADDITIONAL_CONFIGURE_OPTIONS \
     --pkgconfigdir="$WORKSPACE/lib/pkgconfig" \
     --prefix=${WORKSPACE} \
     --pkg-config-flags="--static" \
@@ -351,26 +372,9 @@ cd $PACKAGES/ffmpeg-4.1 || exit
 	--enable-libopencore_amrwb \
 	--enable-libopencore_amrnb \
 	--enable-filters \
-	--enable-libvidstab
-	# enable all filters
-	# enable AAC de/encoding via libfdk-aac [no]
-	# enable detecting cpu capabilities at runtime (smaller binary)
-	# enable HEVC encoding via x265 [no]
-	# enable H.264 encoding via x264 [no]
-	# enable Vorbis en/decoding via libvorbis, native implementation exists [no]
-	# enable Theora encoding via libtheora [no]
-	# enable MP3 encoding via libmp3lame [no]
-	# enable VP8 and VP9 de/encoding via libvpx [no]
-	# enable pthreads [autodetect]
-	# allow use of nonfree code, the resulting libs and binaries will be unredistributable [no]
-	# upgrade (L)GPL to version 3 [no]
-	# allow use of GPL code, the resulting libs and binaries will be under GPL [no]
-	# do not build documentation
-	# disable ffserver build
-	# disable ffplay build
-	# build static libraries [no]
-	# disable debugging symbols
-	# disable build shared libraries [no]
+	--enable-libvidstab \
+	--enable-libaom
+
 execute make -j $MJOBS
 execute make install
 
