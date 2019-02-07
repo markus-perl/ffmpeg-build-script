@@ -229,7 +229,7 @@ Password:
 
 Other Projects Of Mine
 ------------
-- Github pushover-cli: [Pushover CLI Client](https://github.com/markus-perl/pushover-cli)
+- GitHub pushover-cli: [Pushover CLI Client](https://github.com/markus-perl/pushover-cli)
 - [Gender API](https://gender-api.com): [Genderize A Name](https://gender-api.com)
 - [Gender API Client PHP](https://github.com/markus-perl/gender-api-client)
 - [Gender API Client NPM](https://github.com/markus-perl/gender-api-client-npm)
