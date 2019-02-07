@@ -37,7 +37,7 @@ ffmpeg-build-script is rockstable. Every commit runs against Linux and OSX with 
 Requirements OSX
 ------------
 
-* XCode 5.x or greater
+* XCode 8.x or greater
 
 Requirements Linux
 ------------
@@ -84,13 +84,13 @@ Usage
 Contact
 -------
 
-* Github: [http://www.github.com/markus-perl](http://www.github.com/markus-perl)
+* Github: [http://www.github.com/markus-perl/](https://github.com/markus-perl/ffmpeg-build-script)
 
 
 Tested on
 ---------
 
-* Mac OSX 10.13 64Bit XCode 9.3
+* Mac OSX 10.14 64Bit XCode 10.1
 * Debian 9.4
 
 Example
@@ -226,3 +226,10 @@ Building done. The binary can be found here: /Volumes/Daten/dev/mac/ffmpeg-build
 Install the binary to your /usr/local/bin folder? [Y/n] y
 Password:
 ```
+
+Other Projects Of Mine
+------------
+- Github pushover-cli: [Pushover CLI Client](https://github.com/markus-perl/pushover-cli)
+- [Gender API](https://gender-api.com): [Genderize A Name](https://gender-api.com)
+- [Gender API Client PHP](https://github.com/markus-perl/gender-api-client)
+- [Gender API Client NPM](https://github.com/markus-perl/gender-api-client-npm)
