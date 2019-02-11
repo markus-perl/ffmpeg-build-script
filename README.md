@@ -64,6 +64,14 @@ bash <(curl -s "https://raw.githubusercontent.com/markus-perl/ffmpeg-build-scrip
 ```
 This command downloads the build script and automatically starts the build process.
 
+### Run with Docker
+
+```bash
+git clone https://github.com/markus-perl/ffmpeg-build-script.git
+cd ffmpeg-build-script
+docker build --tag=ffmpeg
+```
+
 ### Common installation
 
 ```bash

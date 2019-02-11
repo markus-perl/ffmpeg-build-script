@@ -2,7 +2,7 @@
 
 # https://github.com/markus-perl/ffmpeg-build-script
 
-VERSION=1.1
+VERSION=1.2
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
 WORKSPACE="$CWD/workspace"
@@ -175,8 +175,8 @@ if build "yasm"; then
 fi
 
 if build "nasm"; then
-	download "http://www.nasm.us/pub/nasm/releasebuilds/2.13.03/nasm-2.13.03.tar.gz" "nasm.tar.gz"
-	cd $PACKAGES/nasm-2.13.03 || exit
+	download "https://www.nasm.us/pub/nasm/releasebuilds/2.14.02/nasm-2.14.02.tar.gz" "nasm.tar.gz"
+	cd $PACKAGES/nasm-2.14.02 || exit
 	execute ./configure --prefix=${WORKSPACE} --disable-shared --enable-static
 	execute make -j $MJOBS
 	execute make install
@@ -334,7 +334,7 @@ if build "av1"; then
 	cd $PACKAGES/av1 || exit
 	mkdir -p $PACKAGES/aom_build
 	cd $PACKAGES/aom_build
-	execute cmake -DCMAKE_INSTALL_PREFIX:PATH=${WORKSPACE} $PACKAGES/av1
+	execute cmake -DENABLE_TESTS=0 -DCMAKE_INSTALL_PREFIX:PATH=${WORKSPACE} $PACKAGES/av1
 	execute make -j $MJOBS
 	execute make install
 	build_done "av1"
@@ -378,7 +378,7 @@ cd $PACKAGES/ffmpeg-4.1 || exit
 execute make -j $MJOBS
 execute make install
 
-INSTALL_FOLDER="/usr/bin"
+    INSTALL_FOLDER="/usr/bin"
 if [[ "$OSTYPE" == "darwin"* ]]; then
 INSTALL_FOLDER="/usr/local/bin"
 fi
