@@ -342,8 +342,8 @@ fi
 
 
 build "ffmpeg"
-download "http://ffmpeg.org/releases/ffmpeg-4.1.tar.bz2" "ffmpeg-snapshot.tar.bz2"
-cd $PACKAGES/ffmpeg-4.1 || exit
+download "http://ffmpeg.org/releases/ffmpeg-4.1.3.tar.bz2" "ffmpeg-snapshot.tar.bz2"
+cd $PACKAGES/ffmpeg-4.1.3 || exit
 ./configure $ADDITIONAL_CONFIGURE_OPTIONS \
     --pkgconfigdir="$WORKSPACE/lib/pkgconfig" \
     --prefix=${WORKSPACE} \

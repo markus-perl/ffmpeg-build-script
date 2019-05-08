@@ -70,6 +70,7 @@ This command downloads the build script and automatically starts the build proce
 git clone https://github.com/markus-perl/ffmpeg-build-script.git
 cd ffmpeg-build-script
 docker build --tag=ffmpeg
+docker run  ffmpeg -i http://files.coconut.co.s3.amazonaws.com/test.mp4 -f webm -c:v libvpx -c:a libvorbis - > /tmp/test.mp4
 ```
 
 ### Common installation
