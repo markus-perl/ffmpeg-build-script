@@ -1,12 +1,12 @@
 [![Build Status](https://travis-ci.org/markus-perl/ffmpeg-build-script.svg?branch=master)](https://travis-ci.org/markus-perl/ffmpeg-build-script)
 
-![Image of Yaktocat](https://raw.github.com/markus-perl/ffmpeg-build-script/master/ffmpeg-build-script.png)
+![FFmpeg build script](https://raw.github.com/markus-perl/ffmpeg-build-script/master/ffmpeg-build-script.png)
 
 
 build-ffmpeg
 ==========
 
-The FFmpeg build script provides an easy way to build a static ffmpeg on **OSX** and **Linux** with **non-free codecs** included.
+The FFmpeg build script provides an easy way to build a static FFmpeg on **OSX** and **Linux** with **non-free codecs** included.
 
 
 [![How-To build FFmpeg on OSX](http://img.youtube.com/vi/Z9p3mM757cM/0.jpg)](http://www.youtube.com/watch?v=Z9p3mM757cM "How-To build FFmpeg on OSX")
@@ -242,3 +242,4 @@ Other Projects Of Mine
 - [Gender API](https://gender-api.com): [Genderize A Name](https://gender-api.com)
 - [Gender API Client PHP](https://github.com/markus-perl/gender-api-client)
 - [Gender API Client NPM](https://github.com/markus-perl/gender-api-client-npm)
+- [Genderize Names](https://www.youtube.com/watch?v=2SLIAguaygo)
