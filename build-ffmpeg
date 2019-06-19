@@ -218,7 +218,7 @@ if build "lame"; then
 fi
 
 if build "xvidcore"; then
-	download "http://downloads.xvid.org/downloads/xvidcore-1.3.4.tar.gz" "xvidcore-1.3.4.tar.gz"
+	download "https://downloads.xvid.com/downloads/xvidcore-1.3.5.tar.gz" "xvidcore-1.3.5.tar.gz"
 	cd $PACKAGES/xvidcore  || exit
 	cd build/generic  || exit
 	execute ./configure --prefix=${WORKSPACE} --disable-shared --enable-static
