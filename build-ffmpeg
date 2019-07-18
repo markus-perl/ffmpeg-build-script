@@ -300,8 +300,8 @@ if build "cmake"; then
 fi
 
 if build "vid_stab"; then
-	download "https://codeload.github.com/georgmartius/vid.stab/zip/aeabc8daa7904f9edf7441a11f293965a5ef53b8" "georgmartius-vid.stab.tar.tgz"
-	cd $PACKAGES/vid.stab-aeabc8daa7904f9edf7441a11f293965a5ef53b8 || exit
+	download "https://github.com/georgmartius/vid.stab/archive/v1.1.0.tar.gz" "georgmartius-vid.stab-v1.1.0-0-g60d65da.tar.tgz"
+	cd $PACKAGES/vid.stab-1.1.0 || exit
 	execute cmake -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX:PATH=${WORKSPACE} -DUSE_OMP=OFF -DENABLE_SHARED:bool=off .
 	execute make
 	execute make install
