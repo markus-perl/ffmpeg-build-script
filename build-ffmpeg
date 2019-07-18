@@ -300,11 +300,11 @@ if build "cmake"; then
 fi
 
 if build "vid_stab"; then
-	download "https://codeload.github.com/georgmartius/vid.stab/legacy.tar.gz/release-0.98b" "vid.stab-0.98b-transcode-1.1-binary-x86_64.tgz"
-	cd $PACKAGES/georgmartius-vid* || exit
+	download "https://github.com/georgmartius/vid.stab/archive/v1.1.0.tar.gz" "georgmartius-vid.stab-v1.1.0-0-g60d65da.tar.tgz"
+	cd $PACKAGES/vid.stab-1.1.0 || exit
 	perl -p -i -e "s/vidstab SHARED/vidstab STATIC/" CMakeLists.txt
-	execute cmake -DCMAKE_INSTALL_PREFIX:PATH=${WORKSPACE} .
-	execute make install
+	execute cmake -DCMAKE_INSTALL_PREFIX:PATH=${WORKSPACE} -DUSE_OMP=OFF .
+	execute make
 	build_done "vid_stab"
 fi
 
