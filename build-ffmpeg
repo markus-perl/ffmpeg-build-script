@@ -2,7 +2,7 @@
 
 # https://github.com/markus-perl/ffmpeg-build-script
 
-VERSION=1.4
+VERSION=1.5
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
 WORKSPACE="$CWD/workspace"
