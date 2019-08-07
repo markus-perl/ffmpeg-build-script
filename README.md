@@ -243,3 +243,4 @@ Other Projects Of Mine
 - [Gender API Client PHP](https://github.com/markus-perl/gender-api-client)
 - [Gender API Client NPM](https://github.com/markus-perl/gender-api-client-npm)
 - [Genderize Names](https://www.youtube.com/watch?v=2SLIAguaygo)
+- [Genderize API](https://gender-api.io)
