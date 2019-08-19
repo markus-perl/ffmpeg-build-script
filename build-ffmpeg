@@ -43,7 +43,7 @@ remove_dir () {
 download () {
 
 	DOWNLOAD_PATH=$PACKAGES;
-		
+
 	if [ ! -z "$3" ]; then
 		mkdir -p $PACKAGES/$3
 		DOWNLOAD_PATH=$PACKAGES/$3
@@ -340,6 +340,15 @@ if build "av1"; then
 	build_done "av1"
 fi
 
+if build "openssl"; then
+	download "https://www.openssl.org/source/openssl-1.1.1c.tar.gz" "openssl-1.1.1c.tar.gz"
+	cd $PACKAGES/openssl-1.1.1c || exit
+	execute ./config --prefix=${WORKSPACE} --openssldir=${WORKSPACE} shared zlib
+	execute make -j $MJOBS
+	execute make install
+	build_done "openssl"
+fi
+
 build "ffmpeg"
 download "https://ffmpeg.org/releases/ffmpeg-4.2.tar.bz2" "ffmpeg-snapshot.tar.bz2"
 cd $PACKAGES/ffmpeg-4.2 || exit
@@ -355,6 +364,7 @@ cd $PACKAGES/ffmpeg-4.2 || exit
 	--disable-shared \
 	--disable-ffplay \
 	--disable-doc \
+	--enable-openssl \
 	--enable-gpl \
 	--enable-version3 \
 	--enable-nonfree \
