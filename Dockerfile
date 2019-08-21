@@ -1,7 +1,7 @@
 FROM ubuntu:18.10
 
 RUN apt-get update \
-    && apt-get -y --no-install-recommends install  build-essential curl g++ ca-certificates \
+    && apt-get -y --no-install-recommends install  build-essential curl g++ ca-certificates libz-dev \
     && apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/* \
     && update-ca-certificates
 
