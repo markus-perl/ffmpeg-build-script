@@ -340,10 +340,19 @@ if build "av1"; then
 	build_done "av1"
 fi
 
+if build "zlib"; then
+	download "https://www.zlib.net/zlib-1.2.11.tar.gz" "zlib-1.2.11.tar.gz"
+	cd $PACKAGES/zlib-1.2.11 || exit
+	execute ./configure --prefix=${WORKSPACE}
+	execute make -j $MJOBS
+	execute make install
+	build_done "zlib"
+fi
+
 if build "openssl"; then
 	download "https://www.openssl.org/source/openssl-1.1.1c.tar.gz" "openssl-1.1.1c.tar.gz"
 	cd $PACKAGES/openssl-1.1.1c || exit
-	execute ./config --prefix=${WORKSPACE} --openssldir=${WORKSPACE} shared zlib
+	execute ./config --prefix=${WORKSPACE} --openssldir=${WORKSPACE} --with-zlib-include=${WORKSPACE}/include/ --with-zlib-lib=${WORKSPACE}/lib no-shared zlib
 	execute make -j $MJOBS
 	execute make install
 	build_done "openssl"
