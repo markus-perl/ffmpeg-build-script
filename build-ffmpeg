@@ -288,8 +288,8 @@ if build "pkg-config"; then
 fi
 
 if build "cmake"; then
-	download "https://cmake.org/files/v3.11/cmake-3.11.3.tar.gz" "cmake-3.11.3.tar.gz"
-	cd $PACKAGES/cmake-3.11.3  || exit
+	download "https://cmake.org/files/v3.15/cmake-3.15.4.tar.gz" "cmake-3.15.4.tar.gz"
+	cd $PACKAGES/cmake-3.15.4  || exit
 	rm Modules/FindJava.cmake
 	perl -p -i -e "s/get_filename_component.JNIPATH/#get_filename_component(JNIPATH/g" Tests/CMakeLists.txt
 	perl -p -i -e "s/get_filename_component.JNIPATH/#get_filename_component(JNIPATH/g" Tests/CMakeLists.txt
@@ -330,7 +330,7 @@ if build "fdk_aac"; then
 fi
 
 if build "av1"; then
-	download "https://aomedia.googlesource.com/aom/+archive/8d335b714326a38dd6d20403082f1c8eb2c3f7e5.tar.gz" "av1.tar.gz" "av1"
+	download "https://aomedia.googlesource.com/aom/+archive/60a00de69ca79fe5f51dcbf862aaaa8eb50ec344.tar.gz" "av1.tar.gz" "av1"
 	cd $PACKAGES/av1 || exit
 	mkdir -p $PACKAGES/aom_build
 	cd $PACKAGES/aom_build
@@ -359,8 +359,8 @@ if build "openssl"; then
 fi
 
 build "ffmpeg"
-download "https://ffmpeg.org/releases/ffmpeg-4.2.tar.bz2" "ffmpeg-snapshot.tar.bz2"
-cd $PACKAGES/ffmpeg-4.2 || exit
+download "https://git.ffmpeg.org/gitweb/ffmpeg.git/snapshot/6023b9fbfef02b71f6acfb1b09e5a12fe9d276e2.tar.gz" "ffmpeg-snapshot.tar.bz2"
+cd $PACKAGES/ffmpeg-6023b9f/ || exit
 ./configure $ADDITIONAL_CONFIGURE_OPTIONS \
     --pkgconfigdir="$WORKSPACE/lib/pkgconfig" \
     --prefix=${WORKSPACE} \
