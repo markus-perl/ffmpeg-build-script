@@ -359,8 +359,8 @@ if build "openssl"; then
 fi
 
 build "ffmpeg"
-download "https://git.ffmpeg.org/gitweb/ffmpeg.git/snapshot/6023b9fbfef02b71f6acfb1b09e5a12fe9d276e2.tar.gz" "ffmpeg-snapshot.tar.bz2"
-cd $PACKAGES/ffmpeg-6023b9f/ || exit
+download "https://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2" "ffmpeg-snapshot.tar.bz2"
+cd $PACKAGES/ffmpeg/ || exit
 ./configure $ADDITIONAL_CONFIGURE_OPTIONS \
     --pkgconfigdir="$WORKSPACE/lib/pkgconfig" \
     --prefix=${WORKSPACE} \
