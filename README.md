@@ -37,7 +37,7 @@ ffmpeg-build-script is rockstable. Every commit runs against Linux and OSX with 
 Requirements OSX
 ------------
 
-* XCode 8.x or greater
+* XCode 10.x or greater
 
 Requirements Linux
 ------------
@@ -99,8 +99,8 @@ Contact
 Tested on
 ---------
 
-* Mac OSX 10.14 64Bit XCode 10.1
-* Debian 9.4
+* Mac OSX 10.14 64Bit XCode 11.0
+* Debian 9.11
 
 Example
 -------
