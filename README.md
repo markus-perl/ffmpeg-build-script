@@ -30,6 +30,7 @@ because I don't have the resources and the time to maintain other systems.
 * ogg: Free, open container format
 * vorbis: Lossy audio compression format
 * theora: Free lossy video compression format
+* opus: Lossy audio coding format
 
 ## Continuos Integration
 ffmpeg-build-script is rockstable. Every commit runs against Linux and OSX with https://travis-ci.org just to make sure everything works as expected.

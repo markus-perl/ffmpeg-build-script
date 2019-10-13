@@ -2,7 +2,7 @@
 
 # https://github.com/markus-perl/ffmpeg-build-script
 
-VERSION=1.6
+VERSION=1.7
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
 WORKSPACE="$CWD/workspace"
@@ -217,6 +217,15 @@ if build "lame"; then
 	build_done "lame"
 fi
 
+if build "opus"; then
+	download "https://archive.mozilla.org/pub/opus/opus-1.3.1.tar.gz" "opus-1.3.1.tar.gz"
+	cd $PACKAGES/opus-1.3.1 || exit
+	execute ./configure --prefix=${WORKSPACE} --disable-shared --enable-static
+	execute make -j $MJOBS
+	execute make install
+	build_done "opus"
+fi
+
 if build "xvidcore"; then
 	download "https://downloads.xvid.com/downloads/xvidcore-1.3.5.tar.gz" "xvidcore-1.3.5.tar.gz"
 	cd $PACKAGES/xvidcore  || exit
@@ -380,6 +389,7 @@ cd $PACKAGES/ffmpeg-6023b9f/ || exit
 	--enable-pthreads \
 	--enable-libvpx \
 	--enable-libmp3lame \
+    --enable-libopus \
 	--enable-libtheora \
 	--enable-libvorbis \
 	--enable-libx264 \
