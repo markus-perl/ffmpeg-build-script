@@ -367,6 +367,19 @@ if build "openssl"; then
 	build_done "openssl"
 fi
 
+if which nvcc > /dev/null ; then
+       if build "nv-codec"; then
+               download "https://github.com/FFmpeg/nv-codec-headers/releases/download/n9.1.23.0/nv-codec-headers-9.1.23.0.tar.gz" "nv-codec-headers-9.1.23.0.tar.gz"
+               cd $PACKAGES/nv-codec-headers-n9.1.23.0 || exit
+               sed -i  "s#PREFIX = /usr/local#PREFIX = ${WORKSPACE}#g" $PACKAGES/nv-codec-headers-n9.1.23.0/Makefile
+               execute make install
+               build_done "nv-codec"
+       fi
+       CFLAGS="$CFLAGS -I/usr/local/cuda/include"
+       LDFLAGS="$LDFLAGS -L/usr/local/cuda/lib64"
+       ADDITIONAL_CONFIGURE_OPTIONS="$ADDITIONAL_CONFIGURE_OPTIONS --enable-cuda-nvcc --enable-cuvid --enable-nvenc --enable-libnpp"
+fi
+
 build "ffmpeg"
 download "https://git.ffmpeg.org/gitweb/ffmpeg.git/snapshot/47773f7979d77c1fcd08b57e85af1ad08d9248c8.tar.gz" "ffmpeg-snapshot.tar.bz2"
 cd $PACKAGES/ffmpeg-47773f7/ || exit
@@ -374,8 +387,8 @@ cd $PACKAGES/ffmpeg-47773f7/ || exit
     --pkgconfigdir="$WORKSPACE/lib/pkgconfig" \
     --prefix=${WORKSPACE} \
     --pkg-config-flags="--static" \
-    --extra-cflags="-I$WORKSPACE/include" \
-    --extra-ldflags="-L$WORKSPACE/lib" \
+    --extra-cflags="$CFLAGS" \
+    --extra-ldflags="$LDFLAGS" \
     --extra-libs="-lpthread -lm" \
 	--enable-static \
 	--disable-debug \
