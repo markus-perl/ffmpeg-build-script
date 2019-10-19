@@ -20,17 +20,18 @@ because I don't have the resources and the time to maintain other systems.
 
 
 ## Supported Codecs
-* x264: H.264 (MPEG-4 AVC)
-* x265: H.265 Video Codec
-* aom: AV1 Video Codec (Experimental and very slow!)
-* fdk_aac: Fraunhofer FDK AAC Codec 
-* xvidcore: MPEG-4 video coding standard
-* webm: WebM is a video file format
-* mp3: MPEG-1 or MPEG-2 Audio Layer III
-* ogg: Free, open container format
-* vorbis: Lossy audio compression format
-* theora: Free lossy video compression format
-* opus: Lossy audio coding format
+* `x264`: H.264 (MPEG-4 AVC)
+* `x265`: H.265 Video Codec
+* `aom`: AV1 Video Codec (Experimental and very slow!)
+* `fdk_aac`: Fraunhofer FDK AAC Codec 
+* `xvidcore`: MPEG-4 video coding standard
+* `webm`: WebM is a video file format
+* `mp3`: MPEG-1 or MPEG-2 Audio Layer III
+* `ogg`: Free, open container format
+* `vorbis`: Lossy audio compression format
+* `theora`: Free lossy video compression format
+* `opus`: Lossy audio coding format
+* `nv-codec`: NVIDIA's GPU accelerated video codecs(H264 and HEVC). Installation is triggered only if CUDA installation is detected
 
 ## Continuos Integration
 ffmpeg-build-script is rockstable. Every commit runs against Linux and OSX with https://travis-ci.org just to make sure everything works as expected.
