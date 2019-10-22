@@ -31,7 +31,7 @@ because I don't have the resources and the time to maintain other systems.
 * `vorbis`: Lossy audio compression format
 * `theora`: Free lossy video compression format
 * `opus`: Lossy audio coding format
-* `nv-codec`: NVIDIA's GPU accelerated video codecs(H264 and HEVC). Installation is triggered only if CUDA installation is detected
+* `nv-codec`: NVIDIA's GPU accelerated video codecs(H264 and HEVC). Installation is triggered only if CUDA installation is detected, follow [these](#Cuda-installation) instructions for installation
 
 ## Continuos Integration
 ffmpeg-build-script is rockstable. Every commit runs against Linux and OSX with https://travis-ci.org just to make sure everything works as expected.
@@ -82,6 +82,11 @@ git clone https://github.com/markus-perl/ffmpeg-build-script.git
 cd ffmpeg-build-script
 ./build-ffmpeg --help
 ```
+
+
+### Cuda installation
+
+To be able to install CUDA, you first need a compatible NVIDIA GPU.  Once you have the GPU and display driver installed, you can follow the [official instructions](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html) or [this blog](https://www.pugetsystems.com/labs/hpc/How-To-Install-CUDA-10-1-on-Ubuntu-19-04-1405/) to setup CUDA
 
 Usage
 ------
