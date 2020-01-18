@@ -406,7 +406,7 @@ cd $PACKAGES/ffmpeg-6023b9f/ || exit
 execute make -j $MJOBS
 execute make install
 
-    INSTALL_FOLDER="/usr/bin"
+INSTALL_FOLDER="/usr/bin"
 if [[ "$OSTYPE" == "darwin"* ]]; then
 INSTALL_FOLDER="/usr/local/bin"
 fi
@@ -421,20 +421,25 @@ if [[ $AUTOINSTALL == "yes" ]]; then
 		sudo cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
 		sudo cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
 		echo "Done. ffmpeg is now installed to your system"
+	else
+		cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
+		cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
+		echo "Done. ffmpeg is now installed to your system"
 	fi
 elif [[ ! $SKIPINSTALL == "yes" ]]; then
-	if command_exists "sudo"; then
-
-		read -r -p "Install the binary to your $INSTALL_FOLDER folder? [Y/n] " response
-
-		case $response in
-    		[yY][eE][sS]|[yY])
-        		sudo cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
-        		sudo cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
-        		echo "Done. ffmpeg is now installed to your system"
-        		;;
-		esac
-	fi
+	read -r -p "Install the binary to your $INSTALL_FOLDER folder? [Y/n] " response
+	case $response in
+	[yY][eE][sS]|[yY])
+		if command_exists "sudo"; then
+			sudo cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
+			sudo cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
+		else
+			cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
+			cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
+		fi
+		echo "Done. ffmpeg is now installed to your system"
+		;;
+	esac
 fi
 
 exit 0
