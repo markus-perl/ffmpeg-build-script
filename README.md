@@ -15,7 +15,7 @@ The FFmpeg build script provides an easy way to build a static FFmpeg on **OSX**
 
 ## Disclaimer
 Use this script at your own risk. I maintain this script in my spare time. 
-Please do not file bug reports for systems other than Debian 9 and macOS 10.13
+Please do not file bug reports for systems other than Debian 10 and macOS 10.15.x
 because I don't have the resources and the time to maintain other systems.
 
 
@@ -42,7 +42,7 @@ Requirements OSX
 
 Requirements Linux
 ------------
-* Debian >= Wheezy, Ubuntu => Trusty, other Distros might work too
+* Debian >= Buster, Ubuntu => Trusty, other Distros might work too
 * build-essentials installed:
 
 ```
