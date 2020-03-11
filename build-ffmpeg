@@ -379,14 +379,17 @@ if which nvcc > /dev/null ; then
        LDFLAGS="$LDFLAGS -L/usr/local/cuda/lib64"
        ADDITIONAL_CONFIGURE_OPTIONS="$ADDITIONAL_CONFIGURE_OPTIONS --enable-cuda-nvcc --enable-cuvid --enable-nvenc --enable-libnpp"
 fi
+echo $WORKSPACE
 
 build "ffmpeg"
-download "https://git.ffmpeg.org/gitweb/ffmpeg.git/snapshot/47773f7979d77c1fcd08b57e85af1ad08d9248c8.tar.gz" "ffmpeg-snapshot.tar.bz2"
-cd $PACKAGES/ffmpeg-47773f7/ || exit
+download "https://git.ffmpeg.org/gitweb/ffmpeg.git/snapshot/192d1d34eb3668fa27f433e96036340e1e5077a0.tar.gz" "ffmpeg-snapshot.tar.bz2"
+cd $PACKAGES/ffmpeg-192d1d3/ || exit
 ./configure $ADDITIONAL_CONFIGURE_OPTIONS \
     --pkgconfigdir="$WORKSPACE/lib/pkgconfig" \
     --prefix=${WORKSPACE} \
     --pkg-config-flags="--static" \
+    --extra-cflags="-I$WORKSPACE/include" \
+    --extra-ldflags="-L$WORKSPACE/lib" \
     --extra-cflags="$CFLAGS" \
     --extra-ldflags="$LDFLAGS" \
     --extra-libs="-lpthread -lm" \
