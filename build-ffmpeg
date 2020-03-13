@@ -388,10 +388,8 @@ cd $PACKAGES/ffmpeg-192d1d3/ || exit
     --pkgconfigdir="$WORKSPACE/lib/pkgconfig" \
     --prefix=${WORKSPACE} \
     --pkg-config-flags="--static" \
-    --extra-cflags="-I$WORKSPACE/include" \
-    --extra-ldflags="-L$WORKSPACE/lib" \
-    --extra-cflags="$CFLAGS" \
-    --extra-ldflags="$LDFLAGS" \
+    --extra-cflags="-I$WORKSPACE/include $CFLAGS" \
+    --extra-ldflags="-L$WORKSPACE/lib $LDFLAGS" \
     --extra-libs="-lpthread -lm" \
 	--enable-static \
 	--disable-debug \
