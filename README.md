@@ -15,7 +15,7 @@ The FFmpeg build script provides an easy way to build a static FFmpeg on **OSX**
 
 ## Disclaimer
 Use this script at your own risk. I maintain this script in my spare time. 
-Please do not file bug reports for systems other than Debian 9 and macOS 10.13
+Please do not file bug reports for systems other than Debian 10 and macOS 10.15.x
 because I don't have the resources and the time to maintain other systems.
 
 
@@ -31,7 +31,20 @@ because I don't have the resources and the time to maintain other systems.
 * `vorbis`: Lossy audio compression format
 * `theora`: Free lossy video compression format
 * `opus`: Lossy audio coding format
-* `nv-codec`: NVIDIA's GPU accelerated video codecs(H264 and HEVC). Installation is triggered only if CUDA installation is detected, follow [these](#Cuda-installation) instructions for installation
+* `nv-codec`: [NVIDIA's GPU accelerated video codecs](https://devblogs.nvidia.com/nvidia-ffmpeg-transcoding-guide/). Installation is triggered only if CUDA installation is detected, follow [these](#Cuda-installation) instructions for installation. Supported codecs in nvcodec:
+    * Decoders
+        * H264 `h264_cuvid`
+        * H265 `hevc_cuvid`
+        * Motion JPEG `mjpeg_cuvid`
+        * MPEG1 video `mpeg1_cuvid`
+        * MPEG2 video `mpeg2_cuvid`
+        * MPEG4 part 2 video `mepg4_cuvid`
+        * VC-1 `vc1_cuvid`
+        * VP8 `vp8_cuvid`
+        * VP9 `vp9_cuvid`
+    * Encoders
+        * H264 `nvenc nvenc_h264`
+        * H265 `nvenc_hevc` 
 
 ## Continuos Integration
 ffmpeg-build-script is rockstable. Every commit runs against Linux and OSX with https://travis-ci.org just to make sure everything works as expected.
@@ -43,7 +56,7 @@ Requirements OSX
 
 Requirements Linux
 ------------
-* Debian >= Wheezy, Ubuntu => Trusty, other Distros might work too
+* Debian >= Buster, Ubuntu => Trusty, other Distros might work too
 * build-essentials installed:
 
 ```
@@ -108,6 +121,7 @@ Tested on
 
 * Mac OSX 10.14 64Bit XCode 11.0
 * Debian 9.11
+* CemtOS  7.7 (Without Lib AOM and Lib Openssl activated)
 
 Example
 -------
