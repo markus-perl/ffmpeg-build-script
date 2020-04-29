@@ -236,20 +236,6 @@ Building done. The binary can be found here: /Volumes/Daten/dev/mac/ffmpeg-build
 Install the binary to your /usr/local/bin folder? [Y/n] y
 Password:
 ```
-
-Common Error Messages
-------------
-    /Users/m.perl/ffmpeg-build-script/workspace/include/ogg/os_types.h:79:12: error: unknown type name 'uint64_t'
-       typedef uint64_t ogg_uint64_t;
-               ^
-    3 errors generated.
-    3 errors generated.
-    make[3]: *** [synthesis.lo] Error 1
-    make[3]: *** Waiting for unfinished jobs....
-    make[3]: *** [analysis.lo] Error 1
-    make[2]: *** [all-recursive] Error 1
-    make[1]: *** [all-recursive] Error 1
-    make: *** [all] Error 2
     
 
 Other Projects Of Mine
