@@ -9,9 +9,9 @@ build-ffmpeg
 The FFmpeg build script provides an easy way to build a static FFmpeg on **OSX** and **Linux** with **non-free codecs** included.
 
 
-[![How-To build FFmpeg on OSX](http://img.youtube.com/vi/Z9p3mM757cM/0.jpg)](http://www.youtube.com/watch?v=Z9p3mM757cM "How-To build FFmpeg on OSX")
+[![How-To build FFmpeg on MacOS](http://img.youtube.com/vi/Z9p3mM757cM/0.jpg)](http://www.youtube.com/watch?v=Z9p3mM757cM "How-To build FFmpeg on OSX")
 
-*Youtube: How-To build and install FFmpeg on OSX*
+*Youtube: How-To build and install FFmpeg on MacOS*
 
 ## Disclaimer
 Use this script at your own risk. I maintain this script in my spare time. 
@@ -47,16 +47,16 @@ because I don't have the resources and the time to maintain other systems.
         * H265 `nvenc_hevc` 
 
 ## Continuos Integration
-ffmpeg-build-script is rockstable. Every commit runs against Linux and OSX with https://travis-ci.org just to make sure everything works as expected.
+ffmpeg-build-script is rockstable. Every commit runs against Linux and MacOS with https://travis-ci.org just to make sure everything works as expected.
 
-Requirements OSX
+Requirements MacOS
 ------------
 
 * XCode 10.x or greater
 
 Requirements Linux
 ------------
-* Debian >= Buster, Ubuntu => Trusty, other Distros might work too
+* Debian >= Buster, Ubuntu => Focal Fossa, other Distributions might work too
 * build-essentials installed:
 
 ```
@@ -125,7 +125,7 @@ Contact
 Tested on
 ---------
 
-* Mac OSX 10.15
+* MacOS 10.15
 * Debian 10
 * Ubuntu 20.04
 
