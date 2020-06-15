@@ -1,4 +1,4 @@
-FROM ubuntu:18.10
+FROM ubuntu:20.04
 
 RUN apt-get update \
     && apt-get -y --no-install-recommends install  build-essential curl g++ ca-certificates libz-dev \
