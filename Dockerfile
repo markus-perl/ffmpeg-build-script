@@ -1,4 +1,5 @@
 FROM ubuntu:20.04
+ARG MAKE_DOCS="no"
 
 RUN apt-get update \
     && apt-get -y --no-install-recommends install  build-essential curl g++ ca-certificates libz-dev \

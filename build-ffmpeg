@@ -397,7 +397,7 @@ cd "$PACKAGES"/ffmpeg-192d1d3/ || exit
 	--disable-debug \
 	--disable-shared \
 	--disable-ffplay \
-	--disable-doc \
+	$(if [[ $MAKE_DOCS != "yes" ]]; then echo --disable-doc; fi) \
 	--enable-openssl \
 	--enable-gpl \
 	--enable-version3 \
