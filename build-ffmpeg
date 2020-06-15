@@ -382,6 +382,10 @@ if command -v nvcc > /dev/null ; then
        ADDITIONAL_CONFIGURE_OPTIONS="$ADDITIONAL_CONFIGURE_OPTIONS --enable-cuda-nvcc --enable-cuvid --enable-nvenc --enable-libnpp"
 fi
 
+if [[ $SKIP_FFMPEG_BUILD == "yes" ]]; then
+  exit 0
+fi
+
 build "ffmpeg"
 download "https://git.ffmpeg.org/gitweb/ffmpeg.git/snapshot/192d1d34eb3668fa27f433e96036340e1e5077a0.tar.gz" "ffmpeg-snapshot.tar.bz2"
 cd "$PACKAGES"/ffmpeg-192d1d3/ || exit
