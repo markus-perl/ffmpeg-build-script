@@ -1,4 +1,5 @@
-FROM ubuntu:20.04
+ARG CLEANUP="yes"
+FROM ubuntu:20.04 AS base
 ARG MAKE_DOCS="no"
 
 RUN apt-get update \
@@ -12,7 +13,12 @@ COPY ./build-ffmpeg /app/build-ffmpeg
 RUN AUTOINSTALL=yes /app/build-ffmpeg --build
 RUN cp /app/workspace/bin/ffmpeg /usr/bin/ffmpeg
 RUN cp /app/workspace/bin/ffprobe /usr/bin/ffprobe
+
+FROM base as cleanup-no
+FROM base as cleanup-yes
 RUN /app/build-ffmpeg --cleanup
+
+FROM cleanup-${CLEANUP} AS final
 
 CMD         ["--help"]
 ENTRYPOINT  ["/usr/bin/ffmpeg"]
