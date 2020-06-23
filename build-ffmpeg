@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # https://github.com/markus-perl/ffmpeg-build-script
-# statically linking glibc is limited and will break DNS unless the right NSS calls can be dynamically loaded e.g. getaddrinfo, getpwuid_r
 
 VERSION=1.11
 CWD=$(pwd)
@@ -247,9 +246,9 @@ if build "x264"; then
 	cd "$PACKAGES"/x264-stable || exit
 
 	if [[ "$OSTYPE" == "linux-gnu" ]]; then
-		execute ./configure --prefix="${WORKSPACE}" --enable-static --enable-pic --disable-opencl CXXFLAGS="-fPIC"
+		execute ./configure --prefix="${WORKSPACE}" --enable-static --enable-pic CXXFLAGS="-fPIC"
     else
-        execute ./configure --prefix="${WORKSPACE}" --enable-static --enable-pic --disable-opencl
+        execute ./configure --prefix="${WORKSPACE}" --enable-static --enable-pic
     fi
 
     execute make -j $MJOBS
@@ -297,10 +296,6 @@ if build "pkg-config"; then
 	build_done "pkg-config"
 fi
 
-if [[ $STOP_BEFORE_CMAKE == "yes" ]]; then
-  exit 0
-fi
-
 if build "cmake"; then
 	download "https://cmake.org/files/v3.15/cmake-3.15.4.tar.gz" "cmake-3.15.4.tar.gz"
 	cd "$PACKAGES"/cmake-3.15.4  || exit
@@ -326,10 +321,10 @@ if build "x265"; then
 	download "https://bitbucket.org/multicoreware/x265/downloads/x265_3.3.tar.gz" "x265-3.3.tar.gz"
 	cd "$PACKAGES"/x265_* || exit
 	cd source || exit
-	execute cmake -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" -DENABLE_SHARED:bool=off -DSTATIC_LINK_CRT:BOOL=ON -DENABLE_CLI:BOOL=OFF -DEXPORT_C_API=OFF .
+	execute cmake -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" -DENABLE_SHARED:bool=off .
 	execute make -j $MJOBS
 	execute make install
-	sed "s/-lgcc_s/-lgcc_eh/g" "$WORKSPACE/lib/pkgconfig/x265.pc" > "$WORKSPACE/lib/pkgconfig/x265.pc.tmp"
+	sed "s/-lx265/-lx265 -lstdc++/g" "$WORKSPACE/lib/pkgconfig/x265.pc" > "$WORKSPACE/lib/pkgconfig/x265.pc.tmp"
 	mv "$WORKSPACE/lib/pkgconfig/x265.pc.tmp" "$WORKSPACE/lib/pkgconfig/x265.pc"
 	build_done "x265"
 fi
@@ -363,35 +358,13 @@ if build "zlib"; then
 	build_done "zlib"
 fi
 
-if [[ $STOP_BEFORE_GNUTLS == "yes" ]]; then
-  exit 0
-fi
-
-if build "gmplib"; then
-	download "https://gmplib.org/download/gmp/gmp-6.2.0.tar.xz" "gmp-6.2.0.tar.xz"
-	cd "$PACKAGES"/gmp-6.2.0 || exit
-	execute ./configure --prefix="${WORKSPACE}" --disable-shared
+if build "openssl"; then
+	download "https://www.openssl.org/source/openssl-1.1.1g.tar.gz" "openssl-1.1.1g.tar.gz"
+	cd "$PACKAGES"/openssl-1.1.1g || exit
+	execute ./config --prefix="${WORKSPACE}" --openssldir="${WORKSPACE}" --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib no-shared zlib
 	execute make -j $MJOBS
 	execute make install
-	build_done "gmplib"
-fi
-
-if build "nettle"; then
-	download "https://ftp.gnu.org/gnu/nettle/nettle-3.6.tar.gz" "nettle-3.6.tar.gz"
-	cd "$PACKAGES"/nettle-3.6 || exit
-	execute ./configure --prefix="${WORKSPACE}" --libdir="${WORKSPACE}"/lib --with-lib-path="${WORKSPACE}"/lib --with-include-path="${WORKSPACE}"/include --disable-shared
-	execute make -j $MJOBS
-	execute make install
-	build_done "nettle"
-fi
-
-if build "gnutls"; then
-	download "https://www.gnupg.org/ftp/gcrypt/gnutls/v3.6/gnutls-3.6.14.tar.xz" "gnutls-3.6.14.tar.xz"
-	cd "$PACKAGES"/gnutls-3.6.14 || exit
-	execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --with-included-unistring --with-included-libtasn1 --without-p11-kit --disable-doc --disable-cxx --disable-tools LDFLAGS="-L${WORKSPACE}/lib"
-	execute make -j $MJOBS
-	execute make install
-	build_done "gnutls"
+	build_done "openssl"
 fi
 
 CFLAGS="-I$WORKSPACE/include"
@@ -422,14 +395,14 @@ cd "$PACKAGES"/ffmpeg-192d1d3/ || exit
     --prefix="${WORKSPACE}" \
     --pkg-config-flags="--static" \
     --extra-cflags="$CFLAGS" \
-    --extra-ldflags="$LDFLAGS -static -static-libstdc++ -static-libgcc" \
+    --extra-ldflags="$LDFLAGS" \
     --extra-libs="-lpthread -lm" \
 	--enable-static \
 	--disable-debug \
 	--disable-shared \
 	--disable-ffplay \
 	$(if [[ $MAKE_DOCS != "yes" ]]; then echo --disable-doc; fi) \
-	--enable-gnutls \
+	--enable-openssl \
 	--enable-gpl \
 	--enable-version3 \
 	--enable-nonfree \
