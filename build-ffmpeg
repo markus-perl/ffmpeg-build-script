@@ -296,10 +296,6 @@ if build "pkg-config"; then
 	build_done "pkg-config"
 fi
 
-if [[ $STOP_BEFORE_CMAKE == "yes" ]]; then
-  exit 0
-fi
-
 if build "cmake"; then
 	download "https://cmake.org/files/v3.15/cmake-3.15.4.tar.gz" "cmake-3.15.4.tar.gz"
 	cd "$PACKAGES"/cmake-3.15.4  || exit
@@ -347,7 +343,7 @@ if build "av1"; then
 	cd "$PACKAGES"/av1 || exit
 	mkdir -p "$PACKAGES"/aom_build
 	cd "$PACKAGES"/aom_build || exit
-	execute cmake -DENABLE_TESTS=0 -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib "$PACKAGES"/av1
+	execute cmake -DENABLE_TESTS=0 -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" "$PACKAGES"/av1
 	execute make -j $MJOBS
 	execute make install
 	build_done "av1"
