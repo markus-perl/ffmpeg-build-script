@@ -166,7 +166,7 @@ if ! command_exists "curl"; then
 fi
 
 if build "yasm"; then
-	download "http://www.tortall.net/projects/yasm/releases/yasm-1.3.0.tar.gz" "yasm-1.3.0.tar.gz"
+	download "https://www.tortall.net/projects/yasm/releases/yasm-1.3.0.tar.gz" "yasm-1.3.0.tar.gz"
 	cd "$PACKAGES"/yasm-1.3.0 || exit
 	execute ./configure --prefix="${WORKSPACE}"
 	execute make -j $MJOBS
@@ -184,7 +184,7 @@ if build "nasm"; then
 fi
 
 if build "opencore"; then
-	download "http://downloads.sourceforge.net/project/opencore-amr/opencore-amr/opencore-amr-0.1.5.tar.gz?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fopencore-amr%2Ffiles%2Fopencore-amr%2F&ts=1442256558&use_mirror=netassist" "opencore-amr-0.1.5.tar.gz"
+	download "https://deac-riga.dl.sourceforge.net/project/opencore-amr/opencore-amr/opencore-amr-0.1.5.tar.gz" "opencore-amr-0.1.5.tar.gz"
 	cd "$PACKAGES"/opencore-amr-0.1.5 || exit
 	execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
 	execute make -j $MJOBS
@@ -288,7 +288,7 @@ if build "libtheora"; then
 fi
 
 if build "pkg-config"; then
-	download "http://pkgconfig.freedesktop.org/releases/pkg-config-0.29.2.tar.gz" "pkg-config-0.29.2.tar.gz"
+	download "https://pkgconfig.freedesktop.org/releases/pkg-config-0.29.2.tar.gz" "pkg-config-0.29.2.tar.gz"
 	cd "$PACKAGES"/pkg-config-0.29.2 || exit
 	execute ./configure --silent --prefix="${WORKSPACE}" --with-pc-path="${WORKSPACE}"/lib/pkgconfig --with-internal-glib
 	execute make -j $MJOBS
