@@ -383,8 +383,8 @@ if command -v nvcc > /dev/null ; then
 fi
 
 build "ffmpeg"
-download "https://github.com/FFmpeg/FFmpeg/archive/n4.3.tar.gz" "ffmpeg-4.3.tar.bz2"
-cd "$PACKAGES"/FFmpeg-n4.3/ || exit
+download "https://ffmpeg.org/releases/ffmpeg-4.3.tar.bz2" "ffmpeg-4.3.tar.bz2"
+cd "$PACKAGES"/ffmpeg-4.3/ || exit
 # shellcheck disable=SC2086
 ./configure $ADDITIONAL_CONFIGURE_OPTIONS \
     --pkgconfigdir="$WORKSPACE/lib/pkgconfig" \
