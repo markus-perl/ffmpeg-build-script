@@ -371,20 +371,20 @@ CFLAGS="-I$WORKSPACE/include"
 LDFLAGS="-L$WORKSPACE/lib"
 if command -v nvcc > /dev/null ; then
        if build "nv-codec"; then
-               download "https://github.com/FFmpeg/nv-codec-headers/releases/download/n9.1.23.0/nv-codec-headers-9.1.23.0.tar.gz" "nv-codec-headers-9.1.23.0.tar.gz"
-               cd "$PACKAGES"/nv-codec-headers-n9.1.23.0 || exit
-               sed -i  "s#PREFIX = /usr/local#PREFIX = ${WORKSPACE}#g" "$PACKAGES"/nv-codec-headers-n9.1.23.0/Makefile
+               download "https://github.com/FFmpeg/nv-codec-headers/releases/download/n10.0.26.0/nv-codec-headers-10.0.26.0.tar.gz" "nv-codec-headers-10.0.26.0.tar.gz"
+               cd "$PACKAGES"/nv-codec-headers-10.0.26.0 || exit
+               sed -i  "s#PREFIX = /usr/local#PREFIX = ${WORKSPACE}#g" "$PACKAGES"/nv-codec-headers-10.0.26.0/Makefile
                execute make install
                build_done "nv-codec"
        fi
        CFLAGS="$CFLAGS -I/usr/local/cuda/include"
        LDFLAGS="$LDFLAGS -L/usr/local/cuda/lib64"
-       ADDITIONAL_CONFIGURE_OPTIONS="$ADDITIONAL_CONFIGURE_OPTIONS --enable-cuda-nvcc --enable-cuvid --enable-nvenc --enable-libnpp"
+       ADDITIONAL_CONFIGURE_OPTIONS="$ADDITIONAL_CONFIGURE_OPTIONS --enable-cuda-nvcc --enable-cuvid --enable-nvenc --enable-libnpp  --enable-cuda-llvm"
 fi
 
 build "ffmpeg"
-download "https://git.ffmpeg.org/gitweb/ffmpeg.git/snapshot/192d1d34eb3668fa27f433e96036340e1e5077a0.tar.gz" "ffmpeg-snapshot.tar.bz2"
-cd "$PACKAGES"/ffmpeg-192d1d3/ || exit
+download "https://github.com/FFmpeg/FFmpeg/archive/n4.3.tar.gz" "ffmpeg-4.3.tar.bz2"
+cd "$PACKAGES"/FFmpeg-n4.3/ || exit
 # shellcheck disable=SC2086
 ./configure $ADDITIONAL_CONFIGURE_OPTIONS \
     --pkgconfigdir="$WORKSPACE/lib/pkgconfig" \
