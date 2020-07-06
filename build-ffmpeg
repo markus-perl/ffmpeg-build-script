@@ -115,7 +115,7 @@ command_exists() {
 
 
 build_done () {
-	touch "$PACKAGES/$1.done"
+    touch "$PACKAGES/$1.done"
 }
 
 echo "ffmpeg-build-script v$VERSION"
