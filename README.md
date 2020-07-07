@@ -25,7 +25,7 @@ because I don't have the resources and the time to maintain other systems.
 * `aom`: AV1 Video Codec (Experimental and very slow!)
 * `fdk_aac`: Fraunhofer FDK AAC Codec 
 * `xvidcore`: MPEG-4 video coding standard
-* `webm`: WebM is a video file format
+* `VP8/VP9/webm`: VP8 / VP9 Video Codec for the WebM video file format
 * `mp3`: MPEG-1 or MPEG-2 Audio Layer III
 * `ogg`: Free, open container format
 * `vorbis`: Lossy audio compression format
