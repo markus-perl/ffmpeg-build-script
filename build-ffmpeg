@@ -352,7 +352,7 @@ fi
 if build "zlib"; then
 	download "https://www.zlib.net/zlib-1.2.11.tar.gz" "zlib-1.2.11.tar.gz"
 	cd "$PACKAGES"/zlib-1.2.11 || exit
-	execute ./configure --prefix="${WORKSPACE}"
+	execute ./configure --static --prefix="${WORKSPACE}"
 	execute make -j $MJOBS
 	execute make install
 	build_done "zlib"
