@@ -367,6 +367,15 @@ if build "openssl"; then
 	build_done "openssl"
 fi
 
+if build "srt"; then
+	download "https://github.com/Haivision/srt/archive/v1.4.1.tar.gz" "v1.4.1.tar.gz"
+	cd "$PACKAGES"/srt-1.4.1 || exit
+	execute cmake -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DENABLE_APPS=OFF "$PACKAGES"/srt-1.4.1
+	execute make -j $MJOBS
+	execute make install
+	build_done "srt"
+fi
+
 CFLAGS="-I$WORKSPACE/include"
 LDFLAGS="-L$WORKSPACE/lib"
 if command -v nvcc > /dev/null ; then
@@ -417,7 +426,8 @@ cd "$PACKAGES"/ffmpeg-4.3.1/ || exit
 	--enable-libopencore_amrnb \
 	--enable-filters \
 	--enable-libvidstab \
-	--enable-libaom
+	--enable-libaom \
+	--enable-libsrt
 
 execute make -j $MJOBS
 execute make install
