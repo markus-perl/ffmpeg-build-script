@@ -2,7 +2,7 @@
 
 # https://github.com/markus-perl/ffmpeg-build-script
 
-VERSION=1.14
+VERSION=1.15
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
 WORKSPACE="$CWD/workspace"
@@ -368,13 +368,13 @@ if build "openssl"; then
 fi
 
 if build "srt"; then
-	download "https://github.com/Haivision/srt/archive/v1.4.1.tar.gz" "srt-v1.4.1.tar.gz"
+	download "https://github.com/Haivision/srt/archive/v1.4.1.tar.gz" "v1.4.1.tar.gz"
 	cd "$PACKAGES"/srt-1.4.1 || exit
 	export OPENSSL_ROOT_DIR="${WORKSPACE}"
 	export OPENSSL_LIB_DIR="${WORKSPACE}"/lib
 	export OPENSSL_INCLUDE_DIR="${WORKSPACE}"/include/
 	execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
-	execute cmake "$PACKAGES"/srt-1.4.1 -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DENABLE_APPS=OFF -DWITH_EXTRALIBS="-lz -ldl" .
+	execute cmake "$PACKAGES"/srt-1.4.1 -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DENABLE_APPS=OFF
 	execute make install
 	build_done "srt"
 fi
