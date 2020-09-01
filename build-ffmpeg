@@ -339,7 +339,7 @@ if build "fdk_aac"; then
 fi
 
 if build "av1"; then
-	download "https://aomedia.googlesource.com/aom/+archive/69a986c7d4c354dfbccec570ccbc44688612c083.tar.gz" "av1.tar.gz" "av1"
+	download "https://aomedia.googlesource.com/aom/+archive/0f5cd05bb3d6209e2583ce682d1acd8e21ae24b8.tar.gz" "av1.tar.gz" "av1"
 	cd "$PACKAGES"/av1 || exit
 	mkdir -p "$PACKAGES"/aom_build
 	cd "$PACKAGES"/aom_build || exit
@@ -365,6 +365,18 @@ if build "openssl"; then
 	execute make -j $MJOBS
 	execute make install
 	build_done "openssl"
+fi
+
+if build "srt"; then
+	download "https://github.com/Haivision/srt/archive/v1.4.1.tar.gz" "srt-v1.4.1.tar.gz"
+	cd "$PACKAGES"/srt-1.4.1 || exit
+	export OPENSSL_ROOT_DIR="${WORKSPACE}"
+	export OPENSSL_LIB_DIR="${WORKSPACE}"/lib
+	export OPENSSL_INCLUDE_DIR="${WORKSPACE}"/include/
+	execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+	execute cmake "$PACKAGES"/srt-1.4.1 -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DENABLE_APPS=OFF -DWITH_EXTRALIBS="-lz -ldl" .
+	execute make install
+	build_done "srt"
 fi
 
 CFLAGS="-I$WORKSPACE/include"
@@ -417,7 +429,8 @@ cd "$PACKAGES"/ffmpeg-4.3.1/ || exit
 	--enable-libopencore_amrnb \
 	--enable-filters \
 	--enable-libvidstab \
-	--enable-libaom
+	--enable-libaom \
+	--enable-libsrt
 
 execute make -j $MJOBS
 execute make install
