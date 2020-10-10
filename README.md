@@ -9,12 +9,12 @@ build-ffmpeg
 The FFmpeg build script provides an easy way to build a static FFmpeg on **OSX** and **Linux** with **non-free codecs** included.
 
 
-[![How-To build FFmpeg on MacOS](http://img.youtube.com/vi/Z9p3mM757cM/0.jpg)](http://www.youtube.com/watch?v=Z9p3mM757cM "How-To build FFmpeg on OSX")
+[![How-To build FFmpeg on MacOS](https://img.youtube.com/vi/Z9p3mM757cM/0.jpg)](https://www.youtube.com/watch?v=Z9p3mM757cM "How-To build FFmpeg on OSX")
 
 *Youtube: How-To build and install FFmpeg on MacOS*
 
 ## Disclaimer
-Use this script at your own risk. I maintain this script in my spare time. 
+Use this script at your own risk. I maintain this script in my spare time.
 Please do not file bug reports for systems other than Debian 10 and macOS 10.15.x
 because I don't have the resources and the time to maintain other systems.
 
@@ -23,7 +23,7 @@ because I don't have the resources and the time to maintain other systems.
 * `x264`: H.264 (MPEG-4 AVC)
 * `x265`: H.265 Video Codec
 * `aom`: AV1 Video Codec (Experimental and very slow!)
-* `fdk_aac`: Fraunhofer FDK AAC Codec 
+* `fdk_aac`: Fraunhofer FDK AAC Codec
 * `xvidcore`: MPEG-4 video coding standard
 * `VP8/VP9/webm`: VP8 / VP9 Video Codec for the WebM video file format
 * `mp3`: MPEG-1 or MPEG-2 Audio Layer III
@@ -45,7 +45,7 @@ because I don't have the resources and the time to maintain other systems.
         * VP9 `vp9_cuvid`
     * Encoders
         * H264 `nvenc nvenc_h264`
-        * H265 `nvenc_hevc` 
+        * H265 `nvenc_hevc`
 
 ## Continuos Integration
 ffmpeg-build-script is rockstable. Every commit runs against Linux and MacOS with https://travis-ci.org just to make sure everything works as expected.
@@ -101,11 +101,11 @@ cd ffmpeg-build-script
 ### Cuda installation
 
 CUDA is a parallel computing platform developed by NVIDIA.
-To be able to compile ffmpeg with CUDA support, you first need a compatible NVIDIA GPU. 
+To be able to compile ffmpeg with CUDA support, you first need a compatible NVIDIA GPU.
 - Ubuntu: To install the CUDA toolkit on Ubuntu, simply run "sudo apt install nvidia-cuda-toolkit"
-- Other Linux distributions: Once you have the GPU and display driver installed, you can follow the 
-[official instructions](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html) 
-or [this blog](https://www.pugetsystems.com/labs/hpc/How-To-Install-CUDA-10-1-on-Ubuntu-19-04-1405/) 
+- Other Linux distributions: Once you have the GPU and display driver installed, you can follow the
+[official instructions](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html)
+or [this blog](https://www.pugetsystems.com/labs/hpc/How-To-Install-CUDA-10-1-on-Ubuntu-19-04-1405/)
 to setup the CUDA toolkit.
 
 Usage
@@ -263,7 +263,7 @@ Building done. The binary can be found here: /Volumes/Daten/dev/mac/ffmpeg-build
 Install the binary to your /usr/local/bin folder? [Y/n] y
 Password:
 ```
-    
+
 
 Other Projects Of Mine
 ------------
