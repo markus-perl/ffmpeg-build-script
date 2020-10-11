@@ -6,11 +6,9 @@ VERSION=1.16
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
 WORKSPACE="$CWD/workspace"
-CC=clang
 CFLAGS="-I$WORKSPACE/include"
 LDFLAGS="-L$WORKSPACE/lib"
 EXTRALIBS="-lpthread -lm"
-FFMPEG_OPTS=()
 CONFIGURE_OPTIONS=()
 
 # Speed up the process
