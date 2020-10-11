@@ -6,22 +6,22 @@ VERSION=1.16
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
 WORKSPACE="$CWD/workspace"
-CC=clang
-LDFLAGS="-L${WORKSPACE}/lib -lm"
-CFLAGS="-I${WORKSPACE}/include"
-ADDITIONAL_CONFIGURE_OPTIONS=""
+CFLAGS="-I$WORKSPACE/include"
+LDFLAGS="-L$WORKSPACE/lib"
+EXTRALIBS="-lpthread -lm"
+CONFIGURE_OPTIONS=()
 
 # Speed up the process
 # Env Var NUMJOBS overrides automatic detection
 if [[ -n $NUMJOBS ]]; then
-    MJOBS=$NUMJOBS
+	MJOBS=$NUMJOBS
 elif [[ -f /proc/cpuinfo ]]; then
-    MJOBS=$(grep -c processor /proc/cpuinfo)
+	MJOBS=$(grep -c processor /proc/cpuinfo)
 elif [[ "$OSTYPE" == "darwin"* ]]; then
 	MJOBS=$(sysctl -n machdep.cpu.thread_count)
-	ADDITIONAL_CONFIGURE_OPTIONS="--enable-videotoolbox"
+	CONFIGURE_OPTIONS=("--enable-videotoolbox")
 else
-    MJOBS=4
+	MJOBS=4
 fi
 
 make_dir () {
@@ -85,11 +85,11 @@ execute () {
 
 	# shellcheck disable=SC2181
 	if [ $? -ne 0 ]; then
-        echo "$OUTPUT"
-        echo ""
-        echo "Failed to Execute $*" >&2
-        exit 1
-    fi
+		echo "$OUTPUT"
+		echo ""
+		echo "Failed to Execute $*" >&2
+		exit 1
+	fi
 }
 
 build () {
@@ -106,16 +106,16 @@ build () {
 }
 
 command_exists() {
-    if ! [[ -x $(command -v "$1") ]]; then
-        return 1
-    fi
+	if ! [[ -x $(command -v "$1") ]]; then
+		return 1
+	fi
 
-    return 0
+	return 0
 }
 
 
 build_done () {
-    touch "$PACKAGES/$1.done"
+	touch "$PACKAGES/$1.done"
 }
 
 echo "ffmpeg-build-script v$VERSION"
@@ -129,18 +129,18 @@ case "$1" in
 	echo "Cleanup done."
 	echo ""
 	exit 0
-    ;;
+	;;
 "--build")
 
-    ;;
+	;;
 *)
-    echo "Usage: $0"
-    echo "   --build: start building process"
-    echo "   --cleanup: remove all working dirs"
-    echo "   --help: show this help"
-    echo ""
-    exit 0
-    ;;
+	echo "Usage: $0"
+	echo "   --build: start building process"
+	echo "   --cleanup: remove all working dirs"
+	echo "   --help: show this help"
+	echo ""
+	exit 0
+	;;
 esac
 
 echo "Using $MJOBS make jobs simultaneously."
@@ -151,18 +151,18 @@ make_dir "$WORKSPACE"
 export PATH=${WORKSPACE}/bin:$PATH
 
 if ! command_exists "make"; then
-    echo "make not installed.";
-    exit 1
+	echo "make not installed.";
+	exit 1
 fi
 
 if ! command_exists "g++"; then
-    echo "g++ not installed.";
-    exit 1
+	echo "g++ not installed.";
+	exit 1
 fi
 
 if ! command_exists "curl"; then
-    echo "curl not installed.";
-    exit 1
+	echo "curl not installed.";
+	exit 1
 fi
 
 if build "yasm"; then
@@ -189,22 +189,26 @@ if build "opencore"; then
 	execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
 	execute make -j $MJOBS
 	execute make install
+
+	CONFIGURE_OPTIONS+=("--enable-libopencore_amrnb" "--enable-libopencore_amrwb")
 	build_done "opencore"
 fi
 
 if build "libvpx"; then
-    download "https://github.com/webmproject/libvpx/archive/v1.8.1.tar.gz" "libvpx-1.8.1.tar.gz"
-    cd "$PACKAGES"/libvpx-1.8.1 || exit
+	download "https://github.com/webmproject/libvpx/archive/v1.8.1.tar.gz" "libvpx-1.8.1.tar.gz"
+	cd "$PACKAGES"/libvpx-1.8.1 || exit
 
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        echo "Applying Darwin patch"
-        sed "s/,--version-script//g" build/make/Makefile > build/make/Makefile.patched
-        sed "s/-Wl,--no-undefined -Wl,-soname/-Wl,-undefined,error -Wl,-install_name/g" build/make/Makefile.patched > build/make/Makefile
-    fi
+	if [[ "$OSTYPE" == "darwin"* ]]; then
+		echo "Applying Darwin patch"
+		sed "s/,--version-script//g" build/make/Makefile > build/make/Makefile.patched
+		sed "s/-Wl,--no-undefined -Wl,-soname/-Wl,-undefined,error -Wl,-install_name/g" build/make/Makefile.patched > build/make/Makefile
+	fi
 
 	execute ./configure --prefix="${WORKSPACE}" --disable-unit-tests --disable-shared
 	execute make -j $MJOBS
 	execute make install
+
+	CONFIGURE_OPTIONS+=("--enable-libvpx")
 	build_done "libvpx"
 fi
 
@@ -214,6 +218,8 @@ if build "lame"; then
 	execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
 	execute make -j $MJOBS
 	execute make install
+
+	CONFIGURE_OPTIONS+=("--enable-libmp3lame")
 	build_done "lame"
 fi
 
@@ -223,6 +229,8 @@ if build "opus"; then
 	execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
 	execute make -j $MJOBS
 	execute make install
+
+	CONFIGURE_OPTIONS+=("--enable-libopus")
 	build_done "opus"
 fi
 
@@ -235,9 +243,14 @@ if build "xvidcore"; then
 	execute make install
 
 	if [[ -f ${WORKSPACE}/lib/libxvidcore.4.dylib ]]; then
-	    execute rm "${WORKSPACE}/lib/libxvidcore.4.dylib"
+		execute rm "${WORKSPACE}/lib/libxvidcore.4.dylib"
 	fi
 
+	if [[ -f ${WORKSPACE}/lib/libxvidcore.so ]]; then
+		execute rm "${WORKSPACE}"/lib/libxvidcore.so*
+	fi
+
+	CONFIGURE_OPTIONS+=("--enable-libxvid")
 	build_done "xvidcore"
 fi
 
@@ -247,13 +260,15 @@ if build "x264"; then
 
 	if [[ "$OSTYPE" == "linux-gnu" ]]; then
 		execute ./configure --prefix="${WORKSPACE}" --enable-static --enable-pic CXXFLAGS="-fPIC"
-    else
-        execute ./configure --prefix="${WORKSPACE}" --enable-static --enable-pic
-    fi
+	else
+		execute ./configure --prefix="${WORKSPACE}" --enable-static --enable-pic
+	fi
 
-    execute make -j $MJOBS
+	execute make -j $MJOBS
 	execute make install
 	execute make install-lib-static
+
+	CONFIGURE_OPTIONS+=("--enable-libx264")
 	build_done "x264"
 fi
 
@@ -272,6 +287,8 @@ if build "libvorbis"; then
 	execute ./configure --prefix="${WORKSPACE}" --with-ogg-libraries="${WORKSPACE}"/lib --with-ogg-includes="${WORKSPACE}"/include/ --enable-static --disable-shared --disable-oggtest
 	execute make -j $MJOBS
 	execute make install
+
+	CONFIGURE_OPTIONS+=("--enable-libvorbis")
 	build_done "libvorbis"
 fi
 
@@ -284,6 +301,8 @@ if build "libtheora"; then
 	execute ./configure --prefix="${WORKSPACE}" --with-ogg-libraries="${WORKSPACE}"/lib --with-ogg-includes="${WORKSPACE}"/include/ --with-vorbis-libraries="${WORKSPACE}"/lib --with-vorbis-includes="${WORKSPACE}"/include/ --enable-static --disable-shared --disable-oggtest --disable-vorbistest --disable-examples --disable-asm --disable-spec
 	execute make -j $MJOBS
 	execute make install
+
+	CONFIGURE_OPTIONS+=("--enable-libtheora")
 	build_done "libtheora"
 fi
 
@@ -314,6 +333,8 @@ if build "vid_stab"; then
 	execute cmake -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" -DUSE_OMP=OFF -DENABLE_SHARED:bool=off .
 	execute make
 	execute make install
+
+	CONFIGURE_OPTIONS+=("--enable-libvidstab")
 	build_done "vid_stab"
 fi
 
@@ -326,6 +347,8 @@ if build "x265"; then
 	execute make install
 	sed "s/-lx265/-lx265 -lstdc++/g" "$WORKSPACE/lib/pkgconfig/x265.pc" > "$WORKSPACE/lib/pkgconfig/x265.pc.tmp"
 	mv "$WORKSPACE/lib/pkgconfig/x265.pc.tmp" "$WORKSPACE/lib/pkgconfig/x265.pc"
+
+	CONFIGURE_OPTIONS+=("--enable-libx265")
 	build_done "x265"
 fi
 
@@ -335,6 +358,8 @@ if build "fdk_aac"; then
 	execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
 	execute make -j $MJOBS
 	execute make install
+
+	CONFIGURE_OPTIONS+=("--enable-libfdk-aac")
 	build_done "fdk_aac"
 fi
 
@@ -346,6 +371,8 @@ if build "av1"; then
 	execute cmake -DENABLE_TESTS=0 -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" "$PACKAGES"/av1
 	execute make -j $MJOBS
 	execute make install
+
+	CONFIGURE_OPTIONS+=("--enable-libaom")
 	build_done "av1"
 fi
 
@@ -364,6 +391,8 @@ if build "openssl"; then
 	execute ./config --prefix="${WORKSPACE}" --openssldir="${WORKSPACE}" --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib no-shared zlib
 	execute make -j $MJOBS
 	execute make install
+
+	CONFIGURE_OPTIONS+=("--enable-openssl")
 	build_done "openssl"
 fi
 
@@ -375,61 +404,47 @@ if build "srt"; then
 	export OPENSSL_INCLUDE_DIR="${WORKSPACE}"/include/
 	execute cmake "$PACKAGES"/srt-1.4.1 -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DENABLE_APPS=OFF
 	execute make install
+
+	CONFIGURE_OPTIONS+=("--enable-libsrt")
 	build_done "srt"
 fi
 
-CFLAGS="-I$WORKSPACE/include"
-LDFLAGS="-L$WORKSPACE/lib"
 if command -v nvcc > /dev/null ; then
-       if build "nv-codec"; then
-               download "https://github.com/FFmpeg/nv-codec-headers/releases/download/n10.0.26.0/nv-codec-headers-10.0.26.0.tar.gz" "nv-codec-headers-10.0.26.0.tar.gz"
-               cd "$PACKAGES"/nv-codec-headers-10.0.26.0 || exit
-               sed -i  "s#PREFIX = /usr/local#PREFIX = ${WORKSPACE}#g" "$PACKAGES"/nv-codec-headers-10.0.26.0/Makefile
-               execute make install
-               build_done "nv-codec"
-       fi
-       CFLAGS="$CFLAGS -I/usr/local/cuda/include"
-       LDFLAGS="$LDFLAGS -L/usr/local/cuda/lib64"
-       ADDITIONAL_CONFIGURE_OPTIONS="$ADDITIONAL_CONFIGURE_OPTIONS --enable-cuda-nvcc --enable-cuvid --enable-nvenc --enable-libnpp  --enable-cuda-llvm"
+	if build "nv-codec"; then
+		download "https://github.com/FFmpeg/nv-codec-headers/releases/download/n10.0.26.0/nv-codec-headers-10.0.26.0.tar.gz" "nv-codec-headers-10.0.26.0.tar.gz"
+		cd "$PACKAGES"/nv-codec-headers-10.0.26.0 || exit
+		sed -i  "s#PREFIX = /usr/local#PREFIX = ${WORKSPACE}#g" "$PACKAGES"/nv-codec-headers-10.0.26.0/Makefile
+		execute make install
+		build_done "nv-codec"
+	fi
+	CFLAGS+=" -I/usr/local/cuda/include"
+	LDFLAGS+=" -L/usr/local/cuda/lib64"
+	CONFIGURE_OPTIONS+=("--enable-cuda-nvcc" "--enable-cuvid" "--enable-nvenc" "--enable-libnpp" "--enable-cuda-llvm")
+	# https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
+	CONFIGURE_OPTIONS+=("--nvccflags=-gencode arch=compute_52,code=sm_52")
 fi
 
 build "ffmpeg"
 download "https://ffmpeg.org/releases/ffmpeg-4.3.1.tar.bz2" "ffmpeg-4.3.1.tar.bz2"
 cd "$PACKAGES"/ffmpeg-4.3.1/ || exit
 # shellcheck disable=SC2086
-./configure $ADDITIONAL_CONFIGURE_OPTIONS \
-    --pkgconfigdir="$WORKSPACE/lib/pkgconfig" \
-    --prefix="${WORKSPACE}" \
-    --pkg-config-flags="--static" \
-    --extra-cflags="$CFLAGS" \
-    --extra-ldflags="$LDFLAGS" \
-    --extra-libs="-lpthread -lm" \
-	--enable-static \
+./configure "${CONFIGURE_OPTIONS[@]}" \
 	--disable-debug \
-	--disable-shared \
-	--disable-ffplay \
 	--disable-doc \
-	--enable-openssl \
+	--disable-ffplay \
+	--disable-shared \
 	--enable-gpl \
-	--enable-version3 \
 	--enable-nonfree \
 	--enable-pthreads \
-	--enable-libvpx \
-	--enable-libmp3lame \
-    --enable-libopus \
-	--enable-libtheora \
-	--enable-libvorbis \
-	--enable-libx264 \
-	--enable-libx265 \
-	--enable-runtime-cpudetect \
-	--enable-libfdk-aac \
-	--enable-avfilter \
-	--enable-libopencore_amrwb \
-	--enable-libopencore_amrnb \
-	--enable-filters \
-	--enable-libvidstab \
-	--enable-libaom \
-	--enable-libsrt
+	--enable-static \
+	--enable-small \
+	--enable-version3 \
+	--extra-cflags="${CFLAGS}" \
+	--extra-ldflags="${LDFLAGS}" \
+	--extra-libs="${EXTRALIBS}" \
+	--pkgconfigdir="$WORKSPACE/lib/pkgconfig" \
+	--pkg-config-flags="--static" \
+	--prefix="${WORKSPACE}"
 
 execute make -j $MJOBS
 execute make install
