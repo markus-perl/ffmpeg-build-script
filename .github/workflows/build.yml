@@ -1,0 +1,65 @@
+name: build test
+
+on:
+  push:
+    paths-ignore:
+      - '*.md'
+  pull_request:
+    branches: [ master ]
+
+env:
+  DOCKER_BUILDKIT: 1
+  DOCKER_CLI_EXPERIMENTAL: enabled
+
+jobs:
+  build-linux:
+    name: native build in linux
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: build ffmpeg
+        run: |
+          while sleep 300; do echo "=====[ $SECONDS seconds still running ]====="; done &
+          SKIPINSTALL=yes VERBOSE=yes ./build-ffmpeg --build
+          kill %1
+      - name: clean up
+        run: |
+          ./build-ffmpeg --cleanup
+
+  build-macos:
+    name: native build in macos
+    runs-on: macos-10.15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: build ffmpeg
+        run: |
+          while sleep 300; do echo "=====[ $SECONDS seconds still running ]====="; done &
+          SKIPINSTALL=yes VERBOSE=yes ./build-ffmpeg --build
+          kill %1
+      - name: clean up
+        run: |
+          ./build-ffmpeg --cleanup
+
+  build-docker:
+    name: build in docker
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: build ffmpeg
+        run: |
+          docker build -t ffmpeg:ubuntu -f Dockerfile .
+          docker run --rm ffmpeg:ubuntu
+
+  build-cuda-docker:
+    name: build in docker with cuda
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: build ffmpeg
+        run: |
+          docker build -t ffmpeg:cuda -f cuda-ubuntu.dockerfile .
+          docker run --rm ffmpeg:cuda
