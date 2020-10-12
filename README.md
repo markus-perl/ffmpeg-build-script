@@ -48,7 +48,7 @@ because I don't have the resources and the time to maintain other systems.
         * H265 `nvenc_hevc`
 
 ## Continuos Integration
-ffmpeg-build-script is rockstable. Every commit runs against Linux and MacOS with https://travis-ci.org just to make sure everything works as expected.
+ffmpeg-build-script is rockstable. Every commit runs against Linux and MacOS with https://github.com/markus-perl/ffmpeg-build-script/actions just to make sure everything works as expected.
 
 Requirements MacOS
 ------------
