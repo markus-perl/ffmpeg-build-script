@@ -7,10 +7,6 @@ on:
   pull_request:
     branches: [ master ]
 
-env:
-  DOCKER_BUILDKIT: 1
-  DOCKER_CLI_EXPERIMENTAL: enabled
-
 jobs:
   build-linux:
     name: native build in linux
@@ -18,11 +14,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+
       - name: build ffmpeg
         run: |
           while sleep 300; do echo "=====[ $SECONDS seconds still running ]====="; done &
           SKIPINSTALL=yes VERBOSE=yes ./build-ffmpeg --build
           kill %1
+
       - name: clean up
         run: |
           ./build-ffmpeg --cleanup
@@ -33,11 +31,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+
       - name: build ffmpeg
         run: |
           while sleep 300; do echo "=====[ $SECONDS seconds still running ]====="; done &
           SKIPINSTALL=yes VERBOSE=yes ./build-ffmpeg --build
           kill %1
+
       - name: clean up
         run: |
           ./build-ffmpeg --cleanup
@@ -48,9 +48,23 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+
+      - name: pull base image
+        id: ubuntu_pull
+        run: |
+          docker pull ubuntu:20.04
+
+      - name: run if ubuntu_pull failed
+        if: failure() && steps.ubuntu_pull.outcome == 'failure'
+        run: |
+          docker pull ubuntu:20.04
+
       - name: build ffmpeg
         run: |
           docker build -t ffmpeg:ubuntu -f Dockerfile .
+
+      - name: test run ffmepg
+        run: |
           docker run --rm ffmpeg:ubuntu
 
   build-cuda-docker:
@@ -59,7 +73,21 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+
+      - name: pull base image
+        id: cuda_ubuntu_pull
+        run: |
+          docker pull nvidia/cuda:11.1-devel-ubuntu20.04
+
+      - name: run if cuda_ubuntu_pull failed
+        if: failure() && steps.cuda_ubuntu_pull.outcome == 'failure'
+        run: |
+            docker pull nvidia/cuda:11.1-devel-ubuntu20.04
+
       - name: build ffmpeg
         run: |
           docker build -t ffmpeg:cuda -f cuda-ubuntu.dockerfile .
+
+      - name: test run ffmepg
+        run: |
           docker run --rm ffmpeg:cuda
