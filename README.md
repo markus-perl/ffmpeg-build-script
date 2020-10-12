@@ -1,4 +1,4 @@
-![build test](https://github.com/markus-perl/ffmpeg-build-script/actions)
+![build test](https://github.com/markus-perl/ffmpeg-build-script/workflows/build%20test/badge.svg?branch=master)
 
 ![FFmpeg build script](https://raw.github.com/markus-perl/ffmpeg-build-script/master/ffmpeg-build-script.png)
 
