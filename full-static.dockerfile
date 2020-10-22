@@ -17,8 +17,8 @@ FROM centos:8
 COPY --from=build /app/workspace/bin/ffmpeg /usr/bin/ffmpeg
 COPY --from=build /app/workspace/bin/ffprobe /usr/bin/ffprobe
 
-RUN ldd /usr/bin/ffmpeg
-RUN ldd /usr/bin/ffprobe
+RUN ldd /usr/bin/ffmpeg ; exit 0
+RUN ldd /usr/bin/ffprobe ; exit 0
 
 CMD         ["--help"]
 ENTRYPOINT  ["/usr/bin/ffmpeg"]
