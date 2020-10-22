@@ -3,7 +3,7 @@
 # https://github.com/markus-perl/ffmpeg-build-script
 
 PROGNAME=$(basename $0)
-VERSION=1.17
+VERSION=1.18
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
 WORKSPACE="$CWD/workspace"
@@ -146,11 +146,12 @@ cleanup () {
 usage () {
 	echo "Usage: $PROGNAME [OPTIONS]"
 	echo "Options:"
-	echo "  -h, --help"
-	echo "      --version"
-	echo "  -b, --build : start building process"
-	echo "  -c, --cleanup : remove all working dirs"
-	echo "  -f, --full-static : complete static build of the ffmpeg (eg. glibc, pthreads etc...)"
+	echo "  -h, --help          Display usage information"
+	echo "      --version       Display version information"
+	echo "  -b, --build         Starts the build process"
+	echo "  -c, --cleanup       Remove all working dirs"
+	echo "  -f, --full-static   Complete static build of ffmpeg (eg. glibc, pthreads etc...) **not recommend**"
+	echo "                      Note: Because of the NSS (Name Service Switch), glibc does not recommend static links."
 	echo ""
 }
 
@@ -222,6 +223,10 @@ if ! command_exists "curl"; then
 	exit 1
 fi
 
+##
+## build tools
+##
+
 if build "yasm"; then
 	download "https://www.tortall.net/projects/yasm/releases/yasm-1.3.0.tar.gz"
 	execute ./configure --prefix="${WORKSPACE}"
@@ -238,15 +243,57 @@ if build "nasm"; then
 	build_done "nasm"
 fi
 
-if build "opencore"; then
-	download "https://deac-riga.dl.sourceforge.net/project/opencore-amr/opencore-amr/opencore-amr-0.1.5.tar.gz"
-	execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+if build "pkg-config"; then
+	download "https://pkgconfig.freedesktop.org/releases/pkg-config-0.29.2.tar.gz"
+	execute ./configure --silent --prefix="${WORKSPACE}" --with-pc-path="${WORKSPACE}"/lib/pkgconfig --with-internal-glib
 	execute make -j $MJOBS
 	execute make install
-
-	build_done "opencore"
+	build_done "pkg-config"
 fi
-CONFIGURE_OPTIONS+=("--enable-libopencore_amrnb" "--enable-libopencore_amrwb")
+
+if build "cmake"; then
+	download "https://cmake.org/files/v3.15/cmake-3.15.4.tar.gz"
+	rm Modules/FindJava.cmake
+	perl -p -i -e "s/get_filename_component.JNIPATH/#get_filename_component(JNIPATH/g" Tests/CMakeLists.txt
+	perl -p -i -e "s/get_filename_component.JNIPATH/#get_filename_component(JNIPATH/g" Tests/CMakeLists.txt
+	execute ./configure --prefix="${WORKSPACE}"
+	execute make -j $MJOBS
+	execute make install
+	build_done "cmake"
+fi
+
+
+##
+## video library
+##
+
+if build "x264"; then
+	download "https://code.videolan.org/videolan/x264/-/archive/stable/x264-stable.tar.bz2"
+
+	if [[ "$OSTYPE" == "linux-gnu" ]]; then
+		execute ./configure --prefix="${WORKSPACE}" --enable-static --enable-pic CXXFLAGS="-fPIC"
+	else
+		execute ./configure --prefix="${WORKSPACE}" --enable-static --enable-pic
+	fi
+
+	execute make -j $MJOBS
+	execute make install
+	execute make install-lib-static
+
+	build_done "x264"
+fi
+CONFIGURE_OPTIONS+=("--enable-libx264")
+
+if build "x265"; then
+	download "https://github.com/videolan/x265/archive/3.4.tar.gz" "x265-3.4.tar.gz"
+	cd source || exit
+	execute cmake -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" -DENABLE_SHARED:bool=off -DSTATIC_LINK_CRT:BOOL=ON -DENABLE_CLI:BOOL=OFF .
+	execute make -j $MJOBS
+	execute make install
+	sed -i 's/-lgcc_s/-lgcc_eh/g' "$WORKSPACE/lib/pkgconfig/x265.pc"
+	build_done "x265"
+fi
+CONFIGURE_OPTIONS+=("--enable-libx265")
 
 if build "libvpx"; then
 	download "https://github.com/webmproject/libvpx/archive/v1.8.1.tar.gz" "libvpx-1.8.1.tar.gz"
@@ -264,26 +311,6 @@ if build "libvpx"; then
 	build_done "libvpx"
 fi
 CONFIGURE_OPTIONS+=("--enable-libvpx")
-
-if build "lame"; then
-	download "https://netcologne.dl.sourceforge.net/project/lame/lame/3.100/lame-3.100.tar.gz"
-	execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
-	execute make -j $MJOBS
-	execute make install
-
-	build_done "lame"
-fi
-CONFIGURE_OPTIONS+=("--enable-libmp3lame")
-
-if build "opus"; then
-	download "https://archive.mozilla.org/pub/opus/opus-1.3.1.tar.gz"
-	execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
-	execute make -j $MJOBS
-	execute make install
-
-	build_done "opus"
-fi
-CONFIGURE_OPTIONS+=("--enable-libopus")
 
 if build "xvidcore"; then
 	download "https://downloads.xvid.com/downloads/xvidcore-1.3.7.tar.gz"
@@ -304,23 +331,63 @@ if build "xvidcore"; then
 fi
 CONFIGURE_OPTIONS+=("--enable-libxvid")
 
+if build "vid_stab"; then
+	download "https://github.com/georgmartius/vid.stab/archive/v1.1.0.tar.gz" "vid.stab-1.1.0.tar.gz"
+	execute cmake -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" -DUSE_OMP=OFF -DENABLE_SHARED:bool=off .
+	execute make
+	execute make install
 
-if build "x264"; then
-	download "https://code.videolan.org/videolan/x264/-/archive/stable/x264-stable.tar.bz2"
+	build_done "vid_stab"
+fi
+CONFIGURE_OPTIONS+=("--enable-libvidstab")
 
-	if [[ "$OSTYPE" == "linux-gnu" ]]; then
-		execute ./configure --prefix="${WORKSPACE}" --enable-static --enable-pic CXXFLAGS="-fPIC"
-	else
-		execute ./configure --prefix="${WORKSPACE}" --enable-static --enable-pic
-	fi
 
+if build "av1"; then
+	download "https://aomedia.googlesource.com/aom/+archive/0f5cd05bb3d6209e2583ce682d1acd8e21ae24b8.tar.gz" "av1.tar.gz" "av1"
+	make_dir "$PACKAGES"/aom_build
+	cd "$PACKAGES"/aom_build || exit
+	execute cmake -DENABLE_TESTS=0 -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" "$PACKAGES"/av1
 	execute make -j $MJOBS
 	execute make install
-	execute make install-lib-static
 
-	build_done "x264"
+	build_done "av1"
 fi
-CONFIGURE_OPTIONS+=("--enable-libx264")
+CONFIGURE_OPTIONS+=("--enable-libaom")
+
+
+##
+## audio library
+##
+
+if build "opencore"; then
+	download "https://deac-riga.dl.sourceforge.net/project/opencore-amr/opencore-amr/opencore-amr-0.1.5.tar.gz"
+	execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+	execute make -j $MJOBS
+	execute make install
+
+	build_done "opencore"
+fi
+CONFIGURE_OPTIONS+=("--enable-libopencore_amrnb" "--enable-libopencore_amrwb")
+
+if build "lame"; then
+	download "https://netcologne.dl.sourceforge.net/project/lame/lame/3.100/lame-3.100.tar.gz"
+	execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+	execute make -j $MJOBS
+	execute make install
+
+	build_done "lame"
+fi
+CONFIGURE_OPTIONS+=("--enable-libmp3lame")
+
+if build "opus"; then
+	download "https://archive.mozilla.org/pub/opus/opus-1.3.1.tar.gz"
+	execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+	execute make -j $MJOBS
+	execute make install
+
+	build_done "opus"
+fi
+CONFIGURE_OPTIONS+=("--enable-libopus")
 
 if build "libogg"; then
 	download "https://ftp.osuosl.org/pub/xiph/releases/ogg/libogg-1.3.3.tar.gz"
@@ -353,48 +420,6 @@ if build "libtheora"; then
 fi
 CONFIGURE_OPTIONS+=("--enable-libtheora")
 
-if build "pkg-config"; then
-	download "https://pkgconfig.freedesktop.org/releases/pkg-config-0.29.2.tar.gz"
-	execute ./configure --silent --prefix="${WORKSPACE}" --with-pc-path="${WORKSPACE}"/lib/pkgconfig --with-internal-glib
-	execute make -j $MJOBS
-	execute make install
-	build_done "pkg-config"
-fi
-
-if build "cmake"; then
-	download "https://cmake.org/files/v3.15/cmake-3.15.4.tar.gz"
-	rm Modules/FindJava.cmake
-	perl -p -i -e "s/get_filename_component.JNIPATH/#get_filename_component(JNIPATH/g" Tests/CMakeLists.txt
-	perl -p -i -e "s/get_filename_component.JNIPATH/#get_filename_component(JNIPATH/g" Tests/CMakeLists.txt
-	execute ./configure --prefix="${WORKSPACE}"
-	execute make -j $MJOBS
-	execute make install
-	build_done "cmake"
-fi
-
-if build "vid_stab"; then
-	download "https://github.com/georgmartius/vid.stab/archive/v1.1.0.tar.gz" "vid.stab-1.1.0.tar.gz"
-	execute cmake -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" -DUSE_OMP=OFF -DENABLE_SHARED:bool=off .
-	execute make
-	execute make install
-
-	build_done "vid_stab"
-fi
-CONFIGURE_OPTIONS+=("--enable-libvidstab")
-
-if build "x265"; then
-	download "https://github.com/videolan/x265/archive/3.4.tar.gz" "x265-3.4.tar.gz"
-	cd source || exit
-	execute cmake -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" -DENABLE_SHARED:bool=off .
-	execute make -j $MJOBS
-	execute make install
-	sed "s/-lx265/-lx265 -lstdc++/g" "$WORKSPACE/lib/pkgconfig/x265.pc" > "$WORKSPACE/lib/pkgconfig/x265.pc.tmp"
-	mv "$WORKSPACE/lib/pkgconfig/x265.pc.tmp" "$WORKSPACE/lib/pkgconfig/x265.pc"
-
-	build_done "x265"
-fi
-CONFIGURE_OPTIONS+=("--enable-libx265")
-
 if build "fdk_aac"; then
 	download "https://sourceforge.net/projects/opencore-amr/files/fdk-aac/fdk-aac-2.0.1.tar.gz/download?use_mirror=gigenet" "fdk-aac-2.0.1.tar.gz"
 	execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
@@ -405,17 +430,10 @@ if build "fdk_aac"; then
 fi
 CONFIGURE_OPTIONS+=("--enable-libfdk-aac")
 
-if build "av1"; then
-	download "https://aomedia.googlesource.com/aom/+archive/0f5cd05bb3d6209e2583ce682d1acd8e21ae24b8.tar.gz" "av1.tar.gz" "av1"
-	make_dir "$PACKAGES"/aom_build
-	cd "$PACKAGES"/aom_build || exit
-	execute cmake -DENABLE_TESTS=0 -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" "$PACKAGES"/av1
-	execute make -j $MJOBS
-	execute make install
 
-	build_done "av1"
-fi
-CONFIGURE_OPTIONS+=("--enable-libaom")
+##
+## other library
+##
 
 if build "zlib"; then
 	download "https://www.zlib.net/zlib-1.2.11.tar.gz"
@@ -442,10 +460,15 @@ if build "srt"; then
 	export OPENSSL_INCLUDE_DIR="${WORKSPACE}"/include/
 	execute cmake . -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DENABLE_APPS=OFF -DUSE_STATIC_LIBSTDCXX=ON
 	execute make install
+	sed -i 's/-lgcc_s/-lgcc_eh/g' "$WORKSPACE/lib/pkgconfig/srt.pc"
 
 	build_done "srt"
 fi
 CONFIGURE_OPTIONS+=("--enable-libsrt")
+
+##
+## HWaccel library
+##
 
 if command -v nvcc > /dev/null ; then
 	if build "nv-codec"; then
@@ -456,10 +479,20 @@ if command -v nvcc > /dev/null ; then
 	fi
 	CFLAGS+=" -I/usr/local/cuda/include"
 	LDFLAGS+=" -L/usr/local/cuda/lib64"
-	CONFIGURE_OPTIONS+=("--enable-cuda-nvcc" "--enable-cuvid" "--enable-nvenc" "--enable-libnpp" "--enable-cuda-llvm")
+	CONFIGURE_OPTIONS+=("--enable-cuda-nvcc" "--enable-cuvid" "--enable-nvenc" "--enable-cuda-llvm")
+
+	if [ -z $LDEXEFLAGS ]; then
+		CONFIGURE_OPTIONS+=("--enable-libnpp") # Only libnpp cannot be static link.
+	fi
+
 	# https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
 	CONFIGURE_OPTIONS+=("--nvccflags=-gencode arch=compute_52,code=sm_52")
 fi
+
+
+##
+## FFmpeg
+##
 
 build "ffmpeg"
 download "https://ffmpeg.org/releases/ffmpeg-4.3.1.tar.bz2"
