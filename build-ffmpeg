@@ -2,13 +2,15 @@
 
 # https://github.com/markus-perl/ffmpeg-build-script
 
+PROGNAME=$(basename $0)
 VERSION=1.17
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
 WORKSPACE="$CWD/workspace"
 CFLAGS="-I$WORKSPACE/include"
 LDFLAGS="-L$WORKSPACE/lib"
-EXTRALIBS="-lpthread -lm"
+LDEXEFLAGS=""
+EXTRALIBS="-lpthread -lm -lz"
 CONFIGURE_OPTIONS=()
 
 # Speed up the process
@@ -25,11 +27,10 @@ else
 fi
 
 make_dir () {
-	if [ ! -d "$1" ]; then
-		if ! mkdir "$1"; then
-			printf "\n Failed to create dir %s" "$1";
-			exit 1
-		fi
+	remove_dir "$1"
+	if ! mkdir "$1"; then
+		printf "\n Failed to create dir %s" "$1";
+		exit 1
 	fi
 }
 
@@ -40,25 +41,28 @@ remove_dir () {
 }
 
 download () {
+	# download url [filename[dirname]]
 
-	DOWNLOAD_PATH=$PACKAGES;
+	DOWNLOAD_PATH="$PACKAGES"
+	DOWNLOAD_FILE=${2:-"${1##*/}"}
 
-	if [ -n "$3" ]; then
-		mkdir -p "$PACKAGES"/"$3"
-		DOWNLOAD_PATH=$PACKAGES/$3
-	fi;
+	if [[ "$DOWNLOAD_FILE" =~ "tar." ]]; then
+		TARGETDIR="${DOWNLOAD_FILE%.*}"
+		TARGETDIR=${3:-"${TARGETDIR%.*}"}
+	else
+		TARGETDIR=${3:-"${DOWNLOAD_FILE%.*}"}
+	fi
 
-	if [ ! -f "$DOWNLOAD_PATH/$2" ]; then
-
+	if [ ! -f "$DOWNLOAD_PATH/$DOWNLOAD_FILE" ]; then
 		echo "Downloading $1"
-		curl -L --silent -o "$DOWNLOAD_PATH/$2" "$1"
+		curl -L --silent -o "$DOWNLOAD_PATH/$DOWNLOAD_FILE" "$1"
 
 		EXITCODE=$?
 		if [ $EXITCODE -ne 0 ]; then
 			echo ""
 			echo "Failed to download $1. Exitcode $EXITCODE. Retrying in 10 seconds";
 			sleep 10
-			curl -L --silent -o "$DOWNLOAD_PATH/$2" "$1"
+			curl -L --silent -o "$DOWNLOAD_PATH/$DOWNLOAD_FILE" "$1"
 		fi
 
 		EXITCODE=$?
@@ -69,13 +73,27 @@ download () {
 		fi
 
 		echo "... Done"
+	else
+		echo "$DOWNLOAD_FILE has already downloaded."
+	fi
 
-		if ! tar -xvf "$DOWNLOAD_PATH/$2" -C "$DOWNLOAD_PATH" 2>/dev/null >/dev/null; then
-			echo "Failed to extract $2";
+	make_dir "$DOWNLOAD_PATH/$TARGETDIR"
+
+	if [ -n "$3" ]; then
+		if ! tar -xvf "$DOWNLOAD_PATH/$DOWNLOAD_FILE" -C "$DOWNLOAD_PATH/$TARGETDIR" 2>/dev/null >/dev/null; then
+			echo "Failed to extract $DOWNLOAD_FILE";
 			exit 1
 		fi
-
+	else
+		if ! tar -xvf "$DOWNLOAD_PATH/$DOWNLOAD_FILE" -C "$DOWNLOAD_PATH/$TARGETDIR" --strip-components 1 2>/dev/null >/dev/null; then
+			echo "Failed to extract $DOWNLOAD_FILE";
+			exit 1
+		fi
 	fi
+
+	echo "Extracted $DOWNLOAD_FILE";
+
+	cd "$DOWNLOAD_PATH/$TARGETDIR" || (echo "Error has occurred." ; exit 1)
 }
 
 execute () {
@@ -118,37 +136,76 @@ build_done () {
 	touch "$PACKAGES/$1.done"
 }
 
-echo "ffmpeg-build-script v$VERSION"
-echo "========================="
-echo ""
-
-case "$1" in
-"--cleanup")
+cleanup () {
 	remove_dir "$PACKAGES"
 	remove_dir "$WORKSPACE"
 	echo "Cleanup done."
 	echo ""
-	exit 0
-	;;
-"--build")
+}
 
-	;;
-*)
-	echo "Usage: $0"
-	echo "   --build: start building process"
-	echo "   --cleanup: remove all working dirs"
-	echo "   --help: show this help"
+usage () {
+	echo "Usage: $PROGNAME [OPTIONS]"
+	echo "Options:"
+	echo "  -h, --help"
+	echo "      --version"
+	echo "  -b, --build : start building process"
+	echo "  -c, --cleanup : remove all working dirs"
+	echo "  -f, --full-static : complete static build of the ffmpeg (eg. glibc, pthreads etc...)"
 	echo ""
+}
+
+while (( $# > 0 )); do
+	case $1 in
+		-h | --help)
+			usage
+			exit 0
+			;;
+		--version)
+			echo $VERSION
+			exit 0
+			;;
+		-*)
+			if [[ "$1" == "--build" || "$1" =~ 'b' ]]; then
+				bflag='-b'
+			fi
+			if [[ "$1" == "--cleanup" || "$1" =~ 'c' ]]; then
+				cflag='-c'
+				cleanup
+			fi
+			if [[ "$1" == "--full-static" || "$1" =~ 'f' ]]; then
+				LDEXEFLAGS="-static"
+			fi
+			shift
+			;;
+		*)
+			usage
+			exit 1
+			;;
+	esac
+done
+
+if [ -z $bflag ]; then
+	if [ -z $cflag ]; then
+		usage
+		exit 1
+	fi
 	exit 0
-	;;
-esac
+fi
+
+echo "ffmpeg-build-script v$VERSION"
+echo "========================="
+echo ""
 
 echo "Using $MJOBS make jobs simultaneously."
 
-make_dir "$PACKAGES"
-make_dir "$WORKSPACE"
+if [ -n $LDEXEFLAGS ]; then
+	echo "Start the build in full static mode."
+fi
 
-export PATH=${WORKSPACE}/bin:$PATH
+mkdir -p "$PACKAGES"
+mkdir -p "$WORKSPACE"
+
+export PATH="${WORKSPACE}/bin:$PATH"
 
 if ! command_exists "make"; then
 	echo "make not installed.";
@@ -166,8 +223,7 @@ if ! command_exists "curl"; then
 fi
 
 if build "yasm"; then
-	download "https://www.tortall.net/projects/yasm/releases/yasm-1.3.0.tar.gz" "yasm-1.3.0.tar.gz"
-	cd "$PACKAGES"/yasm-1.3.0 || exit
+	download "https://www.tortall.net/projects/yasm/releases/yasm-1.3.0.tar.gz"
 	execute ./configure --prefix="${WORKSPACE}"
 	execute make -j $MJOBS
 	execute make install
@@ -175,8 +231,7 @@ if build "yasm"; then
 fi
 
 if build "nasm"; then
-	download "https://www.nasm.us/pub/nasm/releasebuilds/2.14.02/nasm-2.14.02.tar.gz" "nasm.tar.gz"
-	cd "$PACKAGES"/nasm-2.14.02 || exit
+	download "https://www.nasm.us/pub/nasm/releasebuilds/2.14.02/nasm-2.14.02.tar.gz"
 	execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
 	execute make -j $MJOBS
 	execute make install
@@ -184,19 +239,17 @@ if build "nasm"; then
 fi
 
 if build "opencore"; then
-	download "https://deac-riga.dl.sourceforge.net/project/opencore-amr/opencore-amr/opencore-amr-0.1.5.tar.gz" "opencore-amr-0.1.5.tar.gz"
-	cd "$PACKAGES"/opencore-amr-0.1.5 || exit
+	download "https://deac-riga.dl.sourceforge.net/project/opencore-amr/opencore-amr/opencore-amr-0.1.5.tar.gz"
 	execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
 	execute make -j $MJOBS
 	execute make install
 
-	CONFIGURE_OPTIONS+=("--enable-libopencore_amrnb" "--enable-libopencore_amrwb")
 	build_done "opencore"
 fi
+CONFIGURE_OPTIONS+=("--enable-libopencore_amrnb" "--enable-libopencore_amrwb")
 
 if build "libvpx"; then
 	download "https://github.com/webmproject/libvpx/archive/v1.8.1.tar.gz" "libvpx-1.8.1.tar.gz"
-	cd "$PACKAGES"/libvpx-1.8.1 || exit
 
 	if [[ "$OSTYPE" == "darwin"* ]]; then
 		echo "Applying Darwin patch"
@@ -208,36 +261,33 @@ if build "libvpx"; then
 	execute make -j $MJOBS
 	execute make install
 
-	CONFIGURE_OPTIONS+=("--enable-libvpx")
 	build_done "libvpx"
 fi
+CONFIGURE_OPTIONS+=("--enable-libvpx")
 
 if build "lame"; then
-	download "https://netcologne.dl.sourceforge.net/project/lame/lame/3.100/lame-3.100.tar.gz" "lame-3.100.tar.gz"
-	cd "$PACKAGES"/lame-3.100 || exit
+	download "https://netcologne.dl.sourceforge.net/project/lame/lame/3.100/lame-3.100.tar.gz"
 	execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
 	execute make -j $MJOBS
 	execute make install
 
-	CONFIGURE_OPTIONS+=("--enable-libmp3lame")
 	build_done "lame"
 fi
+CONFIGURE_OPTIONS+=("--enable-libmp3lame")
 
 if build "opus"; then
-	download "https://archive.mozilla.org/pub/opus/opus-1.3.1.tar.gz" "opus-1.3.1.tar.gz"
-	cd "$PACKAGES"/opus-1.3.1 || exit
+	download "https://archive.mozilla.org/pub/opus/opus-1.3.1.tar.gz"
 	execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
 	execute make -j $MJOBS
 	execute make install
 
-	CONFIGURE_OPTIONS+=("--enable-libopus")
 	build_done "opus"
 fi
+CONFIGURE_OPTIONS+=("--enable-libopus")
 
 if build "xvidcore"; then
-	download "https://downloads.xvid.com/downloads/xvidcore-1.3.7.tar.gz" "xvidcore-1.3.7.tar.gz"
-	cd "$PACKAGES"/xvidcore  || exit
-	cd build/generic  || exit
+	download "https://downloads.xvid.com/downloads/xvidcore-1.3.7.tar.gz"
+	cd build/generic || exit
 	execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
 	execute make -j $MJOBS
 	execute make install
@@ -250,13 +300,13 @@ if build "xvidcore"; then
 		execute rm "${WORKSPACE}"/lib/libxvidcore.so*
 	fi
 
-	CONFIGURE_OPTIONS+=("--enable-libxvid")
 	build_done "xvidcore"
 fi
+CONFIGURE_OPTIONS+=("--enable-libxvid")
+
 
 if build "x264"; then
-	download "https://code.videolan.org/videolan/x264/-/archive/stable/x264-stable.tar.bz2" "last_x264.tar.bz2"
-	cd "$PACKAGES"/x264-stable || exit
+	download "https://code.videolan.org/videolan/x264/-/archive/stable/x264-stable.tar.bz2"
 
 	if [[ "$OSTYPE" == "linux-gnu" ]]; then
 		execute ./configure --prefix="${WORKSPACE}" --enable-static --enable-pic CXXFLAGS="-fPIC"
@@ -268,13 +318,12 @@ if build "x264"; then
 	execute make install
 	execute make install-lib-static
 
-	CONFIGURE_OPTIONS+=("--enable-libx264")
 	build_done "x264"
 fi
+CONFIGURE_OPTIONS+=("--enable-libx264")
 
 if build "libogg"; then
-	download "https://ftp.osuosl.org/pub/xiph/releases/ogg/libogg-1.3.3.tar.gz" "libogg-1.3.3.tar.gz"
-	cd "$PACKAGES"/libogg-1.3.3 || exit
+	download "https://ftp.osuosl.org/pub/xiph/releases/ogg/libogg-1.3.3.tar.gz"
 	execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
 	execute make -j $MJOBS
 	execute make install
@@ -282,19 +331,17 @@ if build "libogg"; then
 fi
 
 if build "libvorbis"; then
-	download "https://ftp.osuosl.org/pub/xiph/releases/vorbis/libvorbis-1.3.6.tar.gz" "libvorbis-1.3.6.tar.gz"
-	cd "$PACKAGES"/libvorbis-1.3.6 || exit
+	download "https://ftp.osuosl.org/pub/xiph/releases/vorbis/libvorbis-1.3.6.tar.gz"
 	execute ./configure --prefix="${WORKSPACE}" --with-ogg-libraries="${WORKSPACE}"/lib --with-ogg-includes="${WORKSPACE}"/include/ --enable-static --disable-shared --disable-oggtest
 	execute make -j $MJOBS
 	execute make install
 
-	CONFIGURE_OPTIONS+=("--enable-libvorbis")
 	build_done "libvorbis"
 fi
+CONFIGURE_OPTIONS+=("--enable-libvorbis")
 
 if build "libtheora"; then
-	download "https://ftp.osuosl.org/pub/xiph/releases/theora/libtheora-1.1.1.tar.gz" "libtheora-1.1.1.tar.bz"
-	cd "$PACKAGES"/libtheora-1.1.1 || exit
+	download "https://ftp.osuosl.org/pub/xiph/releases/theora/libtheora-1.1.1.tar.gz"
 	sed "s/-fforce-addr//g" configure > configure.patched
 	chmod +x configure.patched
 	mv configure.patched configure
@@ -302,13 +349,12 @@ if build "libtheora"; then
 	execute make -j $MJOBS
 	execute make install
 
-	CONFIGURE_OPTIONS+=("--enable-libtheora")
 	build_done "libtheora"
 fi
+CONFIGURE_OPTIONS+=("--enable-libtheora")
 
 if build "pkg-config"; then
-	download "https://pkgconfig.freedesktop.org/releases/pkg-config-0.29.2.tar.gz" "pkg-config-0.29.2.tar.gz"
-	cd "$PACKAGES"/pkg-config-0.29.2 || exit
+	download "https://pkgconfig.freedesktop.org/releases/pkg-config-0.29.2.tar.gz"
 	execute ./configure --silent --prefix="${WORKSPACE}" --with-pc-path="${WORKSPACE}"/lib/pkgconfig --with-internal-glib
 	execute make -j $MJOBS
 	execute make install
@@ -316,8 +362,7 @@ if build "pkg-config"; then
 fi
 
 if build "cmake"; then
-	download "https://cmake.org/files/v3.15/cmake-3.15.4.tar.gz" "cmake-3.15.4.tar.gz"
-	cd "$PACKAGES"/cmake-3.15.4  || exit
+	download "https://cmake.org/files/v3.15/cmake-3.15.4.tar.gz"
 	rm Modules/FindJava.cmake
 	perl -p -i -e "s/get_filename_component.JNIPATH/#get_filename_component(JNIPATH/g" Tests/CMakeLists.txt
 	perl -p -i -e "s/get_filename_component.JNIPATH/#get_filename_component(JNIPATH/g" Tests/CMakeLists.txt
@@ -328,19 +373,17 @@ if build "cmake"; then
 fi
 
 if build "vid_stab"; then
-	download "https://github.com/georgmartius/vid.stab/archive/v1.1.0.tar.gz" "georgmartius-vid.stab-v1.1.0-0-g60d65da.tar.tgz"
-	cd "$PACKAGES"/vid.stab-1.1.0 || exit
+	download "https://github.com/georgmartius/vid.stab/archive/v1.1.0.tar.gz" "vid.stab-1.1.0.tar.gz"
 	execute cmake -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" -DUSE_OMP=OFF -DENABLE_SHARED:bool=off .
 	execute make
 	execute make install
 
-	CONFIGURE_OPTIONS+=("--enable-libvidstab")
 	build_done "vid_stab"
 fi
+CONFIGURE_OPTIONS+=("--enable-libvidstab")
 
 if build "x265"; then
 	download "https://github.com/videolan/x265/archive/3.4.tar.gz" "x265-3.4.tar.gz"
-	cd "$PACKAGES"/x265-*/ || exit
 	cd source || exit
 	execute cmake -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" -DENABLE_SHARED:bool=off .
 	execute make -j $MJOBS
@@ -348,37 +391,34 @@ if build "x265"; then
 	sed "s/-lx265/-lx265 -lstdc++/g" "$WORKSPACE/lib/pkgconfig/x265.pc" > "$WORKSPACE/lib/pkgconfig/x265.pc.tmp"
 	mv "$WORKSPACE/lib/pkgconfig/x265.pc.tmp" "$WORKSPACE/lib/pkgconfig/x265.pc"
 
-	CONFIGURE_OPTIONS+=("--enable-libx265")
 	build_done "x265"
 fi
+CONFIGURE_OPTIONS+=("--enable-libx265")
 
 if build "fdk_aac"; then
 	download "https://sourceforge.net/projects/opencore-amr/files/fdk-aac/fdk-aac-2.0.1.tar.gz/download?use_mirror=gigenet" "fdk-aac-2.0.1.tar.gz"
-	cd "$PACKAGES"/fdk-aac-2.0.1 || exit
 	execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
 	execute make -j $MJOBS
 	execute make install
 
-	CONFIGURE_OPTIONS+=("--enable-libfdk-aac")
 	build_done "fdk_aac"
 fi
+CONFIGURE_OPTIONS+=("--enable-libfdk-aac")
 
 if build "av1"; then
 	download "https://aomedia.googlesource.com/aom/+archive/0f5cd05bb3d6209e2583ce682d1acd8e21ae24b8.tar.gz" "av1.tar.gz" "av1"
-	cd "$PACKAGES"/av1 || exit
-	mkdir -p "$PACKAGES"/aom_build
+	make_dir "$PACKAGES"/aom_build
 	cd "$PACKAGES"/aom_build || exit
 	execute cmake -DENABLE_TESTS=0 -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" "$PACKAGES"/av1
 	execute make -j $MJOBS
 	execute make install
 
-	CONFIGURE_OPTIONS+=("--enable-libaom")
 	build_done "av1"
 fi
+CONFIGURE_OPTIONS+=("--enable-libaom")
 
 if build "zlib"; then
-	download "https://www.zlib.net/zlib-1.2.11.tar.gz" "zlib-1.2.11.tar.gz"
-	cd "$PACKAGES"/zlib-1.2.11 || exit
+	download "https://www.zlib.net/zlib-1.2.11.tar.gz"
 	execute ./configure --static --prefix="${WORKSPACE}"
 	execute make -j $MJOBS
 	execute make install
@@ -386,34 +426,31 @@ if build "zlib"; then
 fi
 
 if build "openssl"; then
-	download "https://www.openssl.org/source/openssl-1.1.1g.tar.gz" "openssl-1.1.1g.tar.gz"
-	cd "$PACKAGES"/openssl-1.1.1g || exit
+	download "https://www.openssl.org/source/openssl-1.1.1g.tar.gz"
 	execute ./config --prefix="${WORKSPACE}" --openssldir="${WORKSPACE}" --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib no-shared zlib
 	execute make -j $MJOBS
 	execute make install
 
-	CONFIGURE_OPTIONS+=("--enable-openssl")
 	build_done "openssl"
 fi
+CONFIGURE_OPTIONS+=("--enable-openssl")
 
 if build "srt"; then
-	download "https://github.com/Haivision/srt/archive/v1.4.1.tar.gz" "v1.4.1.tar.gz"
-	cd "$PACKAGES"/srt-1.4.1 || exit
+	download "https://github.com/Haivision/srt/archive/v1.4.1.tar.gz" "srt-1.4.1.tar.gz"
 	export OPENSSL_ROOT_DIR="${WORKSPACE}"
 	export OPENSSL_LIB_DIR="${WORKSPACE}"/lib
 	export OPENSSL_INCLUDE_DIR="${WORKSPACE}"/include/
-	execute cmake "$PACKAGES"/srt-1.4.1 -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DENABLE_APPS=OFF
+	execute cmake . -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DENABLE_APPS=OFF -DUSE_STATIC_LIBSTDCXX=ON
 	execute make install
 
-	CONFIGURE_OPTIONS+=("--enable-libsrt")
 	build_done "srt"
 fi
+CONFIGURE_OPTIONS+=("--enable-libsrt")
 
 if command -v nvcc > /dev/null ; then
 	if build "nv-codec"; then
-		download "https://github.com/FFmpeg/nv-codec-headers/releases/download/n10.0.26.0/nv-codec-headers-10.0.26.0.tar.gz" "nv-codec-headers-10.0.26.0.tar.gz"
-		cd "$PACKAGES"/nv-codec-headers-10.0.26.0 || exit
-		sed -i  "s#PREFIX = /usr/local#PREFIX = ${WORKSPACE}#g" "$PACKAGES"/nv-codec-headers-10.0.26.0/Makefile
+		download "https://github.com/FFmpeg/nv-codec-headers/releases/download/n10.0.26.0/nv-codec-headers-10.0.26.0.tar.gz"
+		sed -i  "s#PREFIX = /usr/local#PREFIX = ${WORKSPACE}#g" Makefile
 		execute make install
 		build_done "nv-codec"
 	fi
@@ -425,8 +462,7 @@ if command -v nvcc > /dev/null ; then
 fi
 
 build "ffmpeg"
-download "https://ffmpeg.org/releases/ffmpeg-4.3.1.tar.bz2" "ffmpeg-4.3.1.tar.bz2"
-cd "$PACKAGES"/ffmpeg-4.3.1/ || exit
+download "https://ffmpeg.org/releases/ffmpeg-4.3.1.tar.bz2"
 # shellcheck disable=SC2086
 ./configure "${CONFIGURE_OPTIONS[@]}" \
 	--disable-debug \
@@ -440,6 +476,7 @@ cd "$PACKAGES"/ffmpeg-4.3.1/ || exit
 	--enable-small \
 	--enable-version3 \
 	--extra-cflags="${CFLAGS}" \
+	--extra-ldexeflags="${LDEXEFLAGS}" \
 	--extra-ldflags="${LDFLAGS}" \
 	--extra-libs="${EXTRALIBS}" \
 	--pkgconfigdir="$WORKSPACE/lib/pkgconfig" \
