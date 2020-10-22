@@ -20,7 +20,12 @@ jobs:
           while sleep 300; do echo "=====[ $SECONDS seconds still running ]====="; done &
           SKIPINSTALL=yes VERBOSE=yes ./build-ffmpeg --build
           kill %1
-
+      - name: check shared library
+        run: |
+          ldd ./workspace/bin/ffmpeg
+      - name: test run ffmepg
+        run: |
+          ./workspace/bin/ffmpeg -buildconf
       - name: clean up
         run: |
           ./build-ffmpeg --cleanup
@@ -37,7 +42,12 @@ jobs:
           while sleep 300; do echo "=====[ $SECONDS seconds still running ]====="; done &
           SKIPINSTALL=yes VERBOSE=yes ./build-ffmpeg --build
           kill %1
-
+      - name: check shared library
+        run: |
+          otool -L ./workspace/bin/ffmpeg
+      - name: test run ffmepg
+        run: |
+          ./workspace/bin/ffmpeg -buildconf
       - name: clean up
         run: |
           ./build-ffmpeg --cleanup
@@ -53,19 +63,16 @@ jobs:
         id: ubuntu_pull
         run: |
           docker pull ubuntu:20.04
-
       - name: run if ubuntu_pull failed
         if: failure() && steps.ubuntu_pull.outcome == 'failure'
         run: |
           docker pull ubuntu:20.04
-
       - name: build ffmpeg
         run: |
           docker build -t ffmpeg:ubuntu -f Dockerfile .
-
       - name: test run ffmepg
         run: |
-          docker run --rm ffmpeg:ubuntu
+          docker run --rm ffmpeg:ubuntu -buildconf
 
   build-cuda-docker:
     name: build in docker with cuda
@@ -78,16 +85,39 @@ jobs:
         id: cuda_ubuntu_pull
         run: |
           docker pull nvidia/cuda:11.1-devel-ubuntu20.04
-
+          docker pull nvidia/cuda:11.1-runtime-ubuntu20.04
       - name: run if cuda_ubuntu_pull failed
         if: failure() && steps.cuda_ubuntu_pull.outcome == 'failure'
         run: |
-            docker pull nvidia/cuda:11.1-devel-ubuntu20.04
-
+          docker pull nvidia/cuda:11.1-devel-ubuntu20.04
+          docker pull nvidia/cuda:11.1-runtime-ubuntu20.04
       - name: build ffmpeg
         run: |
           docker build -t ffmpeg:cuda -f cuda-ubuntu.dockerfile .
-
       - name: test run ffmepg
         run: |
-          docker run --rm ffmpeg:cuda
+          docker run --rm ffmpeg:cuda -buildconf
+
+  build-full-static:
+    name: build full static linking in docker
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: pull base image
+        id: cuda_ubuntu_centos_pull
+        run: |
+          docker pull nvidia/cuda:11.1-devel-ubuntu20.04
+          docker pull centos:8
+      - name: run if cuda_ubuntu_centos_pull failed
+        if: failure() && steps.cuda_ubuntu_centos_pull.outcome == 'failure'
+        run: |
+          docker pull nvidia/cuda:11.1-devel-ubuntu20.04
+          docker pull centos:8
+      - name: build ffmpeg
+        run: |
+          docker build -t ffmpeg:cuda-static -f full-static.dockerfile .
+      - name: test run ffmepg
+        run: |
+          docker run --rm ffmpeg:cuda-static -buildconf

@@ -62,10 +62,10 @@ Requirements Linux
 
 ```
 # Debian and Ubuntu
-sudo apt-get install build-essential curl g++
+$ sudo apt-get install build-essential curl g++
 
 # Fedora
-sudo dnf install @development-tools
+$ sudo dnf install @development-tools
 ```
 
 Installation
@@ -76,7 +76,7 @@ Installation
 Open your command line and run (needs curl to be installed):
 
 ```bash
-bash <(curl -s "https://raw.githubusercontent.com/markus-perl/ffmpeg-build-script/master/web-install.sh?v1")
+$ bash <(curl -s "https://raw.githubusercontent.com/markus-perl/ffmpeg-build-script/master/web-install.sh?v1")
 ```
 This command downloads the build script and automatically starts the build process.
 
@@ -84,28 +84,27 @@ This command downloads the build script and automatically starts the build proce
 
 #### Default - Without CUDA
 ```bash
-git clone https://github.com/markus-perl/ffmpeg-build-script.git
-cd ffmpeg-build-script
-docker build --tag=ffmpeg .
-docker run ffmpeg -i https://files.coconut.co.s3.amazonaws.com/test.mp4 -f webm -c:v libvpx -c:a libvorbis - > /tmp/test.mp4
+$ git clone https://github.com/markus-perl/ffmpeg-build-script.git
+$ cd ffmpeg-build-script
+$ sudo docker build --tag=ffmpeg .
+$ docker run ffmpeg -i https://files.coconut.co.s3.amazonaws.com/test.mp4 -f webm -c:v libvpx -c:a libvorbis - > /tmp/test.mp4
 ```
 
 #### With CUDA
 ```bash
-git clone https://github.com/markus-perl/ffmpeg-build-script.git
-cd ffmpeg-build-script
-docker build --tag=ffmpeg-cuda -f cuda-ubuntu.dockerfile .
-docker run --gpus all ffmpeg-cuda -hwaccel cuvid -c:v h264_cuvid -i https://files.coconut.co.s3.amazonaws.com/test.mp4 -c:v hevc_nvenc -vf scale_npp=-1:1080 - > /tmp/test.mp4
+$ git clone https://github.com/markus-perl/ffmpeg-build-script.git
+$ cd ffmpeg-build-script
+$ sudo docker build --tag=ffmpeg-cuda -f cuda-ubuntu.dockerfile .
+$ sudo docker run --gpus all ffmpeg-cuda -hwaccel cuvid -c:v h264_cuvid -i https://files.coconut.co.s3.amazonaws.com/test.mp4 -c:v hevc_nvenc -vf scale_npp=-1:1080 - > /tmp/test.mp4
 ```
 
 ### Common installation
 
 ```bash
-git clone https://github.com/markus-perl/ffmpeg-build-script.git
-cd ffmpeg-build-script
-./build-ffmpeg --help
+$ git clone https://github.com/markus-perl/ffmpeg-build-script.git
+$ cd ffmpeg-build-script
+$ ./build-ffmpeg --help
 ```
-
 
 ### Cuda installation
 
@@ -121,10 +120,21 @@ Usage
 ------
 
 ```bash
-./build-ffmpeg --help       Display usage information
-./build-ffmpeg --build      Starts the build process
-./build-ffmpeg --cleanup    Remove all working dirs
+Usage: build-ffmpeg [OPTIONS]
+Options:
+  -h, --help          Display usage information
+      --version       Display version information
+  -b, --build         Starts the build process
+  -c, --cleanup       Remove all working dirs
+  -f, --full-static   Complete static build of ffmpeg (eg. glibc, pthreads etc...) **not recommend**
+                      Note: Because of the NSS (Name Service Switch), glibc does not recommend static links.
 ```
+
+## Notes of static link
+- Because of the NSS (Name Service Switch), glibc does **not recommend** static links.
+  See detail below: https://sourceware.org/glibc/wiki/FAQ#Even_statically_linked_programs_need_some_shared_libraries_which_is_not_acceptable_for_me.__What_can_I_do.3F
+
+- The libnpp in the CUDA SDK cannot be statically linked.
 
 Contact
 -------

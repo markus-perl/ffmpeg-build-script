@@ -10,11 +10,9 @@ RUN apt-get update \
 WORKDIR /app
 COPY ./build-ffmpeg /app/build-ffmpeg
 
-RUN SKIPINSTALL=yes /app/build-ffmpeg --build
+RUN SKIPINSTALL=yes /app/build-ffmpeg --build --full-static
 
-FROM nvidia/cuda:11.1-runtime-ubuntu20.04
-
-ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
+FROM centos:8
 
 COPY --from=build /app/workspace/bin/ffmpeg /usr/bin/ffmpeg
 COPY --from=build /app/workspace/bin/ffprobe /usr/bin/ffprobe
