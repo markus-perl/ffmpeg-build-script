@@ -285,7 +285,7 @@ fi
 CONFIGURE_OPTIONS+=("--enable-libx264")
 
 if build "x265"; then
-	download "https://github.com/videolan/x265/archive/3.4.tar.gz" "x265-3.4.tar.gz"
+	download "https://github.com/videolan/x265/archive/3.5.tar.gz" "x265-3.5.tar.gz"
 	cd source || exit
 	execute cmake -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" -DENABLE_SHARED:bool=off -DSTATIC_LINK_CRT:BOOL=ON -DENABLE_CLI:BOOL=OFF .
 	execute make -j $MJOBS
@@ -296,7 +296,7 @@ fi
 CONFIGURE_OPTIONS+=("--enable-libx265")
 
 if build "libvpx"; then
-	download "https://github.com/webmproject/libvpx/archive/v1.8.1.tar.gz" "libvpx-1.8.1.tar.gz"
+	download "https://github.com/webmproject/libvpx/archive/v1.9.0.tar.gz" "libvpx-1.9.0.tar.gz"
 
 	if [[ "$OSTYPE" == "darwin"* ]]; then
 		echo "Applying Darwin patch"
@@ -343,7 +343,7 @@ CONFIGURE_OPTIONS+=("--enable-libvidstab")
 
 
 if build "av1"; then
-	download "https://aomedia.googlesource.com/aom/+archive/0f5cd05bb3d6209e2583ce682d1acd8e21ae24b8.tar.gz" "av1.tar.gz" "av1"
+	download "https://aomedia.googlesource.com/aom/+archive/430d58446e1f71ec2283af0d6c1879bc7a3553dd.tar.gz" "av1.tar.gz" "av1"
 	make_dir "$PACKAGES"/aom_build
 	cd "$PACKAGES"/aom_build || exit
 	execute cmake -DENABLE_TESTS=0 -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" "$PACKAGES"/av1
@@ -444,7 +444,7 @@ if build "zlib"; then
 fi
 
 if build "openssl"; then
-	download "https://www.openssl.org/source/openssl-1.1.1g.tar.gz"
+	download "https://www.openssl.org/source/openssl-1.1.1h.tar.gz"
 	execute ./config --prefix="${WORKSPACE}" --openssldir="${WORKSPACE}" --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib no-shared zlib
 	execute make -j $MJOBS
 	execute make install
