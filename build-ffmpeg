@@ -301,8 +301,8 @@ CONFIGURE_OPTIONS+=("--enable-libx264")
 
 if build "x265"; then
 	download "https://github.com/videolan/x265/archive/Release_3.5.tar.gz" "x265-3.5.tar.gz"
-	cd build/linux || exit
-	execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=off -DSTATIC_LINK_CRT=ON ../../source
+	cd source || exit
+	execute cmake -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" -DENABLE_SHARED:bool=off -DSTATIC_LINK_CRT:BOOL=ON -DENABLE_CLI:BOOL=OFF .
 	execute make -j $MJOBS
 	execute make install
 
