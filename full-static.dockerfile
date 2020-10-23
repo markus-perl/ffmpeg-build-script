@@ -3,7 +3,7 @@ FROM nvidia/cuda:11.1-devel-ubuntu20.04 AS build
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
 
 RUN apt-get update \
-    && apt-get -y --no-install-recommends install build-essential curl ca-certificates libz-dev \
+    && apt-get -y --no-install-recommends install build-essential curl ca-certificates \
     && apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/* \
     && update-ca-certificates
 

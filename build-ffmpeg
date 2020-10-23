@@ -236,7 +236,7 @@ if build "yasm"; then
 fi
 
 if build "nasm"; then
-	download "https://www.nasm.us/pub/nasm/releasebuilds/2.14.02/nasm-2.14.02.tar.gz"
+	download "https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/nasm-2.15.05.tar.xz"
 	execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
 	execute make -j $MJOBS
 	execute make install
@@ -251,12 +251,27 @@ if build "pkg-config"; then
 	build_done "pkg-config"
 fi
 
+if build "zlib"; then
+	download "https://www.zlib.net/zlib-1.2.11.tar.gz"
+	execute ./configure --static  --prefix="${WORKSPACE}"
+	execute make -j $MJOBS
+	execute make install
+	build_done "zlib"
+fi
+
+if build "openssl"; then
+	download "https://www.openssl.org/source/openssl-1.1.1h.tar.gz"
+	execute ./config --prefix="${WORKSPACE}" --openssldir="${WORKSPACE}" --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib no-shared zlib
+	execute make -j $MJOBS
+	execute make install
+
+	build_done "openssl"
+fi
+CONFIGURE_OPTIONS+=("--enable-openssl")
+
 if build "cmake"; then
-	download "https://cmake.org/files/v3.15/cmake-3.15.4.tar.gz"
-	rm Modules/FindJava.cmake
-	perl -p -i -e "s/get_filename_component.JNIPATH/#get_filename_component(JNIPATH/g" Tests/CMakeLists.txt
-	perl -p -i -e "s/get_filename_component.JNIPATH/#get_filename_component(JNIPATH/g" Tests/CMakeLists.txt
-	execute ./configure --prefix="${WORKSPACE}"
+	download "https://cmake.org/files/v3.18/cmake-3.18.4.tar.gz"
+	execute ./configure --prefix="${WORKSPACE}" --system-zlib
 	execute make -j $MJOBS
 	execute make install
 	build_done "cmake"
@@ -286,11 +301,15 @@ CONFIGURE_OPTIONS+=("--enable-libx264")
 
 if build "x265"; then
 	download "https://github.com/videolan/x265/archive/Release_3.5.tar.gz" "x265-3.5.tar.gz"
-	cd source || exit
-	execute cmake -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" -DENABLE_SHARED:bool=off -DSTATIC_LINK_CRT:BOOL=ON -DENABLE_CLI:BOOL=OFF .
+	cd build/linux || exit
+	execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=off -DSTATIC_LINK_CRT=ON ../../source
 	execute make -j $MJOBS
 	execute make install
-	sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "$WORKSPACE/lib/pkgconfig/x265.pc" #The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
+
+	if [ -n $LDEXEFLAGS ]; then
+		sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "${WORKSPACE}/lib/pkgconfig/x265.pc" # The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
+	fi
+
 	build_done "x265"
 fi
 CONFIGURE_OPTIONS+=("--enable-libx265")
@@ -435,24 +454,6 @@ CONFIGURE_OPTIONS+=("--enable-libfdk-aac")
 ## other library
 ##
 
-if build "zlib"; then
-	download "https://www.zlib.net/zlib-1.2.11.tar.gz"
-	execute ./configure --static --prefix="${WORKSPACE}"
-	execute make -j $MJOBS
-	execute make install
-	build_done "zlib"
-fi
-
-if build "openssl"; then
-	download "https://www.openssl.org/source/openssl-1.1.1h.tar.gz"
-	execute ./config --prefix="${WORKSPACE}" --openssldir="${WORKSPACE}" --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib no-shared zlib
-	execute make -j $MJOBS
-	execute make install
-
-	build_done "openssl"
-fi
-CONFIGURE_OPTIONS+=("--enable-openssl")
-
 if build "srt"; then
 	download "https://github.com/Haivision/srt/archive/v1.4.1.tar.gz" "srt-1.4.1.tar.gz"
 	export OPENSSL_ROOT_DIR="${WORKSPACE}"
@@ -460,11 +461,15 @@ if build "srt"; then
 	export OPENSSL_INCLUDE_DIR="${WORKSPACE}"/include/
 	execute cmake . -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DENABLE_APPS=OFF -DUSE_STATIC_LIBSTDCXX=ON
 	execute make install
-	sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "$WORKSPACE/lib/pkgconfig/srt.pc" #The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
+
+	if [ -n $LDEXEFLAGS ]; then
+		sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "$WORKSPACE/lib/pkgconfig/srt.pc" # The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
+	fi
 
 	build_done "srt"
 fi
 CONFIGURE_OPTIONS+=("--enable-libsrt")
+
 
 ##
 ## HWaccel library
@@ -472,9 +477,9 @@ CONFIGURE_OPTIONS+=("--enable-libsrt")
 
 if command -v nvcc > /dev/null ; then
 	if build "nv-codec"; then
-		download "https://github.com/FFmpeg/nv-codec-headers/releases/download/n10.0.26.0/nv-codec-headers-10.0.26.0.tar.gz"
-		sed -i.backup "s#PREFIX = /usr/local#PREFIX = ${WORKSPACE}#g" Makefile #The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
-		execute make install
+		download "https://github.com/FFmpeg/nv-codec-headers/releases/download/n11.0.10.0/nv-codec-headers-11.0.10.0.tar.gz"
+		execute make PREFIX="${WORKSPACE}"
+		execute make install PREFIX="${WORKSPACE}"
 		build_done "nv-codec"
 	fi
 	CFLAGS+=" -I/usr/local/cuda/include"
@@ -482,12 +487,20 @@ if command -v nvcc > /dev/null ; then
 	CONFIGURE_OPTIONS+=("--enable-cuda-nvcc" "--enable-cuvid" "--enable-nvenc" "--enable-cuda-llvm")
 
 	if [ -z $LDEXEFLAGS ]; then
-		CONFIGURE_OPTIONS+=("--enable-libnpp") # Only libnpp cannot be static link.
+		CONFIGURE_OPTIONS+=("--enable-libnpp") # Only libnpp cannot be statically linked.
 	fi
 
 	# https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
 	CONFIGURE_OPTIONS+=("--nvccflags=-gencode arch=compute_52,code=sm_52")
 fi
+
+if build "amf"; then
+	download "https://github.com/GPUOpen-LibrariesAndSDKs/AMF/archive/1.4.16.1.tar.gz" "amf-1.4.16.1.tar.gz"
+	execute mkdir -p ${WORKSPACE}/include/AMF
+	execute cp -r amf/public/include/* ${WORKSPACE}/include/AMF/
+	build_done "amf"
+fi
+CONFIGURE_OPTIONS+=("--enable-amf")
 
 
 ##
