@@ -596,7 +596,7 @@ Building done. The binary can be found here: /Users/me/dev/ffmpeg-build-script/w
 
 Install the binary to your /usr/local/bin folder? [Y/n] y
 Password:
-Done. ffmpeg is now installed to your system
+Done. ffmpeg is now installed to your system.
 ```
 
 

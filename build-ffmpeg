@@ -290,7 +290,7 @@ if build "x265"; then
 	execute cmake -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" -DENABLE_SHARED:bool=off -DSTATIC_LINK_CRT:BOOL=ON -DENABLE_CLI:BOOL=OFF .
 	execute make -j $MJOBS
 	execute make install
-	sed -i 's/-lgcc_s/-lgcc_eh/g' "$WORKSPACE/lib/pkgconfig/x265.pc"
+	sed -i '' 's/-lgcc_s/-lgcc_eh/g' "$WORKSPACE/lib/pkgconfig/x265.pc" #The -i '' is intended and required on MacOS: https://unix.stackexchange.com/questions/112023/how-can-i-replace-a-string-in-a-files/112024#112024
 	build_done "x265"
 fi
 CONFIGURE_OPTIONS+=("--enable-libx265")
@@ -460,7 +460,7 @@ if build "srt"; then
 	export OPENSSL_INCLUDE_DIR="${WORKSPACE}"/include/
 	execute cmake . -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DENABLE_APPS=OFF -DUSE_STATIC_LIBSTDCXX=ON
 	execute make install
-	sed -i 's/-lgcc_s/-lgcc_eh/g' "$WORKSPACE/lib/pkgconfig/srt.pc"
+	sed -i '' 's/-lgcc_s/-lgcc_eh/g' "$WORKSPACE/lib/pkgconfig/srt.pc" #The -i '' is intended and required on MacOS: https://unix.stackexchange.com/questions/112023/how-can-i-replace-a-string-in-a-files/112024#112024
 
 	build_done "srt"
 fi
@@ -473,7 +473,7 @@ CONFIGURE_OPTIONS+=("--enable-libsrt")
 if command -v nvcc > /dev/null ; then
 	if build "nv-codec"; then
 		download "https://github.com/FFmpeg/nv-codec-headers/releases/download/n10.0.26.0/nv-codec-headers-10.0.26.0.tar.gz"
-		sed -i  "s#PREFIX = /usr/local#PREFIX = ${WORKSPACE}#g" Makefile
+		sed -i '' "s#PREFIX = /usr/local#PREFIX = ${WORKSPACE}#g" Makefile #The -i '' is intended and required on MacOS: https://unix.stackexchange.com/questions/112023/how-can-i-replace-a-string-in-a-files/112024#112024
 		execute make install
 		build_done "nv-codec"
 	fi
@@ -528,16 +528,15 @@ echo ""
 echo "Building done. The binary can be found here: $WORKSPACE/bin/ffmpeg"
 echo ""
 
-
 if [[ $AUTOINSTALL == "yes" ]]; then
 	if command_exists "sudo"; then
 		sudo cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
 		sudo cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
-		echo "Done. ffmpeg is now installed to your system"
+		echo "Done. ffmpeg is now installed to your system."
 	else
 		cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
 		cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
-		echo "Done. ffmpeg is now installed to your system"
+		echo "Done. ffmpeg is now installed to your system."
 	fi
 elif [[ ! $SKIPINSTALL == "yes" ]]; then
 	read -r -p "Install the binary to your $INSTALL_FOLDER folder? [Y/n] " response
@@ -550,7 +549,7 @@ elif [[ ! $SKIPINSTALL == "yes" ]]; then
 			cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
 			cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
 		fi
-		echo "Done. ffmpeg is now installed to your system"
+		echo "Done. ffmpeg is now installed to your system."
 		;;
 	esac
 fi
