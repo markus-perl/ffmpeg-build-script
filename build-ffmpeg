@@ -290,7 +290,7 @@ if build "x265"; then
 	execute cmake -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" -DENABLE_SHARED:bool=off -DSTATIC_LINK_CRT:BOOL=ON -DENABLE_CLI:BOOL=OFF .
 	execute make -j $MJOBS
 	execute make install
-	sed -i '' 's/-lgcc_s/-lgcc_eh/g' "$WORKSPACE/lib/pkgconfig/x265.pc" #The -i '' is intended and required on MacOS: https://unix.stackexchange.com/questions/112023/how-can-i-replace-a-string-in-a-files/112024#112024
+	sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "$WORKSPACE/lib/pkgconfig/x265.pc" #The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
 	build_done "x265"
 fi
 CONFIGURE_OPTIONS+=("--enable-libx265")
@@ -460,7 +460,7 @@ if build "srt"; then
 	export OPENSSL_INCLUDE_DIR="${WORKSPACE}"/include/
 	execute cmake . -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DENABLE_APPS=OFF -DUSE_STATIC_LIBSTDCXX=ON
 	execute make install
-	sed -i '' 's/-lgcc_s/-lgcc_eh/g' "$WORKSPACE/lib/pkgconfig/srt.pc" #The -i '' is intended and required on MacOS: https://unix.stackexchange.com/questions/112023/how-can-i-replace-a-string-in-a-files/112024#112024
+	sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "$WORKSPACE/lib/pkgconfig/srt.pc" #The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
 
 	build_done "srt"
 fi
@@ -473,7 +473,7 @@ CONFIGURE_OPTIONS+=("--enable-libsrt")
 if command -v nvcc > /dev/null ; then
 	if build "nv-codec"; then
 		download "https://github.com/FFmpeg/nv-codec-headers/releases/download/n10.0.26.0/nv-codec-headers-10.0.26.0.tar.gz"
-		sed -i '' "s#PREFIX = /usr/local#PREFIX = ${WORKSPACE}#g" Makefile #The -i '' is intended and required on MacOS: https://unix.stackexchange.com/questions/112023/how-can-i-replace-a-string-in-a-files/112024#112024
+		sed -i.backup "s#PREFIX = /usr/local#PREFIX = ${WORKSPACE}#g" Makefile #The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
 		execute make install
 		build_done "nv-codec"
 	fi
