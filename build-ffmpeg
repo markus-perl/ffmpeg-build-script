@@ -3,7 +3,7 @@
 # https://github.com/markus-perl/ffmpeg-build-script
 
 PROGNAME=$(basename "$0")
-VERSION=1.18
+VERSION=1.19
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
 WORKSPACE="$CWD/workspace"
@@ -150,7 +150,7 @@ usage () {
 	echo "      --version       Display version information"
 	echo "  -b, --build         Starts the build process"
 	echo "  -c, --cleanup       Remove all working dirs"
-	echo "  -f, --full-static   Complete static build of ffmpeg (eg. glibc, pthreads etc...) **not recommend**"
+	echo "  -f, --full-static   Complete static build of ffmpeg (eg. glibc, pthreads etc...) **only Linux**"
 	echo "                      Note: Because of the NSS (Name Service Switch), glibc does not recommend static links."
 	echo ""
 }
@@ -174,6 +174,10 @@ while (( $# > 0 )); do
 				cleanup
 			fi
 			if [[ "$1" == "--full-static" || "$1" =~ 'f' ]]; then
+				if [[ "$OSTYPE" == "darwin"* ]]; then
+					echo "Error: full-static mode is available only Linux."
+					exit 1
+				fi
 				LDEXEFLAGS="-static"
 			fi
 			shift

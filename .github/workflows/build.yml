@@ -52,28 +52,6 @@ jobs:
         run: |
           ./build-ffmpeg --cleanup
 
-  build-macos-static:
-    name: full static build in native macOS
-    runs-on: macos-10.15
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: build ffmpeg
-        run: |
-          while sleep 300; do echo "=====[ $SECONDS seconds still running ]====="; done &
-          SKIPINSTALL=yes VERBOSE=yes ./build-ffmpeg --build --full-static
-          kill %1
-      - name: check shared library
-        run: |
-          otool -L ./workspace/bin/ffmpeg
-      - name: test run ffmepg
-        run: |
-          ./workspace/bin/ffmpeg -buildconf
-      - name: clean up
-        run: |
-          ./build-ffmpeg --cleanup
-
   build-docker:
     name: build in docker
     runs-on: ubuntu-20.04
@@ -131,12 +109,10 @@ jobs:
         id: cuda_ubuntu_centos_pull
         run: |
           docker pull nvidia/cuda:11.1-devel-ubuntu20.04
-          docker pull centos:8
       - name: run if cuda_ubuntu_centos_pull failed
         if: failure() && steps.cuda_ubuntu_centos_pull.outcome == 'failure'
         run: |
           docker pull nvidia/cuda:11.1-devel-ubuntu20.04
-          docker pull centos:8
       - name: build ffmpeg
         run: |
           docker build -t ffmpeg:cuda-static -f full-static.dockerfile .

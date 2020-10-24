@@ -126,7 +126,7 @@ Options:
       --version       Display version information
   -b, --build         Starts the build process
   -c, --cleanup       Remove all working dirs
-  -f, --full-static   Complete static build of ffmpeg (eg. glibc, pthreads etc...) **not recommend**
+  -f, --full-static   Complete static build of ffmpeg (eg. glibc, pthreads etc...) **only Linux**
                       Note: Because of the NSS (Name Service Switch), glibc does not recommend static links.
 ```
 

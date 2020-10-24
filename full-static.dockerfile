@@ -10,15 +10,14 @@ RUN apt-get update \
 WORKDIR /app
 COPY ./build-ffmpeg /app/build-ffmpeg
 
-RUN SKIPINSTALL=yes /app/build-ffmpeg --build --full-static
+RUN AUTOINSTALL=yes /app/build-ffmpeg --build --full-static
+RUN ldd /app/workspace/bin/ffmpeg ; exit 0
+RUN ldd /app/workspace/bin/ffprobe ; exit 0
 
-FROM centos:8
+FROM scratch
 
 COPY --from=build /app/workspace/bin/ffmpeg /usr/bin/ffmpeg
 COPY --from=build /app/workspace/bin/ffprobe /usr/bin/ffprobe
-
-RUN ldd /usr/bin/ffmpeg ; exit 0
-RUN ldd /usr/bin/ffprobe ; exit 0
 
 CMD         ["--help"]
 ENTRYPOINT  ["/usr/bin/ffmpeg"]
