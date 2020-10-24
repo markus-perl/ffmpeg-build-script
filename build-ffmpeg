@@ -10,7 +10,7 @@ WORKSPACE="$CWD/workspace"
 CFLAGS="-I$WORKSPACE/include"
 LDFLAGS="-L$WORKSPACE/lib"
 LDEXEFLAGS=""
-EXTRALIBS="-ldl -lpthread -lm -lz"
+EXTRALIBS="-Wl,-Bdynamic,-lc,-ldl,-lpthread,-lm,-Bstatic,-lz,-lbz2,-llzma"
 CONFIGURE_OPTIONS=()
 
 # Speed up the process
@@ -175,6 +175,9 @@ while (( $# > 0 )); do
 			fi
 			if [[ "$1" == "--full-static" || "$1" =~ 'f' ]]; then
 				LDEXEFLAGS="-static"
+				if [[ "$OSTYPE" == "darwin"* ]]; then
+					LDEXEFLAGS="-Bstatic"
+				fi
 			fi
 			shift
 			;;
@@ -370,16 +373,12 @@ CONFIGURE_OPTIONS+=("--enable-libx264")
 if build "x265"; then
 	download "https://github.com/videolan/x265/archive/Release_3.5.tar.gz" "x265-3.5.tar.gz"
 	cd build/linux || exit
+	execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF ../../source
+	execute make -j $MJOBS
+	execute make install
 
 	if [ -n "$LDEXEFLAGS" ]; then
-		execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF -DSTATIC_LINK_CRT=ON ../../source
-		execute make -j $MJOBS
-		execute make install
 		sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "${WORKSPACE}/lib/pkgconfig/x265.pc" # The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
-	else
-		execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF ../../source
-		execute make -j $MJOBS
-		execute make install
 	fi
 
 	build_done "x265"
