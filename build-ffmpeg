@@ -287,7 +287,7 @@ fi
 # Required for building vaapi tools so linux only
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
 	if build "m4"; then
-		download "https://ftp.gnu.org/gnu/m4/m4-1.4.18.tar.xz"
+		download "https://ftpmirror.gnu.org/m4/m4-1.4.18.tar.xz"
 		# https://lists.gnu.org/archive/html/bug-m4/2018-08/msg00000.html
 		# No new version of M4 has been released, so a patch has been applied.
 		execute curl -sLJO https://github.com/easybuilders/easybuild-easyconfigs/raw/master/easybuild/easyconfigs/m/M4/M4-1.4.18_glibc_2.28.patch
@@ -299,7 +299,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
 	fi
 
 	if build "autoconf"; then
-		download "https://ftp.gnu.org/gnu/autoconf/autoconf-2.69.tar.xz"
+		download "https://ftpmirror.gnu.org/autoconf/autoconf-2.69.tar.xz"
 		execute ./configure --prefix="${WORKSPACE}"
 		execute make -j $MJOBS
 		execute make install
@@ -307,7 +307,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
 	fi
 
 	if build "automake"; then
-		download "https://ftp.gnu.org/gnu/automake/automake-1.16.tar.xz"
+		download "https://ftpmirror.gnu.org/automake/automake-1.16.tar.xz"
 		execute ./configure --prefix="${WORKSPACE}"
 		execute make -j $MJOBS
 		execute make install
@@ -315,7 +315,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
 	fi
 
 	if build "util-macros"; then
-		download "https://www.x.org/archive/individual/util/util-macros-1.19.2.tar.gz"
+		download "https://gitlab.freedesktop.org/xorg/util/macros/-/archive/util-macros-1.19.2/macros-util-macros-1.19.2.tar.bz2" "util-macros-1.19.2.tar.bz2"
 		execute ./configure --prefix="${WORKSPACE}"
 		execute make -j $MJOBS
 		execute make install
@@ -323,7 +323,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
 	fi
 
 	if build "libtool"; then
-		download "https://ftp.jaist.ac.jp/pub/GNU/libtool/libtool-2.4.6.tar.xz"
+		download "https://ftpmirror.gnu.org/libtool/libtool-2.4.6.tar.xz"
 		execute ./configure --prefix="${WORKSPACE}"  --disable-shared --enable-static
 		execute make -j $MJOBS
 		execute make install
@@ -581,7 +581,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
 	fi
 
 	if build "libdrm"; then
-		download "https://dri.freedesktop.org/libdrm/libdrm-2.4.102.tar.xz"
+		download "https://gitlab.freedesktop.org/mesa/drm/-/archive/libdrm-2.4.102/drm-libdrm-2.4.102.tar.bz2" "libdrm-2.4.102.tar.bz2"
 		execute meson --prefix="${WORKSPACE}" --libdir="${WORKSPACE}"/lib builddir/
 		execute ninja -C builddir/ install
 		build_done "libdrm"
