@@ -292,8 +292,7 @@ if build "yasm"; then
 fi
 
 if build "nasm"; then
-	download "https://github.com/netwide-assembler/nasm/archive/nasm-2.15.05.tar.gz"
-	execute ./autogen.sh
+	download "https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/nasm-2.15.05.tar.xz"
 	execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
 	execute make -j $MJOBS
 	execute make install
