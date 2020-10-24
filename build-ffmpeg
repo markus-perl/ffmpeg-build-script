@@ -175,9 +175,6 @@ while (( $# > 0 )); do
 			fi
 			if [[ "$1" == "--full-static" || "$1" =~ 'f' ]]; then
 				LDEXEFLAGS="-static"
-				if [[ "$OSTYPE" == "darwin"* ]]; then
-					LDEXEFLAGS="-Bstatic"
-				fi
 			fi
 			shift
 			;;
