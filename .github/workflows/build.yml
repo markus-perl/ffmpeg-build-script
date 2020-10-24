@@ -121,7 +121,7 @@ jobs:
           docker run --rm ffmpeg:cuda -buildconf
 
   build-full-static:
-    name: build full static in docker
+    name: full static build in docker
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout code
