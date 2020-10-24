@@ -10,7 +10,7 @@ WORKSPACE="$CWD/workspace"
 CFLAGS="-I$WORKSPACE/include"
 LDFLAGS="-L$WORKSPACE/lib"
 LDEXEFLAGS=""
-EXTRALIBS="-Wl,-Bdynamic,-lc,-ldl,-lpthread,-lm,-Bstatic,-lz,-lbz2,-llzma"
+EXTRALIBS="-ldl -lpthread -lm -lz"
 CONFIGURE_OPTIONS=()
 
 # Speed up the process
