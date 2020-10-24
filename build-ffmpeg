@@ -238,8 +238,53 @@ fi
 ## build tools
 ##
 
+if build "m4"; then
+	download "https://ftpmirror.gnu.org/m4/m4-1.4.18.tar.xz"
+	# https://lists.gnu.org/archive/html/bug-m4/2018-08/msg00000.html
+	# No new version of M4 has been released, so a patch has been applied.
+	execute curl -sLJO https://github.com/easybuilders/easybuild-easyconfigs/raw/master/easybuild/easyconfigs/m/M4/M4-1.4.18_glibc_2.28.patch
+	execute patch -p1 -d . < M4-1.4.18_glibc_2.28.patch
+	execute ./configure --prefix="${WORKSPACE}"
+	execute make -j $MJOBS
+	execute make install
+	build_done "m4"
+fi
+
+if build "autoconf"; then
+	download "https://ftpmirror.gnu.org/autoconf/autoconf-2.69.tar.xz"
+	execute ./configure --prefix="${WORKSPACE}"
+	execute make -j $MJOBS
+	execute make install
+	build_done "autoconf"
+fi
+
+if build "automake"; then
+	download "https://ftpmirror.gnu.org/automake/automake-1.16.tar.xz"
+	execute ./configure --prefix="${WORKSPACE}"
+	execute make -j $MJOBS
+	execute make install
+	build_done "automake"
+fi
+
+if build "libtool"; then
+	download "https://ftpmirror.gnu.org/libtool/libtool-2.4.6.tar.xz"
+	execute ./configure --prefix="${WORKSPACE}"  --disable-shared --enable-static
+	execute make -j $MJOBS
+	execute make install
+	build_done "libtool"
+fi
+
+if build "util-macros"; then
+	download "https://gitlab.freedesktop.org/xorg/util/macros/-/archive/util-macros-1.19.2/macros-util-macros-1.19.2.tar.bz2" "util-macros-1.19.2.tar.bz2"
+	execute autoreconf --force --verbose --install
+	execute ./configure --prefix="${WORKSPACE}"
+	execute make -j $MJOBS
+	execute make install
+	build_done "util-macros"
+fi
+
 if build "yasm"; then
-	download "https://www.tortall.net/projects/yasm/releases/yasm-1.3.0.tar.gz"
+	download "https://github.com/yasm/yasm/releases/download/v1.3.0/yasm-1.3.0.tar.gz"
 	execute ./configure --prefix="${WORKSPACE}"
 	execute make -j $MJOBS
 	execute make install
@@ -247,7 +292,8 @@ if build "yasm"; then
 fi
 
 if build "nasm"; then
-	download "https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/nasm-2.15.05.tar.xz"
+	download "https://github.com/netwide-assembler/nasm/archive/nasm-2.15.05.tar.gz"
+	execute ./autogen.sh
 	execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
 	execute make -j $MJOBS
 	execute make install
@@ -255,7 +301,8 @@ if build "nasm"; then
 fi
 
 if build "pkg-config"; then
-	download "https://pkgconfig.freedesktop.org/releases/pkg-config-0.29.2.tar.gz"
+	download "https://gitlab.freedesktop.org/pkg-config/pkg-config/-/archive/pkg-config-0.29.2/pkg-config-pkg-config-0.29.2.tar.bz2" "pkg-config-0.29.2.tar.bz2"
+	execute autoreconf --force --verbose --install
 	execute ./configure --silent --prefix="${WORKSPACE}" --with-pc-path="${WORKSPACE}"/lib/pkgconfig --with-internal-glib
 	execute make -j $MJOBS
 	execute make install
@@ -290,50 +337,6 @@ fi
 
 # Required for building vaapi tools so linux only
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
-	if build "m4"; then
-		download "https://ftpmirror.gnu.org/m4/m4-1.4.18.tar.xz"
-		# https://lists.gnu.org/archive/html/bug-m4/2018-08/msg00000.html
-		# No new version of M4 has been released, so a patch has been applied.
-		execute curl -sLJO https://github.com/easybuilders/easybuild-easyconfigs/raw/master/easybuild/easyconfigs/m/M4/M4-1.4.18_glibc_2.28.patch
-		execute patch -p1 -d . < M4-1.4.18_glibc_2.28.patch
-		execute ./configure --prefix="${WORKSPACE}"
-		execute make -j $MJOBS
-		execute make install
-		build_done "m4"
-	fi
-
-	if build "autoconf"; then
-		download "https://ftpmirror.gnu.org/autoconf/autoconf-2.69.tar.xz"
-		execute ./configure --prefix="${WORKSPACE}"
-		execute make -j $MJOBS
-		execute make install
-		build_done "autoconf"
-	fi
-
-	if build "automake"; then
-		download "https://ftpmirror.gnu.org/automake/automake-1.16.tar.xz"
-		execute ./configure --prefix="${WORKSPACE}"
-		execute make -j $MJOBS
-		execute make install
-		build_done "automake"
-	fi
-
-	if build "util-macros"; then
-		download "https://gitlab.freedesktop.org/xorg/util/macros/-/archive/util-macros-1.19.2/macros-util-macros-1.19.2.tar.bz2" "util-macros-1.19.2.tar.bz2"
-		execute ./configure --prefix="${WORKSPACE}"
-		execute make -j $MJOBS
-		execute make install
-		build_done "util-macros"
-	fi
-
-	if build "libtool"; then
-		download "https://ftpmirror.gnu.org/libtool/libtool-2.4.6.tar.xz"
-		execute ./configure --prefix="${WORKSPACE}"  --disable-shared --enable-static
-		execute make -j $MJOBS
-		execute make install
-		build_done "libtool"
-	fi
-
 	if build "meson"; then
 		download "https://github.com/mesonbuild/meson/releases/download/0.55.3/meson-0.55.3.tar.gz"
 		execute ln -s $(pwd)/meson.py ${WORKSPACE}/bin/meson
