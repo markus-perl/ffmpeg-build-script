@@ -2,7 +2,7 @@
 
 # https://github.com/markus-perl/ffmpeg-build-script
 
-PROGNAME=$(basename $0)
+PROGNAME=$(basename "$0")
 VERSION=1.18
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
@@ -10,13 +10,13 @@ WORKSPACE="$CWD/workspace"
 CFLAGS="-I$WORKSPACE/include"
 LDFLAGS="-L$WORKSPACE/lib"
 LDEXEFLAGS=""
-EXTRALIBS="-lpthread -lm -lz"
+EXTRALIBS="-ldl -lpthread -lm -lz"
 CONFIGURE_OPTIONS=()
 
 # Speed up the process
 # Env Var NUMJOBS overrides automatic detection
-if [[ -n $NUMJOBS ]]; then
-	MJOBS=$NUMJOBS
+if [[ -n "$NUMJOBS" ]]; then
+	MJOBS="$NUMJOBS"
 elif [[ -f /proc/cpuinfo ]]; then
 	MJOBS=$(grep -c processor /proc/cpuinfo)
 elif [[ "$OSTYPE" == "darwin"* ]]; then
@@ -44,17 +44,17 @@ download () {
 	# download url [filename[dirname]]
 
 	DOWNLOAD_PATH="$PACKAGES"
-	DOWNLOAD_FILE=${2:-"${1##*/}"}
+	DOWNLOAD_FILE="${2:-"${1##*/}"}"
 
 	if [[ "$DOWNLOAD_FILE" =~ "tar." ]]; then
 		TARGETDIR="${DOWNLOAD_FILE%.*}"
-		TARGETDIR=${3:-"${TARGETDIR%.*}"}
+		TARGETDIR="${3:-"${TARGETDIR%.*}"}"
 	else
-		TARGETDIR=${3:-"${DOWNLOAD_FILE%.*}"}
+		TARGETDIR="${3:-"${DOWNLOAD_FILE%.*}"}"
 	fi
 
 	if [ ! -f "$DOWNLOAD_PATH/$DOWNLOAD_FILE" ]; then
-		echo "Downloading $1"
+		echo "Downloading $1 as $DOWNLOAD_FILE"
 		curl -L --silent -o "$DOWNLOAD_PATH/$DOWNLOAD_FILE" "$1"
 
 		EXITCODE=$?
@@ -162,7 +162,7 @@ while (( $# > 0 )); do
 			exit 0
 			;;
 		--version)
-			echo $VERSION
+			echo "$VERSION"
 			exit 0
 			;;
 		-*)
@@ -185,8 +185,8 @@ while (( $# > 0 )); do
 	esac
 done
 
-if [ -z $bflag ]; then
-	if [ -z $cflag ]; then
+if [ -z "$bflag" ]; then
+	if [ -z "$cflag" ]; then
 		usage
 		exit 1
 	fi
@@ -199,7 +199,7 @@ echo ""
 
 echo "Using $MJOBS make jobs simultaneously."
 
-if [ -n $LDEXEFLAGS ]; then
+if [ -n "$LDEXEFLAGS" ]; then
 	echo "Start the build in full static mode."
 fi
 
@@ -221,6 +221,13 @@ fi
 if ! command_exists "curl"; then
 	echo "curl not installed.";
 	exit 1
+fi
+
+if [[ "$OSTYPE" == "linux-gnu" ]]; then
+	if ! command_exists "python3" ; then
+		echo "python3 not installed.";
+		exit 1
+	fi
 fi
 
 ##
@@ -277,6 +284,67 @@ if build "cmake"; then
 	build_done "cmake"
 fi
 
+# Required for building vaapi tools so linux only
+if [[ "$OSTYPE" == "linux-gnu" ]]; then
+	if build "m4"; then
+		download "https://ftp.gnu.org/gnu/m4/m4-1.4.18.tar.xz"
+		# https://lists.gnu.org/archive/html/bug-m4/2018-08/msg00000.html
+		# No new version of M4 has been released, so a patch has been applied.
+		execute curl -sLJO https://github.com/easybuilders/easybuild-easyconfigs/raw/master/easybuild/easyconfigs/m/M4/M4-1.4.18_glibc_2.28.patch
+		execute patch -p1 -d . < M4-1.4.18_glibc_2.28.patch
+		execute ./configure --prefix="${WORKSPACE}"
+		execute make -j $MJOBS
+		execute make install
+		build_done "m4"
+	fi
+
+	if build "autoconf"; then
+		download "https://ftp.gnu.org/gnu/autoconf/autoconf-2.69.tar.xz"
+		execute ./configure --prefix="${WORKSPACE}"
+		execute make -j $MJOBS
+		execute make install
+		build_done "autoconf"
+	fi
+
+	if build "automake"; then
+		download "https://ftp.gnu.org/gnu/automake/automake-1.16.tar.xz"
+		execute ./configure --prefix="${WORKSPACE}"
+		execute make -j $MJOBS
+		execute make install
+		build_done "automake"
+	fi
+
+	if build "util-macros"; then
+		download "https://www.x.org/archive/individual/util/util-macros-1.19.2.tar.gz"
+		execute ./configure --prefix="${WORKSPACE}"
+		execute make -j $MJOBS
+		execute make install
+		build_done "util-macros"
+	fi
+
+	if build "libtool"; then
+		download "https://ftp.jaist.ac.jp/pub/GNU/libtool/libtool-2.4.6.tar.xz"
+		execute ./configure --prefix="${WORKSPACE}"  --disable-shared --enable-static
+		execute make -j $MJOBS
+		execute make install
+		build_done "libtool"
+	fi
+
+	if build "meson"; then
+		download "https://github.com/mesonbuild/meson/releases/download/0.55.3/meson-0.55.3.tar.gz"
+		execute ln -s $(pwd)/meson.py ${WORKSPACE}/bin/meson
+		build_done "meson"
+	fi
+
+	if build "ninja"; then
+		download "https://github.com/ninja-build/ninja/archive/v1.10.1.tar.gz" "ninja-1.10.1.tar.gz"
+		execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" .
+		execute make -j $MJOBS
+		execute make install
+		build_done "ninja"
+	fi
+fi
+
 
 ##
 ## video library
@@ -301,13 +369,17 @@ CONFIGURE_OPTIONS+=("--enable-libx264")
 
 if build "x265"; then
 	download "https://github.com/videolan/x265/archive/Release_3.5.tar.gz" "x265-3.5.tar.gz"
-	cd source || exit
-	execute cmake -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" -DENABLE_SHARED:bool=off -DSTATIC_LINK_CRT:BOOL=ON .
-	execute make -j $MJOBS
-	execute make install
+	cd build/linux || exit
 
-	if [ -n $LDEXEFLAGS ]; then
+	if [ -n "$LDEXEFLAGS" ]; then
+		execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF -DSTATIC_LINK_CRT=ON ../../source
+		execute make -j $MJOBS
+		execute make install
 		sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "${WORKSPACE}/lib/pkgconfig/x265.pc" # The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
+	else
+		execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF ../../source
+		execute make -j $MJOBS
+		execute make install
 	fi
 
 	build_done "x265"
@@ -462,8 +534,8 @@ if build "srt"; then
 	execute cmake . -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DENABLE_APPS=OFF -DUSE_STATIC_LIBSTDCXX=ON
 	execute make install
 
-	if [ -n $LDEXEFLAGS ]; then
-		sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "$WORKSPACE/lib/pkgconfig/srt.pc" # The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
+	if [ -n "$LDEXEFLAGS" ]; then
+		sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "${WORKSPACE}"/lib/pkgconfig/srt.pc # The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
 	fi
 
 	build_done "srt"
@@ -475,34 +547,69 @@ CONFIGURE_OPTIONS+=("--enable-libsrt")
 ## HWaccel library
 ##
 
-if command -v nvcc > /dev/null ; then
-	if build "nv-codec"; then
-		download "https://github.com/FFmpeg/nv-codec-headers/releases/download/n11.0.10.0/nv-codec-headers-11.0.10.0.tar.gz"
-		execute make PREFIX="${WORKSPACE}"
-		execute make install PREFIX="${WORKSPACE}"
-		build_done "nv-codec"
-	fi
-	CFLAGS+=" -I/usr/local/cuda/include"
-	LDFLAGS+=" -L/usr/local/cuda/lib64"
-	CONFIGURE_OPTIONS+=("--enable-cuda-nvcc" "--enable-cuvid" "--enable-nvenc" "--enable-cuda-llvm")
-
-	if [ -z $LDEXEFLAGS ]; then
-		CONFIGURE_OPTIONS+=("--enable-libnpp") # Only libnpp cannot be statically linked.
-	fi
-
-	# https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
-	CONFIGURE_OPTIONS+=("--nvccflags=-gencode arch=compute_52,code=sm_52")
-fi
-
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
+	if command_exists nvcc ; then
+		if build "nv-codec"; then
+			download "https://github.com/FFmpeg/nv-codec-headers/releases/download/n11.0.10.0/nv-codec-headers-11.0.10.0.tar.gz"
+			execute make PREFIX="${WORKSPACE}"
+			execute make install PREFIX="${WORKSPACE}"
+			build_done "nv-codec"
+		fi
+		CFLAGS+=" -I/usr/local/cuda/include"
+		LDFLAGS+=" -L/usr/local/cuda/lib64"
+		CONFIGURE_OPTIONS+=("--enable-cuda-nvcc" "--enable-cuvid" "--enable-nvenc" "--enable-cuda-llvm")
+
+		if [ -z "$LDEXEFLAGS" ]; then
+			CONFIGURE_OPTIONS+=("--enable-libnpp") # Only libnpp cannot be statically linked.
+		fi
+
+		# https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
+		CONFIGURE_OPTIONS+=("--nvccflags=-gencode arch=compute_52,code=sm_52")
+	fi
+
 	if build "amf"; then
 		download "https://github.com/GPUOpen-LibrariesAndSDKs/AMF/archive/1.4.16.1.tar.gz" "amf-1.4.16.1.tar.gz"
-		execute mkdir -p ${WORKSPACE}/include/AMF
-		execute cp -r amf/public/include/* ${WORKSPACE}/include/AMF/
+		execute mkdir -p "${WORKSPACE}"/include/AMF
+		execute cp -r amf/public/include/* "${WORKSPACE}"/include/AMF/
 		build_done "amf"
 	fi
 	CONFIGURE_OPTIONS+=("--enable-amf")
+
+	if build "libpciaccess"; then
+		download "https://gitlab.freedesktop.org/xorg/lib/libpciaccess/-/archive/libpciaccess-0.16/libpciaccess-libpciaccess-0.16.tar.bz2" "libpciaccess-0.16.tar.bz2"
+		execute autoreconf --force --verbose --install
+		execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static CFLAGS=-fPIC
+		execute make -j $MJOBS
+		execute make install
+		build_done "libpciaccess"
+	fi
+
+	if build "libdrm"; then
+		download "https://dri.freedesktop.org/libdrm/libdrm-2.4.102.tar.xz"
+		execute meson --prefix="${WORKSPACE}" --libdir="${WORKSPACE}"/lib builddir/
+		execute ninja -C builddir/ install
+		build_done "libdrm"
+	fi
+
+	if build "libva"; then
+		download "https://github.com/intel/libva/releases/download/2.9.0/libva-2.9.0.tar.bz2"
+		execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+		execute make -j $MJOBS
+		execute make install
+		build_done "libva"
+	fi
+
+	if build "intel-vaapi-driver"; then
+		download "https://github.com/intel/intel-vaapi-driver/releases/download/2.4.1/intel-vaapi-driver-2.4.1.tar.bz2"
+		execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+		execute make -j $MJOBS
+		execute make install
+		build_done "intel-vaapi-driver"
+	fi
+
+	CONFIGURE_OPTIONS+=("--enable-vaapi")
 fi
+
 
 ##
 ## FFmpeg
@@ -542,7 +649,7 @@ echo ""
 echo "Building done. The binary can be found here: $WORKSPACE/bin/ffmpeg"
 echo ""
 
-if [[ $AUTOINSTALL == "yes" ]]; then
+if [[ "$AUTOINSTALL" == "yes" ]]; then
 	if command_exists "sudo"; then
 		sudo cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
 		sudo cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
@@ -552,7 +659,7 @@ if [[ $AUTOINSTALL == "yes" ]]; then
 		cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
 		echo "Done. ffmpeg is now installed to your system."
 	fi
-elif [[ ! $SKIPINSTALL == "yes" ]]; then
+elif [[ ! "$SKIPINSTALL" == "yes" ]]; then
 	read -r -p "Install the binary to your $INSTALL_FOLDER folder? [Y/n] " response
 	case $response in
 	[yY][eE][sS]|[yY])

@@ -58,14 +58,14 @@ Requirements MacOS
 Requirements Linux
 ------------
 * Debian >= Buster, Ubuntu => Focal Fossa, other Distributions might work too
-* build-essentials installed:
+* build-essentials, curl, and Python3 is requre installed:
 
 ```
 # Debian and Ubuntu
-$ sudo apt-get install build-essential curl g++
+$ sudo apt-get install build-essential curl python3
 
 # Fedora
-$ sudo dnf install @development-tools
+$ sudo dnf install @development-tools curl python3
 ```
 
 Installation
