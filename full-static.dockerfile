@@ -11,13 +11,14 @@ WORKDIR /app
 COPY ./build-ffmpeg /app/build-ffmpeg
 
 RUN AUTOINSTALL=yes /app/build-ffmpeg --build --full-static
+
 RUN ldd /app/workspace/bin/ffmpeg ; exit 0
 RUN ldd /app/workspace/bin/ffprobe ; exit 0
 
 FROM scratch
 
-COPY --from=build /app/workspace/bin/ffmpeg /usr/bin/ffmpeg
-COPY --from=build /app/workspace/bin/ffprobe /usr/bin/ffprobe
+COPY --from=build /app/workspace/bin/ffmpeg /ffmpeg
+COPY --from=build /app/workspace/bin/ffprobe /ffprobe
 
 CMD         ["--help"]
-ENTRYPOINT  ["/usr/bin/ffmpeg"]
+ENTRYPOINT  ["/ffmpeg"]
