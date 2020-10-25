@@ -123,7 +123,7 @@ build () {
 	return 0
 }
 
-command_exists() {
+command_exists () {
 	if ! [[ -x $(command -v "$1") ]]; then
 		return 1
 	fi
@@ -131,6 +131,17 @@ command_exists() {
 	return 0
 }
 
+library_exists () {
+	if ! command_exists "ldconfig"; then
+		return 1
+	fi
+
+	if ! [ -n "$(ldconfig -p | grep "$1")" ]; then
+		return 1
+	fi
+
+	return 0
+}
 
 build_done () {
 	touch "$PACKAGES/$1.done"
@@ -550,7 +561,7 @@ CONFIGURE_OPTIONS+=("--enable-libsrt")
 ##
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
-	if command_exists nvcc ; then
+	if command_exists "nvcc" ; then
 		if build "nv-codec"; then
 			download "https://github.com/FFmpeg/nv-codec-headers/releases/download/n11.0.10.0/nv-codec-headers-11.0.10.0.tar.gz"
 			execute make PREFIX="${WORKSPACE}"
@@ -577,39 +588,46 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
 	fi
 	CONFIGURE_OPTIONS+=("--enable-amf")
 
-	if build "libpciaccess"; then
-		download "https://gitlab.freedesktop.org/xorg/lib/libpciaccess/-/archive/libpciaccess-0.16/libpciaccess-libpciaccess-0.16.tar.bz2" "libpciaccess-0.16.tar.bz2"
-		execute autoreconf --force --verbose --install
-		execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static CFLAGS=-fPIC
-		execute make -j $MJOBS
-		execute make install
-		build_done "libpciaccess"
-	fi
+	# Vaapi doesn't work well with static links ffmpeg.
+	if [ -z "$LDEXEFLAGS" ]; then
+		if library_exists "libdrm" ; then
+			if build "libpciaccess"; then
+				download "https://gitlab.freedesktop.org/xorg/lib/libpciaccess/-/archive/libpciaccess-0.16/libpciaccess-libpciaccess-0.16.tar.bz2" "libpciaccess-0.16.tar.bz2"
+				execute autoreconf --force --verbose --install
+				execute ./configure --prefix="${WORKSPACE}" --disable-static --enable-shared CFLAGS=-fPIC
+				execute make -j $MJOBS
+				execute make install
+				build_done "libpciaccess"
+			fi
 
-	if build "libdrm"; then
-		download "https://gitlab.freedesktop.org/mesa/drm/-/archive/libdrm-2.4.102/drm-libdrm-2.4.102.tar.bz2" "libdrm-2.4.102.tar.bz2"
-		execute meson --prefix="${WORKSPACE}" --libdir="${WORKSPACE}"/lib builddir/
-		execute ninja -C builddir/ install
-		build_done "libdrm"
-	fi
+			# https://gitlab.freedesktop.org/mesa/drm/-/merge_requests/28
+			# Since libdrm should not be statically linked, neither should libva or intel-vaapi-driver, on which it depends, be statically linked.
+			# They should be installed as drivers in your host OS.
+			if build "libdrm"; then
+				download "https://gitlab.freedesktop.org/mesa/drm/-/archive/libdrm-2.4.102/drm-libdrm-2.4.102.tar.bz2" "libdrm-2.4.102.tar.bz2"
+				execute meson --prefix="${WORKSPACE}" --libdir="${WORKSPACE}"/lib builddir/
+				execute ninja -C builddir/ install
+				build_done "libdrm"
+			fi
 
-	if build "libva"; then
-		download "https://github.com/intel/libva/releases/download/2.9.0/libva-2.9.0.tar.bz2"
-		execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
-		execute make -j $MJOBS
-		execute make install
-		build_done "libva"
-	fi
+			if build "libva"; then
+				download "https://github.com/intel/libva/releases/download/2.9.0/libva-2.9.0.tar.bz2"
+				execute ./configure --prefix="${WORKSPACE}" --disable-static --enable-shared
+				execute make -j $MJOBS
+				execute make install
+				build_done "libva"
+			fi
 
-	if build "intel-vaapi-driver"; then
-		download "https://github.com/intel/intel-vaapi-driver/releases/download/2.4.1/intel-vaapi-driver-2.4.1.tar.bz2"
-		execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
-		execute make -j $MJOBS
-		execute make install
-		build_done "intel-vaapi-driver"
+			if build "intel-vaapi-driver"; then
+				download "https://github.com/intel/intel-vaapi-driver/releases/download/2.4.1/intel-vaapi-driver-2.4.1.tar.bz2"
+				execute ./configure --prefix="${WORKSPACE}" --disable-static --enable-shared
+				execute make -j $MJOBS
+				execute make install
+				build_done "intel-vaapi-driver"
+			fi
+			CONFIGURE_OPTIONS+=("--enable-vaapi")
+		fi
 	fi
-
-	CONFIGURE_OPTIONS+=("--enable-vaapi")
 fi
 
 

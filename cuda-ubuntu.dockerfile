@@ -1,12 +1,11 @@
-ARG DIST=ubuntu
 ARG VER=20.04
 
-FROM nvidia/cuda:11.1-devel-${DIST}${VER} AS build
+FROM nvidia/cuda:11.1-devel-ubuntu${VER} AS build
 
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
 
 RUN apt-get update \
-    && apt-get -y --no-install-recommends install build-essential curl ca-certificates python3 \
+    && apt-get -y --no-install-recommends install build-essential curl ca-certificates python3 i965-va-driver \
     && apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/* \
     && update-ca-certificates
 
@@ -16,7 +15,12 @@ COPY ./build-ffmpeg /app/build-ffmpeg
 RUN SKIPINSTALL=yes /app/build-ffmpeg --build
 
 
-FROM ${DIST}:${VER}
+FROM ubuntu:${VER}
+
+# install va-driver
+RUN apt-get update \
+    && apt-get -y --no-install-recommends install libva-drm2 \
+    && apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
 
 # Copy libnpp
 COPY --from=build /usr/local/cuda-11.1/targets/x86_64-linux/lib/libnppc.so.11 /lib/x86_64-linux-gnu/libnppc.so.11

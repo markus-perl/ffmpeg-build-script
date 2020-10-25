@@ -52,7 +52,7 @@ because I don't have the resources and the time to maintain other systems.
     * Encoders
         * H264 `h264_amf`
         * H265 `hevc_amf`
-* `vaapi`: [Video Acceleration API](https://trac.ffmpeg.org/wiki/Hardware/VAAPI). Supported codecs in vaapi:
+* `vaapi`: [Video Acceleration API](https://trac.ffmpeg.org/wiki/Hardware/VAAPI). Installation is triggered only if libva driver installation is detected, follow [these](#Vaapi-installation) instructions for installation. Supported codecs in vaapi:
     * Encoders
         * H264 `h264_vaapi`
         * H265 `hevc_vaapi`
@@ -78,7 +78,7 @@ ffmpeg-build-script is rockstable. Every commit runs against Linux and MacOS wit
 
 ```bash
 # Debian and Ubuntu
-$ sudo apt-get install build-essential curl python3
+$ sudo apt install build-essential curl python3
 
 # Fedora
 $ sudo dnf install @development-tools curl python3
@@ -125,7 +125,7 @@ $ export VER=8
 
 3. Start the docker build as follows.
 ```bash
-$ sudo -E docker build --tag=ffmpeg:cuda -f cuda.dockerfile --build-arg DIST=$DIST --build-arg VER=$VER .
+$ sudo -E docker build --tag=ffmpeg:cuda-$DIST -f cuda-$DIST.dockerfile --build-arg VER=$VER .
 ```
 
 4. Build an `export.dockerfile` that copies only what you need from the image you just built as follows. When running, move the library in the lib to a location where the linker can find it or set the `LD_LIBRARY_PATH`.
@@ -186,8 +186,19 @@ To be able to compile ffmpeg with CUDA support, you first need a compatible NVID
 or [this blog](https://www.pugetsystems.com/labs/hpc/How-To-Install-CUDA-10-1-on-Ubuntu-19-04-1405/)
 to setup the CUDA toolkit.
 
-Usage
-------
+## Vaapi installation
+
+You will need the libva driver, so please install it below.
+
+```bash
+# Debian and Ubuntu
+$ sudo apt install vainfo
+
+# Fedora and CentOS
+$ sudo dnf install libva libva-intel-driver libva-utils
+```
+
+## Usage
 
 ```bash
 Usage: build-ffmpeg [OPTIONS]
@@ -205,6 +216,7 @@ Options:
   See detail below: https://sourceware.org/glibc/wiki/FAQ#Even_statically_linked_programs_need_some_shared_libraries_which_is_not_acceptable_for_me.__What_can_I_do.3F
 
 - The libnpp in the CUDA SDK cannot be statically linked.
+- Vaapi cannot be statically linked.
 
 Contact
 -------

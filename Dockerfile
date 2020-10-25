@@ -1,7 +1,7 @@
 FROM ubuntu:20.04 AS build
 
 RUN apt-get update \
-    && apt-get -y --no-install-recommends install build-essential curl ca-certificates python3 \
+    && apt-get -y --no-install-recommends install build-essential curl ca-certificates python3 i965-va-driver \
     && apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/* \
     && update-ca-certificates
 
@@ -11,6 +11,11 @@ COPY ./build-ffmpeg /app/build-ffmpeg
 RUN SKIPINSTALL=yes /app/build-ffmpeg --build
 
 FROM ubuntu:20.04
+
+# install va-driver
+RUN apt-get update \
+    && apt-get -y --no-install-recommends install libva-drm2 \
+    && apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
 
 COPY --from=build /app/workspace/bin/ffmpeg /usr/bin/ffmpeg
 COPY --from=build /app/workspace/bin/ffprobe /usr/bin/ffprobe
