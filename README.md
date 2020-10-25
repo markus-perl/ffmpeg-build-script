@@ -6,7 +6,7 @@
 build-ffmpeg
 ==========
 
-The FFmpeg build script provides an easy way to build a static FFmpeg on **OSX** and **Linux** with **non-free codecs** included.
+The FFmpeg build script provides an easy way to build a static FFmpeg on **macOS** and **Linux** with **non-free codecs** included.
 
 
 [![How-To build FFmpeg on MacOS](https://img.youtube.com/vi/Z9p3mM757cM/0.jpg)](https://www.youtube.com/watch?v=Z9p3mM757cM "How-To build FFmpeg on OSX")
@@ -96,7 +96,7 @@ $ bash <(curl -s "https://raw.githubusercontent.com/markus-perl/ffmpeg-build-scr
 
 This command downloads the build script and automatically starts the build process.
 
-### Common installation
+### Common installation (macOS, Linux)
 
 ```bash
 $ git clone https://github.com/markus-perl/ffmpeg-build-script.git
@@ -104,7 +104,7 @@ $ cd ffmpeg-build-script
 $ ./build-ffmpeg --help
 ```
 
-### Build in Docker
+### Build in Docker (Linux)
 
 The main advantage of using Docker is the ability to reliably build without polluting the host environment. And you don't even have to install the CUDA SDK on your host!
 
@@ -141,17 +141,17 @@ $ ls build/lib
 libnppc.so.11 libnppicc.so.11 libnppidei.so.11 libnppig.so.11
 ```
 
-### Build in Docker (full static ver.)
+### Build in Docker (full static ver.) (Linux)
 If you're running an operating system other than the one above, a completely static build may work.
 It's easy to do, just run the following command.
 ```bash
 $ sudo -E docker build --tag=ffmpeg:cuda-static --output type=local,dest=build -f full-static.dockerfile .
 ```
 
-### Run with Docker
+### Run with Docker (macOS, Linux)
 You can also run the entire Docker if the above two fail.
 
-#### Default - Without CUDA
+#### Default - Without CUDA (macOS, Linux)
 If you don't use CUDA, it's simple and runs as follows.
 
 ```bash
@@ -159,7 +159,7 @@ $ sudo docker build --tag=ffmpeg .
 $ sudo docker run ffmpeg -i https://files.coconut.co.s3.amazonaws.com/test.mp4 -f webm -c:v libvpx -c:a libvorbis - > test.mp4
 ```
 
-#### With CUDA
+#### With CUDA (Linux)
 If you use CUDA, Docker must be higher than 19.03.
 Install the driver and `nvidia-docker2` from [here](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#installing-docker-ce).
 You can perform hardware acceleration by GPU by running the following.
@@ -168,7 +168,7 @@ $ sudo docker build --tag=ffmpeg:cuda -f cuda-ubuntu.dockerfile .
 $ sudo docker run --gpus all ffmpeg-cuda -hwaccel cuvid -c:v h264_cuvid -i https://files.coconut.co.s3.amazonaws.com/test.mp4 -c:v hevc_nvenc -vf scale_npp=-1:1080 - > test.mp4
 ```
 
-### Common build
+### Common build (macOS, Linux)
 
 If you want to enable CUDA, please refer to [these](#Cuda-installation) and install the SDK.
 
