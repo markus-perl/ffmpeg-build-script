@@ -86,7 +86,7 @@ $ sudo dnf install @development-tools curl python3
 
 ## Installation
 
-### Quick install and run
+### Quick install and run (macOS, Linux)
 
 Open your command line and run (needs curl to be installed):
 
@@ -125,7 +125,7 @@ $ export VER=8
 
 3. Start the docker build as follows.
 ```bash
-$ sudo -E docker build --tag=ffmpeg:cuda -f cuda.dockerfile --build-arg DIST=$DIST VER=$VER .
+$ sudo -E docker build --tag=ffmpeg:cuda -f cuda.dockerfile --build-arg DIST=$DIST --build-arg VER=$VER .
 ```
 
 4. Build an `export.dockerfile` that copies only what you need from the image you just built as follows. When running, move the library in the lib to a location where the linker can find it or set the `LD_LIBRARY_PATH`.
