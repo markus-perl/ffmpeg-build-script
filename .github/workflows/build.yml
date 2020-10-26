@@ -17,8 +17,8 @@ jobs:
 
       - name: install libva-drm2
         run: |
-          apt update
-          apt install -y libva-drm2
+          sudo apt-get update
+          sudo apt-get install -y libva-drm2
 
       - name: build ffmpeg
         run: |
