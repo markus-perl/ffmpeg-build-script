@@ -48,10 +48,6 @@ because I don't have the resources and the time to maintain other systems.
     * Encoders
         * H264 `nvenc_h264`
         * H265 `nvenc_hevc`
-* `amf`: [Advanced Media Framework SDK](https://gpuopen.com/advanced-media-framework/). Optimal access to AMD GPUs for multimedia processing. Supported codecs in amf:
-    * Encoders
-        * H264 `h264_amf`
-        * H265 `hevc_amf`
 * `vaapi`: [Video Acceleration API](https://trac.ffmpeg.org/wiki/Hardware/VAAPI). Installation is triggered only if libva driver installation is detected, follow [these](#Vaapi-installation) instructions for installation. Supported codecs in vaapi:
     * Encoders
         * H264 `h264_vaapi`
@@ -194,10 +190,10 @@ You will need the libva driver, so please install it below.
 
 ```bash
 # Debian and Ubuntu
-$ sudo apt install vainfo
+$ sudo apt install libva-dev vainfo
 
 # Fedora and CentOS
-$ sudo dnf install libva libva-intel-driver libva-utils
+$ sudo dnf install libva-devel libva-intel-driver libva-utils
 ```
 
 ## Usage
