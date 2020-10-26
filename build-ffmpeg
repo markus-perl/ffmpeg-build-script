@@ -590,11 +590,11 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
 
 	# Vaapi doesn't work well with static links ffmpeg.
 	if [ -z "$LDEXEFLAGS" ]; then
-		if library_exists "libdrm" ; then
+		if library_exists "libva" ; then
 			if build "libpciaccess"; then
 				download "https://gitlab.freedesktop.org/xorg/lib/libpciaccess/-/archive/libpciaccess-0.16/libpciaccess-libpciaccess-0.16.tar.bz2" "libpciaccess-0.16.tar.bz2"
 				execute autoreconf --force --verbose --install
-				execute ./configure --prefix="${WORKSPACE}" --disable-static --enable-shared CFLAGS=-fPIC
+				execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static CFLAGS=-fPIC
 				execute make -j $MJOBS
 				execute make install
 				build_done "libpciaccess"
@@ -616,14 +616,6 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
 				execute make -j $MJOBS
 				execute make install
 				build_done "libva"
-			fi
-
-			if build "intel-vaapi-driver"; then
-				download "https://github.com/intel/intel-vaapi-driver/releases/download/2.4.1/intel-vaapi-driver-2.4.1.tar.bz2"
-				execute ./configure --prefix="${WORKSPACE}" --disable-static --enable-shared
-				execute make -j $MJOBS
-				execute make install
-				build_done "intel-vaapi-driver"
 			fi
 			CONFIGURE_OPTIONS+=("--enable-vaapi")
 		fi

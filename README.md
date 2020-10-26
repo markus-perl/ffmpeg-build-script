@@ -172,6 +172,8 @@ $ sudo docker run --gpus all ffmpeg-cuda -hwaccel cuvid -c:v h264_cuvid -i https
 
 If you want to enable CUDA, please refer to [these](#Cuda-installation) and install the SDK.
 
+If you want to enable Vaapi, please refer to [these](#Vaapi-installation) and install the driver.
+
 ```bash
 $ ./build-ffmpeg --build
 ```
