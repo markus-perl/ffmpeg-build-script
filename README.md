@@ -34,7 +34,7 @@ because I don't have the resources and the time to maintain other systems.
 * `srt`: Secure Reliable Transport
 
 ### HardwareAccel
-* `nv-codec`: [NVIDIA's GPU accelerated video codecs](https://devblogs.nvidia.com/nvidia-ffmpeg-transcoding-guide/). These encoders / decoders will only be available if a CUDA installation was found. Follow [these](#Cuda-installation) instructions for installation. Supported codecs in nvcodec:
+* `nv-codec`: [NVIDIA's GPU accelerated video codecs](https://devblogs.nvidia.com/nvidia-ffmpeg-transcoding-guide/). These encoders/decoders will only be available if a CUDA installation was found. Follow [these](#Cuda-installation) instructions for installation. Supported codecs in nvcodec:
     * Decoders
         * H264 `h264_cuvid`
         * H265 `hevc_cuvid`
@@ -48,7 +48,7 @@ because I don't have the resources and the time to maintain other systems.
     * Encoders
         * H264 `nvenc_h264`
         * H265 `nvenc_hevc`
-* `vaapi`: [Video Acceleration API](https://trac.ffmpeg.org/wiki/Hardware/VAAPI). hese encoders / decoders will only be available if a libva driver installation was found. Follow [these](#Vaapi-installation) instructions for installation. Supported codecs in vaapi:
+* `vaapi`: [Video Acceleration API](https://trac.ffmpeg.org/wiki/Hardware/VAAPI). These encoders/decoders will only be available if a libva driver installation was found. Follow [these](#Vaapi-installation) instructions for installation. Supported codecs in vaapi:
     * Encoders
         * H264 `h264_vaapi`
         * H265 `hevc_vaapi`
