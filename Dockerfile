@@ -1,7 +1,9 @@
 FROM ubuntu:20.04 AS build
 
+ENV DEBIAN_FRONTEND noninteractive
+
 RUN apt-get update \
-    && apt-get -y --no-install-recommends install build-essential curl ca-certificates libdrm-dev \
+    && apt-get -y --no-install-recommends install build-essential curl ca-certificates libva-dev \
     && apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/* \
     && update-ca-certificates
 
