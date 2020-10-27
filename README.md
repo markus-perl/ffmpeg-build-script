@@ -70,14 +70,14 @@ ffmpeg-build-script is rockstable. Every commit runs against Linux and MacOS wit
 ### Linux
 
 * Debian >= Buster, Ubuntu => Focal Fossa, other Distributions might work too
-* build-essentials, curl, and Python3 is required installed
+* build-essentials, curl is required installed
 
 ```bash
 # Debian and Ubuntu
-$ sudo apt install build-essential curl python3
+$ sudo apt install build-essential curl
 
 # Fedora
-$ sudo dnf install @development-tools curl python3
+$ sudo dnf install @development-tools curl
 ```
 
 ## Installation
