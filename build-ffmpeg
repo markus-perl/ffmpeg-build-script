@@ -198,6 +198,10 @@ while (( $# > 0 )); do
 	esac
 done
 
+echo "ffmpeg-build-script v$VERSION"
+echo "========================="
+echo ""
+
 if [ -z "$bflag" ]; then
 	if [ -z "$cflag" ]; then
 		usage
@@ -205,10 +209,6 @@ if [ -z "$bflag" ]; then
 	fi
 	exit 0
 fi
-
-echo "ffmpeg-build-script v$VERSION"
-echo "========================="
-echo ""
 
 echo "Using $MJOBS make jobs simultaneously."
 
