@@ -159,7 +159,7 @@ usage () {
 	echo "      --version       Display version information"
 	echo "  -b, --build         Starts the build process"
 	echo "  -c, --cleanup       Remove all working dirs"
-	echo "  -f, --full-static   Complete static build of ffmpeg (eg. glibc, pthreads etc...) **only Linux**"
+	echo "  -f, --full-static   Build a full static FFmpeg binary (eg. glibc, pthreads etc...) **only Linux**"
 	echo "                      Note: Because of the NSS (Name Service Switch), glibc does not recommend static links."
 	echo ""
 }
@@ -184,7 +184,7 @@ while (( $# > 0 )); do
 			fi
 			if [[ "$1" == "--full-static" || "$1" =~ 'f' ]]; then
 				if [[ "$OSTYPE" == "darwin"* ]]; then
-					echo "Error: full-static mode is available only Linux."
+					echo "Error: A full static binary can only be build on Linux."
 					exit 1
 				fi
 				LDEXEFLAGS="-static"
@@ -512,7 +512,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
 		CONFIGURE_OPTIONS+=("--nvccflags=-gencode arch=compute_52,code=sm_52")
 	fi
 
-	# Vaapi doesn't work well with static links ffmpeg.
+	# Vaapi doesn't work well with static links FFmpeg.
 	if [ -z "$LDEXEFLAGS" ]; then
 		# If the libva development SDK is installed, enable vaapi.
 		if library_exists "libva" ; then
@@ -567,11 +567,11 @@ if [[ "$AUTOINSTALL" == "yes" ]]; then
 	if command_exists "sudo"; then
 		sudo cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
 		sudo cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
-		echo "Done. ffmpeg is now installed to your system."
+		echo "Done. FFmpeg is now installed to your system."
 	else
 		cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
 		cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
-		echo "Done. ffmpeg is now installed to your system."
+		echo "Done. FFmpeg is now installed to your system."
 	fi
 elif [[ ! "$SKIPINSTALL" == "yes" ]]; then
 	read -r -p "Install the binary to your $INSTALL_FOLDER folder? [Y/n] " response
@@ -584,7 +584,7 @@ elif [[ ! "$SKIPINSTALL" == "yes" ]]; then
 			cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
 			cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
 		fi
-		echo "Done. ffmpeg is now installed to your system."
+		echo "Done. FFmpeg is now installed to your system."
 		;;
 	esac
 fi

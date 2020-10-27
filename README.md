@@ -63,14 +63,14 @@ ffmpeg-build-script is rockstable. Every commit runs against Linux and MacOS wit
 
 
 ## Requirements
-### MacOS
+### macOS
 
 * XCode 10.x or greater
 
 ### Linux
 
 * Debian >= Buster, Ubuntu => Focal Fossa, other Distributions might work too
-* build-essentials, curl is required installed
+* A development environment and curl is required
 
 ```bash
 # Debian and Ubuntu
@@ -102,9 +102,10 @@ $ ./build-ffmpeg --help
 
 ### Build in Docker (Linux)
 
-The main advantage of using Docker is the ability to reliably build without polluting the host environment. And you don't even have to install the CUDA SDK on your host!
+With Docker, FFmpeg can be built reliably without altering the host system.
+Also, there is no need to have the CUDA SDK installed outside of the Docker image.
 
-If you are running below kind of operating system and having Docker version 19.03 or higher, this is your best option.
+A Docker engine with version 19.03 or higher is required to build images based on the following distributions:
 * Ubuntu >= 16.04 (16.04, 18.04, 20.04)
 * Centos >= 7 (7, 8)
 
@@ -113,13 +114,13 @@ If you are running below kind of operating system and having Docker version 19.0
 $ export DOCKER_BUILDKIT=1
 ```
 
-2. Set the following DIST (`ubuntu` or `centos`) and VER (ubuntu: `16.04` , `18.04`, `20.04` or centos: `7`, `8`) environment variables in conjunction with your operating system.
+2. Set the DIST (`ubuntu` or `centos`) and VER (ubuntu: `16.04` , `18.04`, `20.04` or centos: `7`, `8`) environment variables to select the preferred Docker base image.
 ```bash
 $ export DIST=centos
 $ export VER=8
 ```
 
-3. Start the docker build as follows.
+3. Start the build as follows.
 ```bash
 $ sudo -E docker build --tag=ffmpeg:cuda-$DIST -f cuda-$DIST.dockerfile --build-arg VER=$VER .
 ```
@@ -139,16 +140,16 @@ libnppc.so.11 libnppicc.so.11 libnppidei.so.11 libnppig.so.11
 
 ### Build in Docker (full static ver.) (Linux)
 If you're running an operating system other than the one above, a completely static build may work.
-It's easy to do, just run the following command.
+To build a full statically linked binary inside Docker, just run the following command:
 ```bash
 $ sudo -E docker build --tag=ffmpeg:cuda-static --output type=local,dest=build -f full-static.dockerfile .
 ```
 
 ### Run with Docker (macOS, Linux)
-You can also run the entire Docker if the above two fail.
+You can also run the FFmpeg directly inside a Docker container.
 
 #### Default - Without CUDA (macOS, Linux)
-If you don't use CUDA, it's simple and runs as follows.
+If CUDA is not required, a dockerized FFmpeg build can be executed with the following command:
 
 ```bash
 $ sudo docker build --tag=ffmpeg .
@@ -156,9 +157,9 @@ $ sudo docker run ffmpeg -i https://files.coconut.co.s3.amazonaws.com/test.mp4 -
 ```
 
 #### With CUDA (Linux)
-If you use CUDA, Docker must be higher than 19.03.
+To use CUDA from inside the container, the installed Docker version must be >= 19.03.
 Install the driver and `nvidia-docker2` from [here](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#installing-docker-ce).
-You can perform hardware acceleration by GPU by running the following.
+You can then run FFmpeg inside Docker with GPU hardware acceleration enabled, as follows:
 ```bash
 $ sudo docker build --tag=ffmpeg:cuda -f cuda-ubuntu.dockerfile .
 $ sudo docker run --gpus all ffmpeg-cuda -hwaccel cuvid -c:v h264_cuvid -i https://files.coconut.co.s3.amazonaws.com/test.mp4 -c:v hevc_nvenc -vf scale_npp=-1:1080 - > test.mp4
