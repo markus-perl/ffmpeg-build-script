@@ -2,21 +2,21 @@
 
 # https://github.com/markus-perl/ffmpeg-build-script
 
-PROGNAME=$(basename $0)
-VERSION=1.18
+PROGNAME=$(basename "$0")
+VERSION=1.19
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
 WORKSPACE="$CWD/workspace"
 CFLAGS="-I$WORKSPACE/include"
 LDFLAGS="-L$WORKSPACE/lib"
 LDEXEFLAGS=""
-EXTRALIBS="-lpthread -lm -lz"
+EXTRALIBS="-ldl -lpthread -lm -lz"
 CONFIGURE_OPTIONS=()
 
 # Speed up the process
 # Env Var NUMJOBS overrides automatic detection
-if [[ -n $NUMJOBS ]]; then
-	MJOBS=$NUMJOBS
+if [[ -n "$NUMJOBS" ]]; then
+	MJOBS="$NUMJOBS"
 elif [[ -f /proc/cpuinfo ]]; then
 	MJOBS=$(grep -c processor /proc/cpuinfo)
 elif [[ "$OSTYPE" == "darwin"* ]]; then
@@ -44,17 +44,17 @@ download () {
 	# download url [filename[dirname]]
 
 	DOWNLOAD_PATH="$PACKAGES"
-	DOWNLOAD_FILE=${2:-"${1##*/}"}
+	DOWNLOAD_FILE="${2:-"${1##*/}"}"
 
 	if [[ "$DOWNLOAD_FILE" =~ "tar." ]]; then
 		TARGETDIR="${DOWNLOAD_FILE%.*}"
-		TARGETDIR=${3:-"${TARGETDIR%.*}"}
+		TARGETDIR="${3:-"${TARGETDIR%.*}"}"
 	else
-		TARGETDIR=${3:-"${DOWNLOAD_FILE%.*}"}
+		TARGETDIR="${3:-"${DOWNLOAD_FILE%.*}"}"
 	fi
 
 	if [ ! -f "$DOWNLOAD_PATH/$DOWNLOAD_FILE" ]; then
-		echo "Downloading $1"
+		echo "Downloading $1 as $DOWNLOAD_FILE"
 		curl -L --silent -o "$DOWNLOAD_PATH/$DOWNLOAD_FILE" "$1"
 
 		EXITCODE=$?
@@ -123,7 +123,7 @@ build () {
 	return 0
 }
 
-command_exists() {
+command_exists () {
 	if ! [[ -x $(command -v "$1") ]]; then
 		return 1
 	fi
@@ -131,6 +131,15 @@ command_exists() {
 	return 0
 }
 
+library_exists () {
+	local result=0
+	local output=$(pkg-config --exists --print-errors "$1" 2>&1 > /dev/null) || result=$?
+	if [ ! "$result" = "0" ]; then
+		return 1
+	fi
+
+	return 0
+}
 
 build_done () {
 	touch "$PACKAGES/$1.done"
@@ -150,7 +159,7 @@ usage () {
 	echo "      --version       Display version information"
 	echo "  -b, --build         Starts the build process"
 	echo "  -c, --cleanup       Remove all working dirs"
-	echo "  -f, --full-static   Complete static build of ffmpeg (eg. glibc, pthreads etc...) **not recommend**"
+	echo "  -f, --full-static   Complete static build of ffmpeg (eg. glibc, pthreads etc...) **only Linux**"
 	echo "                      Note: Because of the NSS (Name Service Switch), glibc does not recommend static links."
 	echo ""
 }
@@ -162,7 +171,7 @@ while (( $# > 0 )); do
 			exit 0
 			;;
 		--version)
-			echo $VERSION
+			echo "$VERSION"
 			exit 0
 			;;
 		-*)
@@ -174,6 +183,10 @@ while (( $# > 0 )); do
 				cleanup
 			fi
 			if [[ "$1" == "--full-static" || "$1" =~ 'f' ]]; then
+				if [[ "$OSTYPE" == "darwin"* ]]; then
+					echo "Error: full-static mode is available only Linux."
+					exit 1
+				fi
 				LDEXEFLAGS="-static"
 			fi
 			shift
@@ -185,8 +198,8 @@ while (( $# > 0 )); do
 	esac
 done
 
-if [ -z $bflag ]; then
-	if [ -z $cflag ]; then
+if [ -z "$bflag" ]; then
+	if [ -z "$cflag" ]; then
 		usage
 		exit 1
 	fi
@@ -199,7 +212,7 @@ echo ""
 
 echo "Using $MJOBS make jobs simultaneously."
 
-if [ -n $LDEXEFLAGS ]; then
+if [ -n "$LDEXEFLAGS" ]; then
 	echo "Start the build in full static mode."
 fi
 
@@ -207,6 +220,9 @@ mkdir -p "$PACKAGES"
 mkdir -p "$WORKSPACE"
 
 export PATH="${WORKSPACE}/bin:$PATH"
+PKG_CONFIG_PATH="/usr/local/lib/x86_64-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig"
+PKG_CONFIG_PATH+=":/usr/local/share/pkgconfig:/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/lib/pkgconfig:/usr/share/pkgconfig:/usr/lib64/pkgconfig"
+export PKG_CONFIG_PATH
 
 if ! command_exists "make"; then
 	echo "make not installed.";
@@ -223,12 +239,13 @@ if ! command_exists "curl"; then
 	exit 1
 fi
 
+
 ##
 ## build tools
 ##
 
 if build "yasm"; then
-	download "https://www.tortall.net/projects/yasm/releases/yasm-1.3.0.tar.gz"
+	download "https://github.com/yasm/yasm/releases/download/v1.3.0/yasm-1.3.0.tar.gz"
 	execute ./configure --prefix="${WORKSPACE}"
 	execute make -j $MJOBS
 	execute make install
@@ -236,7 +253,7 @@ if build "yasm"; then
 fi
 
 if build "nasm"; then
-	download "https://www.nasm.us/pub/nasm/releasebuilds/2.14.02/nasm-2.14.02.tar.gz"
+	download "https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/nasm-2.15.05.tar.xz"
 	execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
 	execute make -j $MJOBS
 	execute make install
@@ -251,12 +268,27 @@ if build "pkg-config"; then
 	build_done "pkg-config"
 fi
 
+if build "zlib"; then
+	download "https://www.zlib.net/zlib-1.2.11.tar.gz"
+	execute ./configure --static  --prefix="${WORKSPACE}"
+	execute make -j $MJOBS
+	execute make install
+	build_done "zlib"
+fi
+
+if build "openssl"; then
+	download "https://www.openssl.org/source/openssl-1.1.1h.tar.gz"
+	execute ./config --prefix="${WORKSPACE}" --openssldir="${WORKSPACE}" --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib no-shared zlib
+	execute make -j $MJOBS
+	execute make install
+
+	build_done "openssl"
+fi
+CONFIGURE_OPTIONS+=("--enable-openssl")
+
 if build "cmake"; then
-	download "https://cmake.org/files/v3.15/cmake-3.15.4.tar.gz"
-	rm Modules/FindJava.cmake
-	perl -p -i -e "s/get_filename_component.JNIPATH/#get_filename_component(JNIPATH/g" Tests/CMakeLists.txt
-	perl -p -i -e "s/get_filename_component.JNIPATH/#get_filename_component(JNIPATH/g" Tests/CMakeLists.txt
-	execute ./configure --prefix="${WORKSPACE}"
+	download "https://cmake.org/files/v3.18/cmake-3.18.4.tar.gz"
+	execute ./configure --prefix="${WORKSPACE}" --system-zlib
 	execute make -j $MJOBS
 	execute make install
 	build_done "cmake"
@@ -286,11 +318,15 @@ CONFIGURE_OPTIONS+=("--enable-libx264")
 
 if build "x265"; then
 	download "https://github.com/videolan/x265/archive/Release_3.5.tar.gz" "x265-3.5.tar.gz"
-	cd source || exit
-	execute cmake -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" -DENABLE_SHARED:bool=off -DSTATIC_LINK_CRT:BOOL=ON -DENABLE_CLI:BOOL=OFF .
+	cd build/linux || exit
+	execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF ../../source
 	execute make -j $MJOBS
 	execute make install
-	sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "$WORKSPACE/lib/pkgconfig/x265.pc" #The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
+
+	if [ -n "$LDEXEFLAGS" ]; then
+		sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "${WORKSPACE}/lib/pkgconfig/x265.pc" # The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
+	fi
+
 	build_done "x265"
 fi
 CONFIGURE_OPTIONS+=("--enable-libx265")
@@ -304,7 +340,7 @@ if build "libvpx"; then
 		sed "s/-Wl,--no-undefined -Wl,-soname/-Wl,-undefined,error -Wl,-install_name/g" build/make/Makefile.patched > build/make/Makefile
 	fi
 
-	execute ./configure --prefix="${WORKSPACE}" --disable-unit-tests --disable-shared
+	execute ./configure --prefix="${WORKSPACE}" --disable-unit-tests --disable-shared --as=yasm
 	execute make -j $MJOBS
 	execute make install
 
@@ -333,7 +369,7 @@ CONFIGURE_OPTIONS+=("--enable-libxvid")
 
 if build "vid_stab"; then
 	download "https://github.com/georgmartius/vid.stab/archive/v1.1.0.tar.gz" "vid.stab-1.1.0.tar.gz"
-	execute cmake -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" -DUSE_OMP=OFF -DENABLE_SHARED:bool=off .
+	execute cmake -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DUSE_OMP=OFF -DENABLE_SHARED=off .
 	execute make
 	execute make install
 
@@ -346,7 +382,7 @@ if build "av1"; then
 	download "https://aomedia.googlesource.com/aom/+archive/430d58446e1f71ec2283af0d6c1879bc7a3553dd.tar.gz" "av1.tar.gz" "av1"
 	make_dir "$PACKAGES"/aom_build
 	cd "$PACKAGES"/aom_build || exit
-	execute cmake -DENABLE_TESTS=0 -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" "$PACKAGES"/av1
+	execute cmake -DENABLE_TESTS=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib "$PACKAGES"/av1
 	execute make -j $MJOBS
 	execute make install
 
@@ -435,58 +471,57 @@ CONFIGURE_OPTIONS+=("--enable-libfdk-aac")
 ## other library
 ##
 
-if build "zlib"; then
-	download "https://www.zlib.net/zlib-1.2.11.tar.gz"
-	execute ./configure --static --prefix="${WORKSPACE}"
-	execute make -j $MJOBS
-	execute make install
-	build_done "zlib"
-fi
-
-if build "openssl"; then
-	download "https://www.openssl.org/source/openssl-1.1.1h.tar.gz"
-	execute ./config --prefix="${WORKSPACE}" --openssldir="${WORKSPACE}" --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib no-shared zlib
-	execute make -j $MJOBS
-	execute make install
-
-	build_done "openssl"
-fi
-CONFIGURE_OPTIONS+=("--enable-openssl")
-
 if build "srt"; then
 	download "https://github.com/Haivision/srt/archive/v1.4.1.tar.gz" "srt-1.4.1.tar.gz"
 	export OPENSSL_ROOT_DIR="${WORKSPACE}"
 	export OPENSSL_LIB_DIR="${WORKSPACE}"/lib
 	export OPENSSL_INCLUDE_DIR="${WORKSPACE}"/include/
-	execute cmake . -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DENABLE_APPS=OFF -DUSE_STATIC_LIBSTDCXX=ON
+	execute cmake . -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DENABLE_APPS=OFF -DUSE_STATIC_LIBSTDCXX=ON
 	execute make install
-	sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "$WORKSPACE/lib/pkgconfig/srt.pc" #The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
+
+	if [ -n "$LDEXEFLAGS" ]; then
+		sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "${WORKSPACE}"/lib/pkgconfig/srt.pc # The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
+	fi
 
 	build_done "srt"
 fi
 CONFIGURE_OPTIONS+=("--enable-libsrt")
 
+
 ##
 ## HWaccel library
 ##
 
-if command -v nvcc > /dev/null ; then
-	if build "nv-codec"; then
-		download "https://github.com/FFmpeg/nv-codec-headers/releases/download/n10.0.26.0/nv-codec-headers-10.0.26.0.tar.gz"
-		sed -i.backup "s#PREFIX = /usr/local#PREFIX = ${WORKSPACE}#g" Makefile #The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
-		execute make install
-		build_done "nv-codec"
-	fi
-	CFLAGS+=" -I/usr/local/cuda/include"
-	LDFLAGS+=" -L/usr/local/cuda/lib64"
-	CONFIGURE_OPTIONS+=("--enable-cuda-nvcc" "--enable-cuvid" "--enable-nvenc" "--enable-cuda-llvm")
+if [[ "$OSTYPE" == "linux-gnu" ]]; then
+	if command_exists "nvcc" ; then
+		if build "nv-codec"; then
+			download "https://github.com/FFmpeg/nv-codec-headers/releases/download/n11.0.10.0/nv-codec-headers-11.0.10.0.tar.gz"
+			execute make PREFIX="${WORKSPACE}"
+			execute make install PREFIX="${WORKSPACE}"
+			build_done "nv-codec"
+		fi
+		CFLAGS+=" -I/usr/local/cuda/include"
+		LDFLAGS+=" -L/usr/local/cuda/lib64"
+		CONFIGURE_OPTIONS+=("--enable-cuda-nvcc" "--enable-cuvid" "--enable-nvenc" "--enable-cuda-llvm")
 
-	if [ -z $LDEXEFLAGS ]; then
-		CONFIGURE_OPTIONS+=("--enable-libnpp") # Only libnpp cannot be static link.
+		if [ -z "$LDEXEFLAGS" ]; then
+			CONFIGURE_OPTIONS+=("--enable-libnpp") # Only libnpp cannot be statically linked.
+		fi
+
+		# https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
+		CONFIGURE_OPTIONS+=("--nvccflags=-gencode arch=compute_52,code=sm_52")
 	fi
 
-	# https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
-	CONFIGURE_OPTIONS+=("--nvccflags=-gencode arch=compute_52,code=sm_52")
+	# Vaapi doesn't work well with static links ffmpeg.
+	if [ -z "$LDEXEFLAGS" ]; then
+		# If the libva development SDK is installed, enable vaapi.
+		if library_exists "libva" ; then
+			if build "vaapi"; then
+				build_done "vaapi"
+			fi
+			CONFIGURE_OPTIONS+=("--enable-vaapi")
+		fi
+	fi
 fi
 
 
@@ -528,7 +563,7 @@ echo ""
 echo "Building done. The binary can be found here: $WORKSPACE/bin/ffmpeg"
 echo ""
 
-if [[ $AUTOINSTALL == "yes" ]]; then
+if [[ "$AUTOINSTALL" == "yes" ]]; then
 	if command_exists "sudo"; then
 		sudo cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
 		sudo cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
@@ -538,7 +573,7 @@ if [[ $AUTOINSTALL == "yes" ]]; then
 		cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
 		echo "Done. ffmpeg is now installed to your system."
 	fi
-elif [[ ! $SKIPINSTALL == "yes" ]]; then
+elif [[ ! "$SKIPINSTALL" == "yes" ]]; then
 	read -r -p "Install the binary to your $INSTALL_FOLDER folder? [Y/n] " response
 	case $response in
 	[yY][eE][sS]|[yY])

@@ -6,7 +6,7 @@
 build-ffmpeg
 ==========
 
-The FFmpeg build script provides an easy way to build a static FFmpeg on **OSX** and **Linux** with **non-free codecs** included.
+The FFmpeg build script provides an easy way to build a static FFmpeg on **macOS** and **Linux** with **non-free codecs** included.
 
 
 [![How-To build FFmpeg on MacOS](https://img.youtube.com/vi/Z9p3mM757cM/0.jpg)](https://www.youtube.com/watch?v=Z9p3mM757cM "How-To build FFmpeg on OSX")
@@ -32,6 +32,8 @@ because I don't have the resources and the time to maintain other systems.
 * `theora`: Free lossy video compression format
 * `opus`: Lossy audio coding format
 * `srt`: Secure Reliable Transport
+
+### HardwareAccel
 * `nv-codec`: [NVIDIA's GPU accelerated video codecs](https://devblogs.nvidia.com/nvidia-ffmpeg-transcoding-guide/). Installation is triggered only if CUDA installation is detected, follow [these](#Cuda-installation) instructions for installation. Supported codecs in nvcodec:
     * Decoders
         * H264 `h264_cuvid`
@@ -46,59 +48,51 @@ because I don't have the resources and the time to maintain other systems.
     * Encoders
         * H264 `nvenc_h264`
         * H265 `nvenc_hevc`
+* `vaapi`: [Video Acceleration API](https://trac.ffmpeg.org/wiki/Hardware/VAAPI). Installation is triggered only if libva driver installation is detected, follow [these](#Vaapi-installation) instructions for installation. Supported codecs in vaapi:
+    * Encoders
+        * H264 `h264_vaapi`
+        * H265 `hevc_vaapi`
+        * Motion JPEG `mjpeg_vaapi`
+        * MPEG2 video `mpeg2_vaapi`
+        * VP8 `vp8_vaapi`
+        * VP9 `vp9_vaapi`
+
 
 ## Continuos Integration
 ffmpeg-build-script is rockstable. Every commit runs against Linux and MacOS with https://github.com/markus-perl/ffmpeg-build-script/actions just to make sure everything works as expected.
 
-Requirements MacOS
-------------
+
+## Requirements
+### MacOS
 
 * XCode 10.x or greater
 
-Requirements Linux
-------------
-* Debian >= Buster, Ubuntu => Focal Fossa, other Distributions might work too
-* build-essentials installed:
+### Linux
 
-```
+* Debian >= Buster, Ubuntu => Focal Fossa, other Distributions might work too
+* build-essentials, curl is required installed
+
+```bash
 # Debian and Ubuntu
-$ sudo apt-get install build-essential curl g++
+$ sudo apt install build-essential curl
 
 # Fedora
-$ sudo dnf install @development-tools
+$ sudo dnf install @development-tools curl
 ```
 
-Installation
-------------
+## Installation
 
-### Quick install and run
+### Quick install and run (macOS, Linux)
 
 Open your command line and run (needs curl to be installed):
 
 ```bash
 $ bash <(curl -s "https://raw.githubusercontent.com/markus-perl/ffmpeg-build-script/master/web-install.sh?v1")
 ```
+
 This command downloads the build script and automatically starts the build process.
 
-### Run with Docker
-
-#### Default - Without CUDA
-```bash
-$ git clone https://github.com/markus-perl/ffmpeg-build-script.git
-$ cd ffmpeg-build-script
-$ sudo docker build --tag=ffmpeg .
-$ docker run ffmpeg -i https://files.coconut.co.s3.amazonaws.com/test.mp4 -f webm -c:v libvpx -c:a libvorbis - > /tmp/test.mp4
-```
-
-#### With CUDA
-```bash
-$ git clone https://github.com/markus-perl/ffmpeg-build-script.git
-$ cd ffmpeg-build-script
-$ sudo docker build --tag=ffmpeg-cuda -f cuda-ubuntu.dockerfile .
-$ sudo docker run --gpus all ffmpeg-cuda -hwaccel cuvid -c:v h264_cuvid -i https://files.coconut.co.s3.amazonaws.com/test.mp4 -c:v hevc_nvenc -vf scale_npp=-1:1080 - > /tmp/test.mp4
-```
-
-### Common installation
+### Common installation (macOS, Linux)
 
 ```bash
 $ git clone https://github.com/markus-perl/ffmpeg-build-script.git
@@ -106,7 +100,81 @@ $ cd ffmpeg-build-script
 $ ./build-ffmpeg --help
 ```
 
-### Cuda installation
+### Build in Docker (Linux)
+
+The main advantage of using Docker is the ability to reliably build without polluting the host environment. And you don't even have to install the CUDA SDK on your host!
+
+If you are running below kind of operating system and having Docker version 19.03 or higher, this is your best option.
+* Ubuntu >= 16.04 (16.04, 18.04, 20.04)
+* Centos >= 7 (7, 8)
+
+1. Enable Docker BuildKit
+```bash
+$ export DOCKER_BUILDKIT=1
+```
+
+2. Set the following DIST (`ubuntu` or `centos`) and VER (ubuntu: `16.04` , `18.04`, `20.04` or centos: `7`, `8`) environment variables in conjunction with your operating system.
+```bash
+$ export DIST=centos
+$ export VER=8
+```
+
+3. Start the docker build as follows.
+```bash
+$ sudo -E docker build --tag=ffmpeg:cuda-$DIST -f cuda-$DIST.dockerfile --build-arg VER=$VER .
+```
+
+4. Build an `export.dockerfile` that copies only what you need from the image you just built as follows. When running, move the library in the lib to a location where the linker can find it or set the `LD_LIBRARY_PATH`.
+Since we have matched the operating system and version, it should work well with dynamic links. If it doesn't work, edit the `export.dockerfile` and copy the necessary libraries and try again.
+
+```bash
+$ sudo -E docker build --output type=local,dest=build -f export.dockerfile .
+$ ls build
+bin lib
+$ ls build/bin
+ffmpeg ffprobe
+$ ls build/lib
+libnppc.so.11 libnppicc.so.11 libnppidei.so.11 libnppig.so.11
+```
+
+### Build in Docker (full static ver.) (Linux)
+If you're running an operating system other than the one above, a completely static build may work.
+It's easy to do, just run the following command.
+```bash
+$ sudo -E docker build --tag=ffmpeg:cuda-static --output type=local,dest=build -f full-static.dockerfile .
+```
+
+### Run with Docker (macOS, Linux)
+You can also run the entire Docker if the above two fail.
+
+#### Default - Without CUDA (macOS, Linux)
+If you don't use CUDA, it's simple and runs as follows.
+
+```bash
+$ sudo docker build --tag=ffmpeg .
+$ sudo docker run ffmpeg -i https://files.coconut.co.s3.amazonaws.com/test.mp4 -f webm -c:v libvpx -c:a libvorbis - > test.mp4
+```
+
+#### With CUDA (Linux)
+If you use CUDA, Docker must be higher than 19.03.
+Install the driver and `nvidia-docker2` from [here](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#installing-docker-ce).
+You can perform hardware acceleration by GPU by running the following.
+```bash
+$ sudo docker build --tag=ffmpeg:cuda -f cuda-ubuntu.dockerfile .
+$ sudo docker run --gpus all ffmpeg-cuda -hwaccel cuvid -c:v h264_cuvid -i https://files.coconut.co.s3.amazonaws.com/test.mp4 -c:v hevc_nvenc -vf scale_npp=-1:1080 - > test.mp4
+```
+
+### Common build (macOS, Linux)
+
+If you want to enable CUDA, please refer to [these](#Cuda-installation) and install the SDK.
+
+If you want to enable Vaapi, please refer to [these](#Vaapi-installation) and install the driver.
+
+```bash
+$ ./build-ffmpeg --build
+```
+
+## Cuda installation
 
 CUDA is a parallel computing platform developed by NVIDIA.
 To be able to compile ffmpeg with CUDA support, you first need a compatible NVIDIA GPU.
@@ -116,8 +184,19 @@ To be able to compile ffmpeg with CUDA support, you first need a compatible NVID
 or [this blog](https://www.pugetsystems.com/labs/hpc/How-To-Install-CUDA-10-1-on-Ubuntu-19-04-1405/)
 to setup the CUDA toolkit.
 
-Usage
-------
+## Vaapi installation
+
+You will need the libva driver, so please install it below.
+
+```bash
+# Debian and Ubuntu
+$ sudo apt install libva-dev vainfo
+
+# Fedora and CentOS
+$ sudo dnf install libva-devel libva-intel-driver libva-utils
+```
+
+## Usage
 
 ```bash
 Usage: build-ffmpeg [OPTIONS]
@@ -126,7 +205,7 @@ Options:
       --version       Display version information
   -b, --build         Starts the build process
   -c, --cleanup       Remove all working dirs
-  -f, --full-static   Complete static build of ffmpeg (eg. glibc, pthreads etc...) **not recommend**
+  -f, --full-static   Complete static build of ffmpeg (eg. glibc, pthreads etc...) **only Linux**
                       Note: Because of the NSS (Name Service Switch), glibc does not recommend static links.
 ```
 
@@ -135,6 +214,7 @@ Options:
   See detail below: https://sourceware.org/glibc/wiki/FAQ#Even_statically_linked_programs_need_some_shared_libraries_which_is_not_acceptable_for_me.__What_can_I_do.3F
 
 - The libnpp in the CUDA SDK cannot be statically linked.
+- Vaapi cannot be statically linked.
 
 Contact
 -------
