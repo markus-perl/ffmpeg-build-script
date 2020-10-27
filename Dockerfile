@@ -16,7 +16,7 @@ FROM ubuntu:20.04
 
 # install va-driver
 RUN apt-get update \
-    && apt-get -y --no-install-recommends install libva-drm2 \
+    && apt-get -y install libva-drm2 \
     && apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
 
 COPY --from=build /app/workspace/bin/ffmpeg /usr/bin/ffmpeg

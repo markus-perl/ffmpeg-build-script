@@ -15,10 +15,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: install libdrm-dev
+      - name: install libva-dev
         run: |
           sudo apt-get update
-          sudo apt-get install -y libdrm-dev
+          sudo apt-get install -y libva-dev
 
       - name: build ffmpeg
         run: |

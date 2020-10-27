@@ -20,7 +20,7 @@ FROM ubuntu:${VER}
 
 # install va-driver
 RUN apt-get update \
-    && apt-get -y --no-install-recommends install libva-drm2 \
+    && apt-get -y install libva-drm2 \
     && apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
 
 # Copy libnpp
