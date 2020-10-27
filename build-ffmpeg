@@ -260,7 +260,6 @@ fi
 
 if build "pkg-config"; then
 	download "https://pkgconfig.freedesktop.org/releases/pkg-config-0.29.2.tar.gz"
-	execute autoreconf --force --verbose --install
 	execute ./configure --silent --prefix="${WORKSPACE}" --with-pc-path="${WORKSPACE}"/lib/pkgconfig --with-internal-glib
 	execute make -j $MJOBS
 	execute make install
