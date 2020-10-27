@@ -220,6 +220,7 @@ mkdir -p "$PACKAGES"
 mkdir -p "$WORKSPACE"
 
 export PATH="${WORKSPACE}/bin:$PATH"
+export PKG_CONFIG_PATH="/usr/lib/pkgconfig:/usr/lib64/pkgconfig:/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig"
 
 if ! command_exists "make"; then
 	echo "make not installed.";
@@ -338,7 +339,7 @@ if build "libvpx"; then
 		sed "s/-Wl,--no-undefined -Wl,-soname/-Wl,-undefined,error -Wl,-install_name/g" build/make/Makefile.patched > build/make/Makefile
 	fi
 
-	execute ./configure --prefix="${WORKSPACE}" --disable-unit-tests --disable-shared
+	execute ./configure --prefix="${WORKSPACE}" --disable-unit-tests --disable-shared --as=yasm
 	execute make -j $MJOBS
 	execute make install
 
@@ -367,7 +368,7 @@ CONFIGURE_OPTIONS+=("--enable-libxvid")
 
 if build "vid_stab"; then
 	download "https://github.com/georgmartius/vid.stab/archive/v1.1.0.tar.gz" "vid.stab-1.1.0.tar.gz"
-	execute cmake -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" -DUSE_OMP=OFF -DENABLE_SHARED:bool=off .
+	execute cmake -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DUSE_OMP=OFF -DENABLE_SHARED=off .
 	execute make
 	execute make install
 
@@ -380,7 +381,7 @@ if build "av1"; then
 	download "https://aomedia.googlesource.com/aom/+archive/430d58446e1f71ec2283af0d6c1879bc7a3553dd.tar.gz" "av1.tar.gz" "av1"
 	make_dir "$PACKAGES"/aom_build
 	cd "$PACKAGES"/aom_build || exit
-	execute cmake -DENABLE_TESTS=0 -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" "$PACKAGES"/av1
+	execute cmake -DENABLE_TESTS=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib "$PACKAGES"/av1
 	execute make -j $MJOBS
 	execute make install
 
@@ -474,7 +475,7 @@ if build "srt"; then
 	export OPENSSL_ROOT_DIR="${WORKSPACE}"
 	export OPENSSL_LIB_DIR="${WORKSPACE}"/lib
 	export OPENSSL_INCLUDE_DIR="${WORKSPACE}"/include/
-	execute cmake . -DCMAKE_INSTALL_PREFIX:PATH="${WORKSPACE}" -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DENABLE_APPS=OFF -DUSE_STATIC_LIBSTDCXX=ON
+	execute cmake . -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DENABLE_APPS=OFF -DUSE_STATIC_LIBSTDCXX=ON
 	execute make install
 
 	if [ -n "$LDEXEFLAGS" ]; then
@@ -512,7 +513,11 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
 
 	# Vaapi doesn't work well with static links ffmpeg.
 	if [ -z "$LDEXEFLAGS" ]; then
+		# If the libva development SDK is installed, enable vaapi.
 		if library_exists "libva" ; then
+			if build "vaapi"; then
+				build_done "vaapi"
+			fi
 			CONFIGURE_OPTIONS+=("--enable-vaapi")
 		fi
 	fi

@@ -5,7 +5,7 @@ FROM nvidia/cuda:11.1-devel-centos${VER} AS build
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
 
 RUN yum group install -y "Development Tools" \
-    && yum install -y curl python3 libva \
+    && yum install -y curl libva-devel \
     && rm -rf /var/cache/yum/* \
     && yum clean all
 
