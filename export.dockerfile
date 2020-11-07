@@ -11,3 +11,4 @@ COPY --from=ffmpeg:cuda-${DIST} /lib/x86_64-linux-gnu/libnppidei.so.11 /lib/libn
 # Copy ffmpeg
 COPY --from=ffmpeg:cuda-${DIST} /usr/bin/ffmpeg /bin/ffmpeg
 COPY --from=ffmpeg:cuda-${DIST} /usr/bin/ffprobe /bin/ffprobe
+COPY --from=ffmpeg:cuda-${DIST} /usr/bin/ffplay /bin/ffplay
