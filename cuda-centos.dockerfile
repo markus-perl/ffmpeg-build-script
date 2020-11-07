@@ -2,7 +2,8 @@ ARG VER=8
 
 FROM nvidia/cuda:11.1-devel-centos${VER} AS build
 
-ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
+ENV NVIDIA_VISIBLE_DEVICES all
+ENV NVIDIA_DRIVER_CAPABILITIES compute,utility,video
 
 RUN yum group install -y "Development Tools" \
     && yum install -y curl libva-devel \
@@ -16,6 +17,9 @@ RUN SKIPINSTALL=yes /app/build-ffmpeg --build
 
 
 FROM centos:${VER}
+
+ENV NVIDIA_VISIBLE_DEVICES all
+ENV NVIDIA_DRIVER_CAPABILITIES compute,utility,video
 
 # install va-driver
 RUN yum install -y libva \

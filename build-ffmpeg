@@ -468,6 +468,22 @@ CONFIGURE_OPTIONS+=("--enable-libfdk-aac")
 
 
 ##
+## image library
+##
+
+if build "libwebp"; then
+	download "https://github.com/webmproject/libwebp/archive/v1.1.0.tar.gz" "libwebp-1.1.0.tar.gz"
+	make_dir build
+	cd build || exit
+	execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DENABLE_STATIC=ON ../
+	execute make -j $MJOBS
+	execute make install
+
+	build_done "libwebp"
+fi
+CONFIGURE_OPTIONS+=("--enable-libwebp")
+
+##
 ## other library
 ##
 

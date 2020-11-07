@@ -14,6 +14,8 @@ RUN SKIPINSTALL=yes /app/build-ffmpeg --build
 
 FROM ubuntu:20.04
 
+ENV DEBIAN_FRONTEND noninteractive
+
 # install va-driver
 RUN apt-get update \
     && apt-get -y install libva-drm2 \

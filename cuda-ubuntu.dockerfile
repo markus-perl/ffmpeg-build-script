@@ -3,7 +3,8 @@ ARG VER=20.04
 FROM nvidia/cuda:11.1-devel-ubuntu${VER} AS build
 
 ENV DEBIAN_FRONTEND noninteractive
-ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
+ENV NVIDIA_VISIBLE_DEVICES all
+ENV NVIDIA_DRIVER_CAPABILITIES compute,utility,video
 
 RUN apt-get update \
     && apt-get -y --no-install-recommends install build-essential curl ca-certificates libva-dev \
@@ -17,6 +18,10 @@ RUN SKIPINSTALL=yes /app/build-ffmpeg --build
 
 
 FROM ubuntu:${VER}
+
+ENV DEBIAN_FRONTEND noninteractive
+ENV NVIDIA_VISIBLE_DEVICES all
+ENV NVIDIA_DRIVER_CAPABILITIES compute,utility,video
 
 # install va-driver
 RUN apt-get update \

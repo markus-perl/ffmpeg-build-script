@@ -1,7 +1,8 @@
 FROM nvidia/cuda:11.1-devel-ubuntu20.04 AS build
 
 ENV DEBIAN_FRONTEND noninteractive
-ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
+ENV NVIDIA_VISIBLE_DEVICES all
+ENV NVIDIA_DRIVER_CAPABILITIES compute,utility,video
 
 RUN apt-get update \
     && apt-get -y --no-install-recommends install build-essential curl ca-certificates \
@@ -17,6 +18,9 @@ RUN ldd /app/workspace/bin/ffmpeg ; exit 0
 RUN ldd /app/workspace/bin/ffprobe ; exit 0
 
 FROM scratch
+
+ENV NVIDIA_VISIBLE_DEVICES all
+ENV NVIDIA_DRIVER_CAPABILITIES compute,utility,video
 
 COPY --from=build /app/workspace/bin/ffmpeg /ffmpeg
 COPY --from=build /app/workspace/bin/ffprobe /ffprobe
