@@ -488,6 +488,15 @@ CONFIGURE_OPTIONS+=("--enable-libwebp")
 ## other library
 ##
 
+if build "libsdl"; then
+	download "https://www.libsdl.org/release/SDL2-2.0.12.tar.gz"
+	execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+	execute make -j $MJOBS
+	execute make install
+
+	build_done "libsdl"
+fi
+
 if build "srt"; then
 	download "https://github.com/Haivision/srt/archive/v1.4.1.tar.gz" "srt-1.4.1.tar.gz"
 	export OPENSSL_ROOT_DIR="${WORKSPACE}"
