@@ -1,7 +1,8 @@
 FROM nvidia/cuda:11.1-devel-ubuntu20.04 AS build
 
 ENV DEBIAN_FRONTEND noninteractive
-ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
+ENV NVIDIA_VISIBLE_DEVICES all
+ENV NVIDIA_DRIVER_CAPABILITIES compute,utility,video
 
 RUN apt-get update \
     && apt-get -y --no-install-recommends install build-essential curl ca-certificates \
@@ -13,13 +14,20 @@ COPY ./build-ffmpeg /app/build-ffmpeg
 
 RUN AUTOINSTALL=yes /app/build-ffmpeg --build --full-static
 
-RUN ldd /app/workspace/bin/ffmpeg ; exit 0
-RUN ldd /app/workspace/bin/ffprobe ; exit 0
+# Check shared library
+RUN ! ldd /app/workspace/bin/ffmpeg
+RUN ! ldd /app/workspace/bin/ffprobe
+RUN ! ldd /app/workspace/bin/ffplay
 
 FROM scratch
 
+ENV NVIDIA_VISIBLE_DEVICES all
+ENV NVIDIA_DRIVER_CAPABILITIES compute,utility,video
+
+# Copy ffmpeg
 COPY --from=build /app/workspace/bin/ffmpeg /ffmpeg
 COPY --from=build /app/workspace/bin/ffprobe /ffprobe
+COPY --from=build /app/workspace/bin/ffplay /ffplay
 
 CMD         ["--help"]
 ENTRYPOINT  ["/ffmpeg"]

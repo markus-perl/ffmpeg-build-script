@@ -129,7 +129,7 @@ $ sudo -E docker build --tag=ffmpeg:cuda-$DIST -f cuda-$DIST.dockerfile --build-
 Since we have matched the operating system and version, it should work well with dynamic links. If it doesn't work, edit the `export.dockerfile` and copy the necessary libraries and try again.
 
 ```bash
-$ sudo -E docker build --output type=local,dest=build -f export.dockerfile .
+$ sudo -E docker build --output type=local,dest=build -f export.dockerfile --build-arg DIST=$DIST .
 $ ls build
 bin lib
 $ ls build/bin

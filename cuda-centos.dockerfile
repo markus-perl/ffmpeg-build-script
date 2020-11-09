@@ -2,7 +2,8 @@ ARG VER=8
 
 FROM nvidia/cuda:11.1-devel-centos${VER} AS build
 
-ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
+ENV NVIDIA_VISIBLE_DEVICES all
+ENV NVIDIA_DRIVER_CAPABILITIES compute,utility,video
 
 RUN yum group install -y "Development Tools" \
     && yum install -y curl libva-devel \
@@ -16,6 +17,9 @@ RUN SKIPINSTALL=yes /app/build-ffmpeg --build
 
 
 FROM centos:${VER}
+
+ENV NVIDIA_VISIBLE_DEVICES all
+ENV NVIDIA_DRIVER_CAPABILITIES compute,utility,video
 
 # install va-driver
 RUN yum install -y libva \
@@ -31,9 +35,12 @@ COPY --from=build /usr/local/cuda-11.1/targets/x86_64-linux/lib/libnppidei.so.11
 # Copy ffmpeg
 COPY --from=build /app/workspace/bin/ffmpeg /usr/bin/ffmpeg
 COPY --from=build /app/workspace/bin/ffprobe /usr/bin/ffprobe
+COPY --from=build /app/workspace/bin/ffplay /usr/bin/ffplay
 
-RUN ldd /usr/bin/ffmpeg ; exit 0
-RUN ldd /usr/bin/ffprobe ; exit 0
+# Check shared library
+RUN ldd /usr/bin/ffmpeg
+RUN ldd /usr/bin/ffprobe
+RUN ldd /usr/bin/ffplay
 
 CMD         ["--help"]
 ENTRYPOINT  ["/usr/bin/ffmpeg"]
