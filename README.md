@@ -13,15 +13,18 @@ The FFmpeg build script provides an easy way to build a static FFmpeg on **macOS
 
 *Youtube: How-To build and install FFmpeg on MacOS*
 
-## Disclaimer
+
+## Disclaimer And Data Privacy Notice
+This script will download different packages from different sources which may track your usage. These sources are out of control 
+by the developers of this script. By downloading and using this script you are fully aware of this.
+
 Use this script at your own risk. I maintain this script in my spare time.
 Please do not file bug reports for systems other than Debian 10 and macOS 10.15.x
 because I don't have the resources and the time to maintain other systems.
 
-
 ## Supported Codecs
-* `x264`: H.264 (MPEG-4 AVC)
-* `x265`: H.265 Video Codec
+* `x264`: H.264 Video Codec (MPEG-4 AVC)
+* `x265`: H.265 Video Codec (HEVC)
 * `aom`: AV1 Video Codec (Experimental and very slow!)
 * `fdk_aac`: Fraunhofer FDK AAC Codec
 * `xvidcore`: MPEG-4 video coding standard
@@ -32,6 +35,8 @@ because I don't have the resources and the time to maintain other systems.
 * `theora`: Free lossy video compression format
 * `opus`: Lossy audio coding format
 * `srt`: Secure Reliable Transport
+* `srt`: Secure Reliable Transport
+* `webp`: Image format both lossless and lossy
 
 ### HardwareAccel
 * `nv-codec`: [NVIDIA's GPU accelerated video codecs](https://devblogs.nvidia.com/nvidia-ffmpeg-transcoding-guide/). These encoders/decoders will only be available if a CUDA installation was found while building the binary. Follow [these](#Cuda-installation) instructions for installation. Supported codecs in nvcodec:
@@ -674,6 +679,7 @@ $ make -j 12
 $ make install
 
 Building done. The binary can be found here: /Users/me/dev/ffmpeg-build-script/workspace/bin/ffmpeg
+
 
 Install the binary to your /usr/local/bin folder? [Y/n] y
 Password:

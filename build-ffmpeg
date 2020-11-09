@@ -1,9 +1,10 @@
 #!/bin/bash
 
-# https://github.com/markus-perl/ffmpeg-build-script
+# HOMEPAGE: https://github.com/markus-perl/ffmpeg-build-script
+# LICENSE: https://github.com/markus-perl/ffmpeg-build-script/blob/master/LICENSE
 
 PROGNAME=$(basename "$0")
-VERSION=1.19
+VERSION=1.20
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
 WORKSPACE="$CWD/workspace"
@@ -585,29 +586,37 @@ INSTALL_FOLDER="/usr/local/bin"
 fi
 
 echo ""
-echo "Building done. The binary can be found here: $WORKSPACE/bin/ffmpeg"
+echo "Building done. The following binaries can be found here:"
+echo "- ffmpeg: $WORKSPACE/bin/ffmpeg"
+echo "- ffprobe: $WORKSPACE/bin/ffprobe"
+echo "- ffplay: $WORKSPACE/bin/ffplay"
+
 echo ""
 
 if [[ "$AUTOINSTALL" == "yes" ]]; then
 	if command_exists "sudo"; then
 		sudo cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
 		sudo cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
+    sudo cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/ffplay"
 		echo "Done. FFmpeg is now installed to your system."
 	else
 		cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
 		cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
+    sudo cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/ffplay"
 		echo "Done. FFmpeg is now installed to your system."
 	fi
 elif [[ ! "$SKIPINSTALL" == "yes" ]]; then
-	read -r -p "Install the binary to your $INSTALL_FOLDER folder? [Y/n] " response
+	read -r -p "Install these binaries to your $INSTALL_FOLDER folder? Existing binaries will be replaced. [Y/n] " response
 	case $response in
 	[yY][eE][sS]|[yY])
 		if command_exists "sudo"; then
 			sudo cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
 			sudo cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
+      sudo cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/ffplay"
 		else
 			cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
 			cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
+      cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/ffplay"
 		fi
 		echo "Done. FFmpeg is now installed to your system."
 		;;
