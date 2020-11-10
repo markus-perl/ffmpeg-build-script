@@ -15,8 +15,8 @@ The FFmpeg build script provides an easy way to build a static FFmpeg on **macOS
 
 
 ## Disclaimer And Data Privacy Notice
-This script will download different packages from different sources which may track your usage. These sources are out of control 
-by the developers of this script. By downloading and using this script you are fully aware of this.
+This script will download different packages with different licenses from various sources which may track your usage. 
+These sources are out of control by the developers of this script. By downloading and using this script, you are fully aware of this.
 
 Use this script at your own risk. I maintain this script in my spare time.
 Please do not file bug reports for systems other than Debian 10 and macOS 10.15.x
