@@ -179,7 +179,7 @@ while (( $# > 0 )); do
 			if [[ "$1" == "--build" || "$1" =~ 'b' ]]; then
 				bflag='-b'
 			fi
-			if [[ "$1" == "--cleanup" || "$1" =~ 'c' ]]; then
+			if [[ "$1" == "--cleanup" || "$1" =~ 'c'  && ! "$1" =~ '--' ]]; then
 				cflag='-c'
 				cleanup
 			fi
