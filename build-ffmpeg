@@ -14,6 +14,10 @@ LDEXEFLAGS=""
 EXTRALIBS="-ldl -lpthread -lm -lz"
 CONFIGURE_OPTIONS=()
 
+# read by gcc and cmake
+# https://cmake.org/cmake/help/latest/variable/CMAKE_OSX_DEPLOYMENT_TARGET.html
+export MACOSX_DEPLOYMENT_TARGET=10.11
+
 # Speed up the process
 # Env Var NUMJOBS overrides automatic detection
 if [[ -n "$NUMJOBS" ]]; then
@@ -271,21 +275,22 @@ fi
 
 if build "zlib"; then
 	download "https://www.zlib.net/zlib-1.2.11.tar.gz"
-	execute ./configure --static  --prefix="${WORKSPACE}"
+	execute ./configure --shared --prefix="${WORKSPACE}"
 	execute make -j $MJOBS
 	execute make install
 	build_done "zlib"
 fi
 
-if build "openssl"; then
-	download "https://www.openssl.org/source/openssl-1.1.1h.tar.gz"
-	execute ./config --prefix="${WORKSPACE}" --openssldir="${WORKSPACE}" --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib no-shared zlib
-	execute make -j $MJOBS
-	execute make install
-
-	build_done "openssl"
-fi
-CONFIGURE_OPTIONS+=("--enable-openssl")
+#if build "openssl"; then
+#	download "https://www.openssl.org/source/openssl-1.1.1h.tar.gz"
+#	execute ./config --prefix="${WORKSPACE}" --openssldir="${WORKSPACE}" --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib shared zlib
+#	execute make -j $MJOBS
+#	execute make install
+#
+#	build_done "openssl"
+#fi
+# not enabling openssl -- it's non-free
+#CONFIGURE_OPTIONS+=("--enable-openssl")
 
 if build "cmake"; then
 	download "https://cmake.org/files/v3.18/cmake-3.18.4.tar.gz"
@@ -304,9 +309,9 @@ if build "x264"; then
 	download "https://code.videolan.org/videolan/x264/-/archive/stable/x264-stable.tar.bz2"
 
 	if [[ "$OSTYPE" == "linux-gnu" ]]; then
-		execute ./configure --prefix="${WORKSPACE}" --enable-static --enable-pic CXXFLAGS="-fPIC"
+		execute ./configure --prefix="${WORKSPACE}" --enable-shared --enable-pic CXXFLAGS="-fPIC"
 	else
-		execute ./configure --prefix="${WORKSPACE}" --enable-static --enable-pic
+		execute ./configure --prefix="${WORKSPACE}" --enable-shared --enable-pic
 	fi
 
 	execute make -j $MJOBS
@@ -320,7 +325,7 @@ CONFIGURE_OPTIONS+=("--enable-libx264")
 if build "x265"; then
 	download "https://github.com/videolan/x265/archive/Release_3.5.tar.gz" "x265-3.5.tar.gz"
 	cd build/linux || exit
-	execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF ../../source
+	execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=on -DBUILD_SHARED_LIBS=on ../../source
 	execute make -j $MJOBS
 	execute make install
 
@@ -341,7 +346,7 @@ if build "libvpx"; then
 		sed "s/-Wl,--no-undefined -Wl,-soname/-Wl,-undefined,error -Wl,-install_name/g" build/make/Makefile.patched > build/make/Makefile
 	fi
 
-	execute ./configure --prefix="${WORKSPACE}" --disable-unit-tests --disable-shared --as=yasm
+	execute ./configure --prefix="${WORKSPACE}" --disable-unit-tests --enable-shared --disable-static --as=yasm
 	execute make -j $MJOBS
 	execute make install
 
@@ -352,7 +357,7 @@ CONFIGURE_OPTIONS+=("--enable-libvpx")
 if build "xvidcore"; then
 	download "https://downloads.xvid.com/downloads/xvidcore-1.3.7.tar.gz"
 	cd build/generic || exit
-	execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+	execute ./configure --prefix="${WORKSPACE}" --enable-shared --disable-static
 	execute make -j $MJOBS
 	execute make install
 
@@ -370,7 +375,7 @@ CONFIGURE_OPTIONS+=("--enable-libxvid")
 
 if build "vid_stab"; then
 	download "https://github.com/georgmartius/vid.stab/archive/v1.1.0.tar.gz" "vid.stab-1.1.0.tar.gz"
-	execute cmake -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DUSE_OMP=OFF -DENABLE_SHARED=off .
+	execute cmake -DBUILD_SHARED_LIBS=on -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DUSE_OMP=OFF -DENABLE_SHARED=on .
 	execute make
 	execute make install
 
@@ -383,7 +388,7 @@ if build "av1"; then
 	download "https://aomedia.googlesource.com/aom/+archive/430d58446e1f71ec2283af0d6c1879bc7a3553dd.tar.gz" "av1.tar.gz" "av1"
 	make_dir "$PACKAGES"/aom_build
 	cd "$PACKAGES"/aom_build || exit
-	execute cmake -DENABLE_TESTS=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib "$PACKAGES"/av1
+	execute cmake -DBUILD_SHARED_LIBS=1 -DENABLE_TESTS=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib "$PACKAGES"/av1
 	execute make -j $MJOBS
 	execute make install
 
@@ -398,7 +403,7 @@ CONFIGURE_OPTIONS+=("--enable-libaom")
 
 if build "opencore"; then
 	download "https://deac-riga.dl.sourceforge.net/project/opencore-amr/opencore-amr/opencore-amr-0.1.5.tar.gz"
-	execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+	execute ./configure --prefix="${WORKSPACE}" --enable-shared --disable-static
 	execute make -j $MJOBS
 	execute make install
 
@@ -408,7 +413,9 @@ CONFIGURE_OPTIONS+=("--enable-libopencore_amrnb" "--enable-libopencore_amrwb")
 
 if build "lame"; then
 	download "https://netcologne.dl.sourceforge.net/project/lame/lame/3.100/lame-3.100.tar.gz"
-	execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+	sed "/lame_init_old/d" include/libmp3lame.sym > include/libmp3lame.sym.patched
+	mv include/libmp3lame.sym.patched include/libmp3lame.sym
+	execute ./configure --prefix="${WORKSPACE}" --enable-shared --disable-static
 	execute make -j $MJOBS
 	execute make install
 
@@ -418,7 +425,7 @@ CONFIGURE_OPTIONS+=("--enable-libmp3lame")
 
 if build "opus"; then
 	download "https://archive.mozilla.org/pub/opus/opus-1.3.1.tar.gz"
-	execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+	execute ./configure --prefix="${WORKSPACE}" --enable-shared --disable-static
 	execute make -j $MJOBS
 	execute make install
 
@@ -428,7 +435,7 @@ CONFIGURE_OPTIONS+=("--enable-libopus")
 
 if build "libogg"; then
 	download "https://ftp.osuosl.org/pub/xiph/releases/ogg/libogg-1.3.3.tar.gz"
-	execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+	execute ./configure --prefix="${WORKSPACE}" --enable-shared --disable-static
 	execute make -j $MJOBS
 	execute make install
 	build_done "libogg"
@@ -436,7 +443,7 @@ fi
 
 if build "libvorbis"; then
 	download "https://ftp.osuosl.org/pub/xiph/releases/vorbis/libvorbis-1.3.6.tar.gz"
-	execute ./configure --prefix="${WORKSPACE}" --with-ogg-libraries="${WORKSPACE}"/lib --with-ogg-includes="${WORKSPACE}"/include/ --enable-static --disable-shared --disable-oggtest
+	execute ./configure --prefix="${WORKSPACE}" --with-ogg-libraries="${WORKSPACE}"/lib --with-ogg-includes="${WORKSPACE}"/include/ --disable-static --enable-shared --disable-oggtest
 	execute make -j $MJOBS
 	execute make install
 
@@ -449,23 +456,13 @@ if build "libtheora"; then
 	sed "s/-fforce-addr//g" configure > configure.patched
 	chmod +x configure.patched
 	mv configure.patched configure
-	execute ./configure --prefix="${WORKSPACE}" --with-ogg-libraries="${WORKSPACE}"/lib --with-ogg-includes="${WORKSPACE}"/include/ --with-vorbis-libraries="${WORKSPACE}"/lib --with-vorbis-includes="${WORKSPACE}"/include/ --enable-static --disable-shared --disable-oggtest --disable-vorbistest --disable-examples --disable-asm --disable-spec
+	execute ./configure --prefix="${WORKSPACE}" --with-ogg-libraries="${WORKSPACE}"/lib --with-ogg-includes="${WORKSPACE}"/include/ --with-vorbis-libraries="${WORKSPACE}"/lib --with-vorbis-includes="${WORKSPACE}"/include/ --disable-static --enable-shared --disable-oggtest --disable-vorbistest --disable-examples --disable-asm --disable-spec
 	execute make -j $MJOBS
 	execute make install
 
 	build_done "libtheora"
 fi
 CONFIGURE_OPTIONS+=("--enable-libtheora")
-
-if build "fdk_aac"; then
-	download "https://sourceforge.net/projects/opencore-amr/files/fdk-aac/fdk-aac-2.0.1.tar.gz/download?use_mirror=gigenet" "fdk-aac-2.0.1.tar.gz"
-	execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
-	execute make -j $MJOBS
-	execute make install
-
-	build_done "fdk_aac"
-fi
-CONFIGURE_OPTIONS+=("--enable-libfdk-aac")
 
 
 ##
@@ -476,7 +473,7 @@ if build "libwebp"; then
 	download "https://github.com/webmproject/libwebp/archive/v1.1.0.tar.gz" "libwebp-1.1.0.tar.gz"
 	make_dir build
 	cd build || exit
-	execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=OFF -DENABLE_STATIC=ON ../
+	execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=ON -DENABLE_STATIC=OFF ../
 	execute make -j $MJOBS
 	execute make install
 
@@ -491,28 +488,28 @@ CONFIGURE_OPTIONS+=("--enable-libwebp")
 
 if build "libsdl"; then
 	download "https://www.libsdl.org/release/SDL2-2.0.12.tar.gz"
-	execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+	execute ./configure --prefix="${WORKSPACE}" --enable-shared --disable-static
 	execute make -j $MJOBS
 	execute make install
 
 	build_done "libsdl"
 fi
 
-if build "srt"; then
-	download "https://github.com/Haivision/srt/archive/v1.4.1.tar.gz" "srt-1.4.1.tar.gz"
-	export OPENSSL_ROOT_DIR="${WORKSPACE}"
-	export OPENSSL_LIB_DIR="${WORKSPACE}"/lib
-	export OPENSSL_INCLUDE_DIR="${WORKSPACE}"/include/
-	execute cmake . -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DENABLE_APPS=OFF -DUSE_STATIC_LIBSTDCXX=ON
-	execute make install
-
-	if [ -n "$LDEXEFLAGS" ]; then
-		sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "${WORKSPACE}"/lib/pkgconfig/srt.pc # The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
-	fi
-
-	build_done "srt"
-fi
-CONFIGURE_OPTIONS+=("--enable-libsrt")
+#if build "srt"; then
+#	download "https://github.com/Haivision/srt/archive/v1.4.1.tar.gz" "srt-1.4.1.tar.gz"
+#	export OPENSSL_ROOT_DIR="${WORKSPACE}"
+#	export OPENSSL_LIB_DIR="${WORKSPACE}"/lib
+#	export OPENSSL_INCLUDE_DIR="${WORKSPACE}"/include/
+#	execute cmake . -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=ON -DENABLE_STATIC=OFF -DENABLE_APPS=OFF -DUSE_STATIC_LIBSTDCXX=ON
+#	execute make install
+#
+#	if [ -n "$LDEXEFLAGS" ]; then
+#		sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "${WORKSPACE}"/lib/pkgconfig/srt.pc # The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
+#	fi
+#
+#	build_done "srt"
+#fi
+#CONFIGURE_OPTIONS+=("--enable-libsrt")
 
 
 ##
@@ -562,11 +559,10 @@ download "https://ffmpeg.org/releases/ffmpeg-4.3.1.tar.bz2"
 ./configure "${CONFIGURE_OPTIONS[@]}" \
 	--disable-debug \
 	--disable-doc \
-	--disable-shared \
+	--disable-static \
 	--enable-gpl \
-	--enable-nonfree \
 	--enable-pthreads \
-	--enable-static \
+	--enable-shared \
 	--enable-small \
 	--enable-version3 \
 	--extra-cflags="${CFLAGS}" \
