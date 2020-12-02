@@ -346,8 +346,13 @@ if build "libvpx"; then
 		sed "s/-Wl,--no-undefined -Wl,-soname/-Wl,-undefined,error -Wl,-install_name/g" build/make/Makefile.patched > build/make/Makefile
 	fi
 
-	execute ./configure --prefix="${WORKSPACE}" --disable-unit-tests --enable-shared --disable-static --as=yasm
+	execute ./configure --prefix="${WORKSPACE}" --disable-unit-tests --enable-shared --disable-static --as=yasm --target=x86_64-darwin15-gcc
 	execute make -j $MJOBS
+
+	if [[ "$OSTYPE" == "darwin"* ]]; then
+	  install_name_tool -id "${WORKSPACE}/lib/libvpx.6.dylib" libvpx.6.dylib
+	fi
+
 	execute make install
 
 	build_done "libvpx"
