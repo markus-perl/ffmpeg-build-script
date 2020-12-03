@@ -4,7 +4,7 @@
 # LICENSE: https://github.com/markus-perl/ffmpeg-build-script/blob/master/LICENSE
 
 PROGNAME=$(basename "$0")
-VERSION=1.20
+VERSION=1.21.rc1
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
 WORKSPACE="$CWD/workspace"
@@ -736,6 +736,8 @@ fi
 cd $CWD
 if [[ "$OSTYPE" == "darwin"* ]]; then
   node copy_mac_libs.js
+  cd "$WORKSPACE/mac"
+  execute zip "ffmpeg-ffprobe-shared-darwin-x86_64.${VERSION}.zip" *
 fi
 
 exit 0
