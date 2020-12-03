@@ -31,6 +31,8 @@ else
 	MJOBS=4
 fi
 
+CONFIGURE_OPTIONS+=("--extra-version=beamcube")
+
 make_dir () {
 	remove_dir "$1"
 	if ! mkdir "$1"; then
@@ -281,6 +283,11 @@ if build "zlib"; then
 	build_done "zlib"
 fi
 
+if build "meson"; then
+  execute python3 -m pip install meson ninja
+  build_done "meson"
+fi
+
 #if build "openssl"; then
 #	download "https://www.openssl.org/source/openssl-1.1.1h.tar.gz"
 #	execute ./config --prefix="${WORKSPACE}" --openssldir="${WORKSPACE}" --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib shared zlib
@@ -327,6 +334,11 @@ if build "x265"; then
 	cd build/linux || exit
 	execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=on -DBUILD_SHARED_LIBS=on ../../source
 	execute make -j $MJOBS
+
+	if [[ "$OSTYPE" == "darwin"* ]]; then
+	  execute install_name_tool -id "${WORKSPACE}/lib/libx265.198.dylib" libx265.198.dylib
+	fi
+
 	execute make install
 
 	if [ -n "$LDEXEFLAGS" ]; then
@@ -350,7 +362,7 @@ if build "libvpx"; then
 	execute make -j $MJOBS
 
 	if [[ "$OSTYPE" == "darwin"* ]]; then
-	  install_name_tool -id "${WORKSPACE}/lib/libvpx.6.dylib" libvpx.6.dylib
+	  execute install_name_tool -id "${WORKSPACE}/lib/libvpx.6.dylib" libvpx.6.dylib
 	fi
 
 	execute make install
@@ -382,11 +394,26 @@ if build "vid_stab"; then
 	download "https://github.com/georgmartius/vid.stab/archive/v1.1.0.tar.gz" "vid.stab-1.1.0.tar.gz"
 	execute cmake -DBUILD_SHARED_LIBS=on -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DUSE_OMP=OFF -DENABLE_SHARED=on .
 	execute make
-	execute make install
+
+	if [[ "$OSTYPE" == "darwin"* ]]; then
+	  execute install_name_tool -id "${WORKSPACE}/lib/libvidstab.1.1.dylib" libvidstab.1.1.dylib
+	fi
+
+  execute make install
 
 	build_done "vid_stab"
 fi
 CONFIGURE_OPTIONS+=("--enable-libvidstab")
+
+if build "twolame"; then
+  download "https://downloads.sourceforge.net/twolame/twolame-0.4.0.tar.gz"
+  execute ./configure --prefix="${WORKSPACE}" --enable-shared --disable-static
+	execute make -j $MJOBS
+	execute make install
+
+	build_done "twolame"
+fi
+CONFIGURE_OPTIONS+=("--enable-libtwolame")
 
 
 if build "av1"; then
@@ -395,12 +422,50 @@ if build "av1"; then
 	cd "$PACKAGES"/aom_build || exit
 	execute cmake -DBUILD_SHARED_LIBS=1 -DENABLE_TESTS=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib "$PACKAGES"/av1
 	execute make -j $MJOBS
-	execute make install
+
+	if [[ "$OSTYPE" == "darwin"* ]]; then
+	  execute install_name_tool -id "${WORKSPACE}/lib/libaom.2.dylib" libaom.2.dylib
+	fi
+
+  execute make install
 
 	build_done "av1"
 fi
 CONFIGURE_OPTIONS+=("--enable-libaom")
 
+if build "dav1d"; then
+  download "https://code.videolan.org/videolan/dav1d/-/archive/0.7.1/dav1d-0.7.1.tar.gz"
+  make_dir "$PACKAGES"/dav1d_build
+  cd "$PACKAGES"/dav1d_build || exit
+  execute meson --prefix="${WORKSPACE}" ../dav1d-0.7.1
+  execute ninja
+  execute ninja install
+
+  build_done "dav1d"
+fi
+CONFIGURE_OPTIONS+=("--enable-libdav1d")
+
+if build "zimg"; then
+  download "https://github.com/sekrit-twc/zimg/archive/release-3.0.1.tar.gz"
+  execute autoreconf -i
+  execute ./configure --prefix="${WORKSPACE}" --enable-shared --disable-static
+	execute make -j $MJOBS
+	execute make install
+
+	build_done "zimg"
+fi
+CONFIGURE_OPTIONS+=("--enable-libzimg")
+
+# get prebuilt binaries
+if build "openh264"; then
+  download "https://github.com/cisco/openh264/archive/v2.1.1.tar.gz" "openh264-2.1.1.tar.gz"
+  execute export PREFIX="${WORKSPACE}"
+  execute make
+  execute make install-shared
+
+	build_done "openh264"
+fi
+CONFIGURE_OPTIONS+=("--enable-libopenh264")
 
 ##
 ## audio library
@@ -448,7 +513,7 @@ fi
 
 if build "libvorbis"; then
 	download "https://ftp.osuosl.org/pub/xiph/releases/vorbis/libvorbis-1.3.6.tar.gz"
-	execute ./configure --prefix="${WORKSPACE}" --with-ogg-libraries="${WORKSPACE}"/lib --with-ogg-includes="${WORKSPACE}"/include/ --disable-static --enable-shared --disable-oggtest
+	OGG_CFLAGS="-I${WORKSPACE}/include/ogg" OGG_LIBS="-L${WORKSPACE}/lib -logg" execute ./configure --prefix="${WORKSPACE}" --with-ogg-libraries="${WORKSPACE}"/lib --with-ogg-includes="${WORKSPACE}"/include/ --disable-static --enable-shared --disable-oggtest
 	execute make -j $MJOBS
 	execute make install
 
@@ -461,7 +526,7 @@ if build "libtheora"; then
 	sed "s/-fforce-addr//g" configure > configure.patched
 	chmod +x configure.patched
 	mv configure.patched configure
-	execute ./configure --prefix="${WORKSPACE}" --with-ogg-libraries="${WORKSPACE}"/lib --with-ogg-includes="${WORKSPACE}"/include/ --with-vorbis-libraries="${WORKSPACE}"/lib --with-vorbis-includes="${WORKSPACE}"/include/ --disable-static --enable-shared --disable-oggtest --disable-vorbistest --disable-examples --disable-asm --disable-spec
+	OGG_CFLAGS="-I${WORKSPACE}/include/ogg" OGG_LIBS="-L${WORKSPACE}/lib -logg" execute ./configure --prefix="${WORKSPACE}" --with-ogg-libraries="${WORKSPACE}"/lib --with-ogg-includes="${WORKSPACE}"/include/ --with-vorbis-libraries="${WORKSPACE}"/lib --with-vorbis-includes="${WORKSPACE}"/include/ --disable-static --enable-shared --disable-oggtest --disable-vorbistest --disable-examples --disable-asm --disable-spec
 	execute make -j $MJOBS
 	execute make install
 
@@ -469,6 +534,38 @@ if build "libtheora"; then
 fi
 CONFIGURE_OPTIONS+=("--enable-libtheora")
 
+if build "shine"; then
+  download "https://github.com/toots/shine/archive/3.1.1.tar.gz" "shine-3.1.1.tar.gz"
+  execute autoreconf -i
+  execute ./configure --prefix="${WORKSPACE}" --enable-shared --disable-static
+  execute make -j $MJOBS
+  execute make install
+
+  build_done "shine"
+fi
+CONFIGURE_OPTIONS+=("--enable-libshine")
+
+if build "soxr"; then
+  download "http://ftp.debian.org/debian/pool/main/libs/libsoxr/libsoxr_0.1.3.orig.tar.xz" "soxr-0.1.3.tar.xz"
+  make_dir build
+  cd build || exit
+  execute cmake .. -DWITH_OPENMP:BOOL=OFF -Wno-dev -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS:BOOL=ON
+  execute make -j $MJOBS
+	execute make install
+
+  build_done "soxr"
+fi
+CONFIGURE_OPTIONS+=("--enable-libsoxr")
+
+if build "speex"; then
+  download "http://downloads.us.xiph.org/releases/speex/speex-1.2.0.tar.gz"
+  execute ./configure --prefix="${WORKSPACE}" --enable-shared --disable-static
+  execute make -j $MJOBS
+  execute make install
+
+  build_done "speex"
+fi
+CONFIGURE_OPTIONS+=("--enable-libspeex")
 
 ##
 ## image library
@@ -486,6 +583,18 @@ if build "libwebp"; then
 fi
 CONFIGURE_OPTIONS+=("--enable-libwebp")
 
+if build "openjpeg"; then
+  download "https://github.com/uclouvain/openjpeg/archive/v2.3.1.tar.gz" "openjpeg-v2.3.1.tar.gz"
+	make_dir build
+	cd build || exit
+	execute cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DBUILD_SHARED_LIBS:bool=on
+	execute make -j $MJOBS
+	execute make install
+
+	build_done "openjpeg"
+fi
+CONFIGURE_OPTIONS+=("--enable-libopenjpeg")
+
 
 ##
 ## other library
@@ -500,21 +609,40 @@ if build "libsdl"; then
 	build_done "libsdl"
 fi
 
-#if build "srt"; then
-#	download "https://github.com/Haivision/srt/archive/v1.4.1.tar.gz" "srt-1.4.1.tar.gz"
-#	export OPENSSL_ROOT_DIR="${WORKSPACE}"
-#	export OPENSSL_LIB_DIR="${WORKSPACE}"/lib
-#	export OPENSSL_INCLUDE_DIR="${WORKSPACE}"/include/
-#	execute cmake . -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=ON -DENABLE_STATIC=OFF -DENABLE_APPS=OFF -DUSE_STATIC_LIBSTDCXX=ON
+if build "snappy"; then
+  download "https://github.com/google/snappy/archive/1.1.8.tar.gz"
+  make_dir build
+  cd build || exit
+  execute cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DBUILD_SHARED_LIBS:bool=on
+  execute make -j $MJOBS
+
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+	  execute install_name_tool -id "${WORKSPACE}/lib/libsnappy.1.dylib" libsnappy.1.dylib
+	fi
+
+  execute make install
+
+  build_done "snappy"
+fi
+CONFIGURE_OPTIONS+=("--enable-libsnappy")
+
+if build "xz"; then
+  download "https://tukaani.org/xz/xz-5.2.5.tar.gz"
+	execute ./configure --prefix="${WORKSPACE}" --enable-shared --disable-static
+	execute make -j $MJOBS
+	execute make install
+
+	build_done "xz"
+fi
+
+#if build "libass"; then
+#  download "https://github.com/libass/libass/releases/download/0.15.0/libass-0.15.0.tar.gz"
+#  execute ./configure --prefix="${WORKSPACE}" --enable-shared --disable-static
+#  execute make -j $MJOBS
 #	execute make install
 #
-#	if [ -n "$LDEXEFLAGS" ]; then
-#		sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "${WORKSPACE}"/lib/pkgconfig/srt.pc # The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
-#	fi
-#
-#	build_done "srt"
+#  build_done "libass"
 #fi
-#CONFIGURE_OPTIONS+=("--enable-libsrt")
 
 
 ##
@@ -622,6 +750,11 @@ elif [[ ! "$SKIPINSTALL" == "yes" ]]; then
 		echo "Done. FFmpeg is now installed to your system."
 		;;
 	esac
+fi
+
+cd $CWD
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  node copy_mac_libs.js
 fi
 
 exit 0
