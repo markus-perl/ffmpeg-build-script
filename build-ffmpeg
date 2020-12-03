@@ -288,17 +288,6 @@ if build "meson"; then
   build_done "meson"
 fi
 
-#if build "openssl"; then
-#	download "https://www.openssl.org/source/openssl-1.1.1h.tar.gz"
-#	execute ./config --prefix="${WORKSPACE}" --openssldir="${WORKSPACE}" --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib shared zlib
-#	execute make -j $MJOBS
-#	execute make install
-#
-#	build_done "openssl"
-#fi
-# not enabling openssl -- it's non-free
-#CONFIGURE_OPTIONS+=("--enable-openssl")
-
 if build "cmake"; then
 	download "https://cmake.org/files/v3.18/cmake-3.18.4.tar.gz"
 	execute ./configure --prefix="${WORKSPACE}" --system-zlib
