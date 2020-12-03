@@ -6,32 +6,32 @@ on:
       - '*.md'
 
 jobs:
-  build-linux:
-    name: build in native linux
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: install libva-dev
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libva-dev
-
-      - name: build ffmpeg
-        run: |
-          while sleep 300; do echo "=====[ $SECONDS seconds still running ]====="; done &
-          SKIPINSTALL=yes VERBOSE=yes ./build-ffmpeg --build
-          kill %1
-      - name: check shared library
-        run: |
-          ldd ./workspace/bin/ffmpeg
-      - name: test run ffmepg
-        run: |
-          ./workspace/bin/ffmpeg -buildconf
-      - name: clean up
-        run: |
-          ./build-ffmpeg --cleanup
+#  build-linux:
+#    name: build in native linux
+#    runs-on: ubuntu-20.04
+#    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v2
+#
+#      - name: install libva-dev
+#        run: |
+#          sudo apt-get update
+#          sudo apt-get install -y libva-dev
+#
+#      - name: build ffmpeg
+#        run: |
+#          while sleep 300; do echo "=====[ $SECONDS seconds still running ]====="; done &
+#          SKIPINSTALL=yes VERBOSE=yes ./build-ffmpeg --build
+#          kill %1
+#      - name: check shared library
+#        run: |
+#          ldd ./workspace/bin/ffmpeg
+#      - name: test run ffmepg
+#        run: |
+#          ./workspace/bin/ffmpeg -buildconf
+#      - name: clean up
+#        run: |
+#          ./build-ffmpeg --cleanup
 
   build-macos:
     name: build in native macOS
