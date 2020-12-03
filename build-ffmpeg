@@ -445,17 +445,6 @@ if build "zimg"; then
 fi
 CONFIGURE_OPTIONS+=("--enable-libzimg")
 
-# get prebuilt binaries
-if build "openh264"; then
-  download "https://github.com/cisco/openh264/archive/v2.1.1.tar.gz" "openh264-2.1.1.tar.gz"
-  execute export PREFIX="${WORKSPACE}"
-  execute make
-  execute make install-shared
-
-	build_done "openh264"
-fi
-CONFIGURE_OPTIONS+=("--enable-libopenh264")
-
 ##
 ## audio library
 ##
