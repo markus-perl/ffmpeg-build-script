@@ -40,6 +40,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Use nodejs
+        uses: actions/setup-node@v1
+
       - name: build ffmpeg
         run: |
           while sleep 300; do echo "=====[ $SECONDS seconds still running ]====="; done &
