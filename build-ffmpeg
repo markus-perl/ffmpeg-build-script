@@ -341,13 +341,17 @@ CONFIGURE_OPTIONS+=("--enable-libx265")
 if build "libvpx"; then
 	download "https://github.com/webmproject/libvpx/archive/v1.9.0.tar.gz" "libvpx-1.9.0.tar.gz"
 
+  EXTRA_FLAG=""
+
 	if [[ "$OSTYPE" == "darwin"* ]]; then
 		echo "Applying Darwin patch"
 		sed "s/,--version-script//g" build/make/Makefile > build/make/Makefile.patched
 		sed "s/-Wl,--no-undefined -Wl,-soname/-Wl,-undefined,error -Wl,-install_name/g" build/make/Makefile.patched > build/make/Makefile
+		EXTRA_FLAG="--target=x86_64-darwin15-gcc"
 	fi
 
-	execute ./configure --prefix="${WORKSPACE}" --disable-unit-tests --enable-shared --disable-static --as=yasm --target=x86_64-darwin15-gcc
+
+	execute ./configure --prefix="${WORKSPACE}" --disable-unit-tests --enable-shared --disable-static --as=yasm "${EXTRA_FLAG}"
 	execute make -j $MJOBS
 
 	if [[ "$OSTYPE" == "darwin"* ]]; then
