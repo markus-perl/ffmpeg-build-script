@@ -4,8 +4,6 @@ on:
   push:
     paths-ignore:
       - '*.md'
-  pull_request:
-    branches: [ master ]
 
 jobs:
   build-linux:
