@@ -4,7 +4,7 @@
 # LICENSE: https://github.com/markus-perl/ffmpeg-build-script/blob/master/LICENSE
 
 PROGNAME=$(basename "$0")
-VERSION=1.21.rc1
+VERSION=1.21.rc3
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
 WORKSPACE="$CWD/workspace"
@@ -677,7 +677,6 @@ download "https://ffmpeg.org/releases/ffmpeg-4.3.1.tar.bz2"
 	--enable-gpl \
 	--enable-pthreads \
 	--enable-shared \
-	--enable-small \
 	--enable-version3 \
 	--extra-cflags="${CFLAGS}" \
 	--extra-ldexeflags="${LDEXEFLAGS}" \
@@ -737,7 +736,7 @@ cd $CWD
 if [[ "$OSTYPE" == "darwin"* ]]; then
   node copy_mac_libs.js
   cd "$WORKSPACE/mac"
-  execute zip "ffmpeg-ffprobe-shared-darwin-x86_64.${VERSION}.zip" *
+  execute zip --symlinks -r "ffmpeg-ffprobe-shared-darwin-x86_64.${VERSION}.zip" *
 fi
 
 exit 0
