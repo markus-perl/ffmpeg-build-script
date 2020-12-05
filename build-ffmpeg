@@ -616,16 +616,6 @@ if build "xz"; then
 	build_done "xz"
 fi
 
-#if build "libass"; then
-#  download "https://github.com/libass/libass/releases/download/0.15.0/libass-0.15.0.tar.gz"
-#  execute ./configure --prefix="${WORKSPACE}" --enable-shared --disable-static
-#  execute make -j $MJOBS
-#	execute make install
-#
-#  build_done "libass"
-#fi
-
-
 ##
 ## HWaccel library
 ##
