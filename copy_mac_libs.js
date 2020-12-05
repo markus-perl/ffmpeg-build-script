@@ -47,8 +47,6 @@ function copyDylibs(binaryName, base = baseBinDir) {
         copiedLibs.add(path);
         copiedLibs.add(newFilename);
         if (path !== newFilename) {
-          // logAndExec(`cp ${path} ${newFilename}`);
-
           // copy sym-linked libraries as well
           let nameWithoutVersion = filename.split('.')[0];
           if (filename.includes('libSDL2')) {
