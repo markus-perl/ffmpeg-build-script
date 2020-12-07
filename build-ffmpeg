@@ -284,8 +284,8 @@ if build "zlib"; then
 fi
 
 if build "meson"; then
-  execute python3 -m pip install meson ninja
-  build_done "meson"
+	execute python3 -m pip install meson ninja
+	build_done "meson"
 fi
 
 if build "cmake"; then
@@ -325,7 +325,7 @@ if build "x265"; then
 	execute make -j $MJOBS
 
 	if [[ "$OSTYPE" == "darwin"* ]]; then
-	  execute install_name_tool -id "${WORKSPACE}/lib/libx265.198.dylib" libx265.198.dylib
+		execute install_name_tool -id "${WORKSPACE}/lib/libx265.198.dylib" libx265.198.dylib
 	fi
 
 	execute make install
@@ -341,7 +341,7 @@ CONFIGURE_OPTIONS+=("--enable-libx265")
 if build "libvpx"; then
 	download "https://github.com/webmproject/libvpx/archive/v1.9.0.tar.gz" "libvpx-1.9.0.tar.gz"
 
-  EXTRA_FLAG=""
+	EXTRA_FLAG=""
 
 	if [[ "$OSTYPE" == "darwin"* ]]; then
 		echo "Applying Darwin patch"
@@ -355,7 +355,7 @@ if build "libvpx"; then
 	execute make -j $MJOBS
 
 	if [[ "$OSTYPE" == "darwin"* ]]; then
-	  execute install_name_tool -id "${WORKSPACE}/lib/libvpx.6.dylib" libvpx.6.dylib
+		execute install_name_tool -id "${WORKSPACE}/lib/libvpx.6.dylib" libvpx.6.dylib
 	fi
 
 	execute make install
@@ -390,7 +390,7 @@ if build "vid_stab"; then
 	execute make install
 
 	if [[ "$OSTYPE" == "darwin"* ]]; then
-	  execute install_name_tool -id "${WORKSPACE}/lib/libvidstab.1.1.dylib" "${WORKSPACE}/lib/libvidstab.1.1.dylib"
+		execute install_name_tool -id "${WORKSPACE}/lib/libvidstab.1.1.dylib" "${WORKSPACE}/lib/libvidstab.1.1.dylib"
 	fi
 
 	build_done "vid_stab"
@@ -398,8 +398,8 @@ fi
 CONFIGURE_OPTIONS+=("--enable-libvidstab")
 
 if build "twolame"; then
-  download "https://downloads.sourceforge.net/twolame/twolame-0.4.0.tar.gz"
-  execute ./configure --prefix="${WORKSPACE}" --enable-shared --disable-static
+	download "https://downloads.sourceforge.net/twolame/twolame-0.4.0.tar.gz"
+	execute ./configure --prefix="${WORKSPACE}" --enable-shared --disable-static
 	execute make -j $MJOBS
 	execute make install
 
@@ -416,31 +416,31 @@ if build "av1"; then
 	execute make -j $MJOBS
 
 	if [[ "$OSTYPE" == "darwin"* ]]; then
-	  execute install_name_tool -id "${WORKSPACE}/lib/libaom.2.dylib" libaom.2.0.0.dylib
+		execute install_name_tool -id "${WORKSPACE}/lib/libaom.2.dylib" libaom.2.0.0.dylib
 	fi
 
-  execute make install
+	execute make install
 
 	build_done "av1"
 fi
 CONFIGURE_OPTIONS+=("--enable-libaom")
 
 if build "dav1d"; then
-  download "https://code.videolan.org/videolan/dav1d/-/archive/0.7.1/dav1d-0.7.1.tar.gz"
-  make_dir "$PACKAGES"/dav1d_build
-  cd "$PACKAGES"/dav1d_build || exit
-  execute meson --prefix="${WORKSPACE}" ../dav1d-0.7.1
-  execute ninja
-  execute ninja install
+	download "https://code.videolan.org/videolan/dav1d/-/archive/0.7.1/dav1d-0.7.1.tar.gz"
+	make_dir "$PACKAGES"/dav1d_build
+	cd "$PACKAGES"/dav1d_build || exit
+	execute meson --prefix="${WORKSPACE}" ../dav1d-0.7.1
+	execute ninja
+	execute ninja install
 
-  build_done "dav1d"
+	build_done "dav1d"
 fi
 CONFIGURE_OPTIONS+=("--enable-libdav1d")
 
 if build "zimg"; then
-  download "https://github.com/sekrit-twc/zimg/archive/release-3.0.1.tar.gz"
-  execute autoreconf -i
-  execute ./configure --prefix="${WORKSPACE}" --enable-shared --disable-static
+	download "https://github.com/sekrit-twc/zimg/archive/release-3.0.1.tar.gz"
+	execute autoreconf -i
+	execute ./configure --prefix="${WORKSPACE}" --enable-shared --disable-static
 	execute make -j $MJOBS
 	execute make install
 
@@ -516,35 +516,35 @@ fi
 CONFIGURE_OPTIONS+=("--enable-libtheora")
 
 if build "shine"; then
-  download "https://github.com/toots/shine/archive/3.1.1.tar.gz" "shine-3.1.1.tar.gz"
-  execute autoreconf -i
-  execute ./configure --prefix="${WORKSPACE}" --enable-shared --disable-static
-  execute make -j $MJOBS
-  execute make install
+	download "https://github.com/toots/shine/archive/3.1.1.tar.gz" "shine-3.1.1.tar.gz"
+	execute autoreconf -i
+	execute ./configure --prefix="${WORKSPACE}" --enable-shared --disable-static
+	execute make -j $MJOBS
+	execute make install
 
-  build_done "shine"
+	build_done "shine"
 fi
 CONFIGURE_OPTIONS+=("--enable-libshine")
 
 if build "soxr"; then
-  download "http://ftp.debian.org/debian/pool/main/libs/libsoxr/libsoxr_0.1.3.orig.tar.xz" "soxr-0.1.3.tar.xz"
-  make_dir build
-  cd build || exit
-  execute cmake .. -DWITH_OPENMP:BOOL=OFF -Wno-dev -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS:BOOL=ON
-  execute make -j $MJOBS
+	download "http://ftp.debian.org/debian/pool/main/libs/libsoxr/libsoxr_0.1.3.orig.tar.xz" "soxr-0.1.3.tar.xz"
+	make_dir build
+	cd build || exit
+	execute cmake .. -DWITH_OPENMP:BOOL=OFF -Wno-dev -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS:BOOL=ON
+	execute make -j $MJOBS
 	execute make install
 
-  build_done "soxr"
+	build_done "soxr"
 fi
 CONFIGURE_OPTIONS+=("--enable-libsoxr")
 
 if build "speex"; then
-  download "http://downloads.us.xiph.org/releases/speex/speex-1.2.0.tar.gz"
-  execute ./configure --prefix="${WORKSPACE}" --enable-shared --disable-static
-  execute make -j $MJOBS
-  execute make install
+	download "http://downloads.us.xiph.org/releases/speex/speex-1.2.0.tar.gz"
+	execute ./configure --prefix="${WORKSPACE}" --enable-shared --disable-static
+	execute make -j $MJOBS
+	execute make install
 
-  build_done "speex"
+	build_done "speex"
 fi
 CONFIGURE_OPTIONS+=("--enable-libspeex")
 
@@ -565,7 +565,7 @@ fi
 CONFIGURE_OPTIONS+=("--enable-libwebp")
 
 if build "openjpeg"; then
-  download "https://github.com/uclouvain/openjpeg/archive/v2.3.1.tar.gz" "openjpeg-v2.3.1.tar.gz"
+	download "https://github.com/uclouvain/openjpeg/archive/v2.3.1.tar.gz" "openjpeg-v2.3.1.tar.gz"
 	make_dir build
 	cd build || exit
 	execute cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DBUILD_SHARED_LIBS:bool=on
@@ -591,24 +591,24 @@ if build "libsdl"; then
 fi
 
 if build "snappy"; then
-  download "https://github.com/google/snappy/archive/1.1.8.tar.gz"
-  make_dir build
-  cd build || exit
-  execute cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DBUILD_SHARED_LIBS:bool=on
-  execute make -j $MJOBS
+	download "https://github.com/google/snappy/archive/1.1.8.tar.gz"
+	make_dir build
+	cd build || exit
+	execute cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DBUILD_SHARED_LIBS:bool=on
+	execute make -j $MJOBS
 
-  if [[ "$OSTYPE" == "darwin"* ]]; then
-	  execute install_name_tool -id "${WORKSPACE}/lib/libsnappy.1.dylib" libsnappy.1.1.8.dylib
+	if [[ "$OSTYPE" == "darwin"* ]]; then
+		execute install_name_tool -id "${WORKSPACE}/lib/libsnappy.1.dylib" libsnappy.1.1.8.dylib
 	fi
 
-  execute make install
+	execute make install
 
-  build_done "snappy"
+	build_done "snappy"
 fi
 CONFIGURE_OPTIONS+=("--enable-libsnappy")
 
 if build "xz"; then
-  download "https://tukaani.org/xz/xz-5.2.5.tar.gz"
+	download "https://tukaani.org/xz/xz-5.2.5.tar.gz"
 	execute ./configure --prefix="${WORKSPACE}" --enable-shared --disable-static
 	execute make -j $MJOBS
 	execute make install
@@ -696,12 +696,12 @@ if [[ "$AUTOINSTALL" == "yes" ]]; then
 	if command_exists "sudo"; then
 		sudo cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
 		sudo cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
-    sudo cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/ffplay"
+		sudo cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/ffplay"
 		echo "Done. FFmpeg is now installed to your system."
 	else
 		cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
 		cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
-    sudo cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/ffplay"
+		sudo cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/ffplay"
 		echo "Done. FFmpeg is now installed to your system."
 	fi
 elif [[ ! "$SKIPINSTALL" == "yes" ]]; then
@@ -711,11 +711,11 @@ elif [[ ! "$SKIPINSTALL" == "yes" ]]; then
 		if command_exists "sudo"; then
 			sudo cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
 			sudo cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
-      sudo cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/ffplay"
+			sudo cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/ffplay"
 		else
 			cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
 			cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
-      cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/ffplay"
+			cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/ffplay"
 		fi
 		echo "Done. FFmpeg is now installed to your system."
 		;;
@@ -724,9 +724,9 @@ fi
 
 cd $CWD
 if [[ "$OSTYPE" == "darwin"* ]]; then
-  node copy_mac_libs.js
-  cd "$WORKSPACE/mac"
-  execute zip --symlinks -r "ffmpeg-ffprobe-shared-darwin-x86_64.${VERSION}.zip" *
+	node copy_mac_libs.js
+	cd "$WORKSPACE/mac"
+	execute zip --symlinks -r "ffmpeg-ffprobe-shared-darwin-x86_64.${VERSION}.zip" *
 fi
 
 exit 0
