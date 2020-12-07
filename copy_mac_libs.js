@@ -49,6 +49,7 @@ function copyDylibs(binaryName, base = baseBinDir) {
         if (path !== newFilename) {
           // copy sym-linked libraries as well
           let nameWithoutVersion = filename.split('.')[0];
+          // libSDL2 weirdly has hypthen after then name (i.e., libSDL2-2.0.0.dylib)
           if (filename.includes('libSDL2')) {
             nameWithoutVersion = 'libSDL2';
           }

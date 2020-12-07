@@ -4,7 +4,7 @@
 # LICENSE: https://github.com/markus-perl/ffmpeg-build-script/blob/master/LICENSE
 
 PROGNAME=$(basename "$0")
-VERSION=1.21.rc4
+VERSION=1.21.rc5
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
 WORKSPACE="$CWD/workspace"
@@ -13,6 +13,14 @@ LDFLAGS="-L$WORKSPACE/lib"
 LDEXEFLAGS=""
 EXTRALIBS="-ldl -lpthread -lm -lz"
 CONFIGURE_OPTIONS=()
+
+is_mac () {
+	if [[ "$OSTYPE" == "darwin"* ]]; then
+		return 0
+	fi
+
+	return 1
+}
 
 # read by gcc and cmake
 # https://cmake.org/cmake/help/latest/variable/CMAKE_OSX_DEPLOYMENT_TARGET.html
@@ -24,7 +32,7 @@ if [[ -n "$NUMJOBS" ]]; then
 	MJOBS="$NUMJOBS"
 elif [[ -f /proc/cpuinfo ]]; then
 	MJOBS=$(grep -c processor /proc/cpuinfo)
-elif [[ "$OSTYPE" == "darwin"* ]]; then
+elif is_mac; then
 	MJOBS=$(sysctl -n machdep.cpu.thread_count)
 	CONFIGURE_OPTIONS=("--enable-videotoolbox")
 else
@@ -148,6 +156,13 @@ library_exists () {
 	return 0
 }
 
+set_mac_install_name () {
+	local name="${2:-$1}"
+	if is_mac; then
+		execute install_name_tool -id "${WORKSPACE}/lib/$name" $1
+	fi
+}
+
 build_done () {
 	touch "$PACKAGES/$1.done"
 }
@@ -190,7 +205,7 @@ while (( $# > 0 )); do
 				cleanup
 			fi
 			if [[ "$1" == "--full-static" || "$1" =~ 'f' ]]; then
-				if [[ "$OSTYPE" == "darwin"* ]]; then
+				if is_mac; then
 					echo "Error: A full static binary can only be build on Linux."
 					exit 1
 				fi
@@ -324,9 +339,7 @@ if build "x265"; then
 	execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=on -DBUILD_SHARED_LIBS=on ../../source
 	execute make -j $MJOBS
 
-	if [[ "$OSTYPE" == "darwin"* ]]; then
-		execute install_name_tool -id "${WORKSPACE}/lib/libx265.198.dylib" libx265.198.dylib
-	fi
+	set_mac_install_name "libx265.198.dylib"
 
 	execute make install
 
@@ -343,7 +356,7 @@ if build "libvpx"; then
 
 	EXTRA_FLAG=""
 
-	if [[ "$OSTYPE" == "darwin"* ]]; then
+	if is_mac; then
 		echo "Applying Darwin patch"
 		sed "s/,--version-script//g" build/make/Makefile > build/make/Makefile.patched
 		sed "s/-Wl,--no-undefined -Wl,-soname/-Wl,-undefined,error -Wl,-install_name/g" build/make/Makefile.patched > build/make/Makefile
@@ -354,9 +367,7 @@ if build "libvpx"; then
 	execute ./configure --prefix="${WORKSPACE}" --disable-unit-tests --enable-shared --disable-static --as=yasm "${EXTRA_FLAG}"
 	execute make -j $MJOBS
 
-	if [[ "$OSTYPE" == "darwin"* ]]; then
-		execute install_name_tool -id "${WORKSPACE}/lib/libvpx.6.dylib" libvpx.6.dylib
-	fi
+	set_mac_install_name "libvpx.6.dylib"
 
 	execute make install
 
@@ -389,9 +400,7 @@ if build "vid_stab"; then
 	execute make
 	execute make install
 
-	if [[ "$OSTYPE" == "darwin"* ]]; then
-		execute install_name_tool -id "${WORKSPACE}/lib/libvidstab.1.1.dylib" "${WORKSPACE}/lib/libvidstab.1.1.dylib"
-	fi
+	set_mac_install_name "${WORKSPACE}/lib/libvidstab.1.1.dylib" "libvidstab.1.1.dylib"
 
 	build_done "vid_stab"
 fi
@@ -415,9 +424,7 @@ if build "av1"; then
 	execute cmake -DBUILD_SHARED_LIBS=1 -DENABLE_TESTS=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib "$PACKAGES"/av1
 	execute make -j $MJOBS
 
-	if [[ "$OSTYPE" == "darwin"* ]]; then
-		execute install_name_tool -id "${WORKSPACE}/lib/libaom.2.dylib" libaom.2.0.0.dylib
-	fi
+	set_mac_install_name "libaom.2.0.0.dylib" "libaom.2.dylib"
 
 	execute make install
 
@@ -597,9 +604,7 @@ if build "snappy"; then
 	execute cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DBUILD_SHARED_LIBS:bool=on
 	execute make -j $MJOBS
 
-	if [[ "$OSTYPE" == "darwin"* ]]; then
-		execute install_name_tool -id "${WORKSPACE}/lib/libsnappy.1.dylib" libsnappy.1.1.8.dylib
-	fi
+	set_mac_install_name "libsnappy.1.1.8.dylib" "libsnappy.1.dylib"
 
 	execute make install
 
@@ -680,7 +685,7 @@ execute make -j $MJOBS
 execute make install
 
 INSTALL_FOLDER="/usr/bin"
-if [[ "$OSTYPE" == "darwin"* ]]; then
+if is_mac; then
 INSTALL_FOLDER="/usr/local/bin"
 fi
 
@@ -723,7 +728,7 @@ elif [[ ! "$SKIPINSTALL" == "yes" ]]; then
 fi
 
 cd $CWD
-if [[ "$OSTYPE" == "darwin"* ]]; then
+if is_mac; then
 	node copy_mac_libs.js
 	cd "$WORKSPACE/mac"
 	execute zip --symlinks -r "ffmpeg-ffprobe-shared-darwin-x86_64.${VERSION}.zip" *
