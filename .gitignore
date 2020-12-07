@@ -3,3 +3,4 @@ workspace
 .idea
 linux
 .artifacts
+.DS_Store

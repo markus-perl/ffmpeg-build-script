@@ -1,0 +1,48 @@
+❌ don't need
+✅ already in ffmpeg-build-script build
+🕒 need to add to ffmpeg-build-script
+
+Target (evermeet.cx static build)
+--cc=/usr/bin/clang
+--prefix=/opt/ffmpeg
+--extra-version=tessus
+❌ --enable-avisynth - non-linear editing
+❌ --enable-fontconfig
+✅ --enable-gpl
+✅ --enable-libaom
+❌ --enable-libass
+❌ --enable-libbluray - bluray playback
+🕒✅ --enable-libdav1d
+❌ --enable-libfreetype - text rendering
+❌ --enable-libgsm - GSM audio
+❌ --enable-libmodplug - midi/instrument support https://github.com/Konstanty/libmodplug
+✅ --enable-libmp3lame
+❌ --enable-libmysofa - spatial audio
+✅ --enable-libopencore-amrnb
+✅ --enable-libopencore-amrwb
+🕒✅ --enable-libopenh264
+🕒✅ --enable-libopenjpeg
+✅ --enable-libopus
+❌ --enable-librubberband - time stretching
+🕒✅ --enable-libshine - mp3 encoder
+🕒✅ --enable-libsnappy - compression/decompression
+🕒✅ --enable-libsoxr - resampling
+🕒✅ --enable-libspeex - speex audio file format
+✅ --enable-libtheora
+🕒✅ --enable-libtwolame - mpeg2
+✅ --enable-libvidstab
+❌ --enable-libvmaf - perceptual video quality metric
+❌ --enable-libvo-amrwbenc - VisualOn AMR-WB encoder library
+✅ --enable-libvorbis
+✅ --enable-libvpx
+✅ --enable-libwebp
+✅ --enable-libx264
+✅ --enable-libx265
+❌ --enable-libxavs - AV standard of China
+✅ --enable-libxvid
+🕒✅ --enable-libzimg - Scaling, colorspace conversion, and dithering library
+❌ --enable-libzmq - ZeroMQ Support To Let Multiple Clients Connect To A Single Instance (streaming)
+❌ --enable-libzvbi - capture and decode VBI (vertical blanking interval) data
+✅ --enable-version3
+--pkg-config-flags=--static
+--disable-ffplay
