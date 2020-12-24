@@ -63,7 +63,7 @@ because I don't have the resources or time to maintain other systems.
         * VP9 `vp9_vaapi`
 
 ### LV2 Plugin Support
-If python is available the binary will be built with lv2 plugin support.
+If Python is available the script will be built a ffmpeg binary with lv2 plugin support.
 
 ## Continuos Integration
 ffmpeg-build-script is rockstable. Every commit runs against Linux and MacOS with https://github.com/markus-perl/ffmpeg-build-script/actions just to make sure everything works as expected.
