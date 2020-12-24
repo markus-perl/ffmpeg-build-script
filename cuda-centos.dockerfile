@@ -6,7 +6,7 @@ ENV NVIDIA_VISIBLE_DEVICES all
 ENV NVIDIA_DRIVER_CAPABILITIES compute,utility,video
 
 RUN yum group install -y "Development Tools" \
-    && yum install -y curl libva-devel \
+    && yum install -y curl libva-devel python2 \
     && rm -rf /var/cache/yum/* \
     && yum clean all
 

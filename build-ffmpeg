@@ -240,10 +240,90 @@ if ! command_exists "curl"; then
 	exit 1
 fi
 
+if ! command_exists "python"; then
+	echo "Python command not found. Lv2 filter will not be available.";
+fi
+
 
 ##
 ## build tools
 ##
+
+if build "pkg-config"; then
+	download "https://pkgconfig.freedesktop.org/releases/pkg-config-0.29.2.tar.gz"
+	execute ./configure --silent --prefix="${WORKSPACE}" --with-pc-path="${WORKSPACE}"/lib/pkgconfig --with-internal-glib
+	execute make -j $MJOBS
+	execute make install
+	build_done "pkg-config"
+fi
+
+
+if command_exists "python"; then
+
+  if build "lv2"; then
+    download "https://lv2plug.in/spec/lv2-1.18.0.tar.bz2" "lv2-1.18.0.tar.bz2"
+    execute ./waf configure --prefix="${WORKSPACE}" --lv2-user
+    execute ./waf
+    execute ./waf install
+
+    build_done "lv2"
+  fi
+
+  if build "waflib"; then
+    download "https://gitlab.com/drobilla/autowaf/-/archive/cc37724b9bfa889baebd8cb10f38b8c7cab83e37/autowaf-cc37724b9bfa889baebd8cb10f38b8c7cab83e37.tar.gz" "autowaf.tar.gz"
+    build_done "waflib"
+  fi
+
+  if build "serd"; then
+    download "https://gitlab.com/drobilla/serd/-/archive/v0.30.6/serd-v0.30.6.tar.gz" "serd-v0.30.6.tar.gz"
+    execute cp -r ${PACKAGES}/autowaf/* "${PACKAGES}/serd-v0.30.6/waflib/"
+    execute ./waf configure --prefix="${WORKSPACE}" --static --no-shared --no-posix
+    execute ./waf
+    execute ./waf install
+    build_done "serd"
+  fi
+
+  if build "pcre"; then
+    download "https://ftp.pcre.org/pub/pcre/pcre-8.44.tar.gz" "pcre-8.44.tar.gz"
+    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+    execute make -j $MJOBS
+    execute make install
+
+    build_done "pcre"
+  fi
+
+  if build "sord"; then
+    download "https://gitlab.com/drobilla/sord/-/archive/v0.16.6/sord-v0.16.6.tar.gz" "sord-v0.16.6.tar.gz"
+    execute cp -r ${PACKAGES}/autowaf/* "${PACKAGES}/sord-v0.16.6/waflib/"
+    execute ./waf configure --prefix="${WORKSPACE}" CFLAGS=${CFLAGS} --static --no-shared --no-utils
+    execute ./waf CFLAGS=${CFLAGS}
+    execute ./waf install
+
+    build_done "sord"
+  fi
+
+  if build "sratom"; then
+    download "https://gitlab.com/lv2/sratom/-/archive/v0.6.6/sratom-v0.6.6.tar.gz" "sratom-v0.6.6.tar.gz"
+    execute cp -r ${PACKAGES}/autowaf/* "${PACKAGES}/sratom-v0.6.6/waflib/"
+    execute ./waf configure --prefix="${WORKSPACE}" --static --no-shared
+    execute ./waf
+    execute ./waf install
+
+    build_done "sratom"
+  fi
+
+  if build "lilv"; then
+    download "https://gitlab.com/lv2/lilv/-/archive/v0.24.10/lilv-v0.24.10.tar.gz" "lilv-v0.24.10.tar.gz"
+    execute cp -r ${PACKAGES}/autowaf/* "${PACKAGES}/lilv-v0.24.10/waflib/"
+    execute ./waf configure --prefix="${WORKSPACE}" --static --no-shared --no-utils
+    execute ./waf
+    execute ./waf install
+		CFLAGS+=" -I$WORKSPACE/include/lilv-0"
+    build_done "lilv"
+  fi
+
+  CONFIGURE_OPTIONS+=("--enable-lv2")
+fi
 
 if build "yasm"; then
 	download "https://github.com/yasm/yasm/releases/download/v1.3.0/yasm-1.3.0.tar.gz"
@@ -261,17 +341,9 @@ if build "nasm"; then
 	build_done "nasm"
 fi
 
-if build "pkg-config"; then
-	download "https://pkgconfig.freedesktop.org/releases/pkg-config-0.29.2.tar.gz"
-	execute ./configure --silent --prefix="${WORKSPACE}" --with-pc-path="${WORKSPACE}"/lib/pkgconfig --with-internal-glib
-	execute make -j $MJOBS
-	execute make install
-	build_done "pkg-config"
-fi
-
 if build "zlib"; then
 	download "https://www.zlib.net/zlib-1.2.11.tar.gz"
-	execute ./configure --static  --prefix="${WORKSPACE}"
+	execute ./configure --static --prefix="${WORKSPACE}"
 	execute make -j $MJOBS
 	execute make install
 	build_done "zlib"
@@ -281,7 +353,7 @@ if build "openssl"; then
 	download "https://www.openssl.org/source/openssl-1.1.1h.tar.gz"
 	execute ./config --prefix="${WORKSPACE}" --openssldir="${WORKSPACE}" --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib no-shared zlib
 	execute make -j $MJOBS
-	execute make install
+	execute make install_sw
 
 	build_done "openssl"
 fi
@@ -378,7 +450,6 @@ if build "vid_stab"; then
 fi
 CONFIGURE_OPTIONS+=("--enable-libvidstab")
 
-
 if build "av1"; then
 	download "https://aomedia.googlesource.com/aom/+archive/b52ee6d44adaef8a08f6984390de050d64df9faa.tar.gz" "av1.tar.gz" "av1"
 	make_dir "$PACKAGES"/aom_build
@@ -390,7 +461,6 @@ if build "av1"; then
 	build_done "av1"
 fi
 CONFIGURE_OPTIONS+=("--enable-libaom")
-
 
 ##
 ## audio library
