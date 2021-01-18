@@ -8,11 +8,18 @@ VERSION=1.21
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
 WORKSPACE="$CWD/workspace"
-CFLAGS="-I$WORKSPACE/include"
+CFLAGS='-I$WORKSPACE/include'
 LDFLAGS="-L$WORKSPACE/lib"
 LDEXEFLAGS=""
 EXTRALIBS="-ldl -lpthread -lm -lz"
 CONFIGURE_OPTIONS=()
+# Check for Apple Silicon 
+if [[ ( "$(uname -m)" == "arm64" ) && ( "$OSTYPE" == "darwin"* ) ]]; then 
+  # If arm64 AND darwin (macOS)
+  export ARCH=arm64
+  export MACOSX_DEPLOYMENT_TARGET=11.0
+fi
+
 
 # Speed up the process
 # Env Var NUMJOBS overrides automatic detection
@@ -350,11 +357,15 @@ if build "zlib"; then
 fi
 
 if build "openssl"; then
-	download "https://www.openssl.org/source/openssl-1.1.1h.tar.gz"
-	execute ./config --prefix="${WORKSPACE}" --openssldir="${WORKSPACE}" --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib no-shared zlib
+	download "https://www.openssl.org/source/openssl-1.1.1i.tar.gz"
+	if [[ ( "$ARCH" == "arm64" ) && ( "$OSTYPE" == "darwin"* ) ]]; then 
+		sed -n 's/\(##### GNU Hurd\)/"darwin64-arm64-cc" => { \n    inherit_from     => [ "darwin-common", asm("aarch64_asm") ],\n    CFLAGS           => add("-Wall"),\n    cflags           => add("-arch arm64 "),\n    lib_cppflags     => add("-DL_ENDIAN"),\n    bn_ops           => "SIXTY_FOUR_BIT_LONG", \n    perlasm_scheme   => "macosx", \n}, \n\1/g' Configurations/10-main.conf
+   		execute ./Configure --prefix="${WORKSPACE}" no-shared no-asm darwin64-arm64-cc 
+	else
+		execute ./config --prefix="${WORKSPACE}" --openssldir="${WORKSPACE}" --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib no-shared zlib 
+	fi
 	execute make -j $MJOBS
 	execute make install_sw
-
 	build_done "openssl"
 fi
 CONFIGURE_OPTIONS+=("--enable-openssl")
@@ -377,7 +388,11 @@ if build "x264"; then
 
 	if [[ "$OSTYPE" == "linux-gnu" ]]; then
 		execute ./configure --prefix="${WORKSPACE}" --enable-static --enable-pic CXXFLAGS="-fPIC"
-	else
+	elif [[ ( "$ARCH" == "arm64" ) && ( "$OSTYPE" == "darwin"* ) ]]; then 
+		## Get latest code to support arm64
+		git clone --depth 1 -b master https://code.videolan.org/videolan/x264.git
+		cd x264
+	else 
 		execute ./configure --prefix="${WORKSPACE}" --enable-static --enable-pic
 	fi
 
@@ -392,6 +407,7 @@ CONFIGURE_OPTIONS+=("--enable-libx264")
 if build "x265"; then
 	download "https://github.com/videolan/x265/archive/Release_3.5.tar.gz" "x265-3.5.tar.gz"
 	cd build/linux || exit
+
 	execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF ../../source
 	execute make -j $MJOBS
 	execute make install
@@ -442,6 +458,12 @@ CONFIGURE_OPTIONS+=("--enable-libxvid")
 
 if build "vid_stab"; then
 	download "https://github.com/georgmartius/vid.stab/archive/v1.1.0.tar.gz" "vid.stab-1.1.0.tar.gz"
+	## rich
+	if [[ ( "$ARCH" == "arm64" ) && ( "$OSTYPE" == "darwin"* ) ]]; then 
+		curl -s -o "$PACKAGES/vid.stab-1.1.0/fix_cmake_quoting.patch" https://raw.githubusercontent.com/Homebrew/formula-patches/5bf1a0e0cfe666ee410305cece9c9c755641bfdf/libvidstab/fix_cmake_quoting.patch
+		patch -p1 < fix_cmake_quoting.patch
+	fi
+	## rich
 	execute cmake -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DUSE_OMP=OFF -DENABLE_SHARED=off .
 	execute make
 	execute make install
@@ -454,7 +476,13 @@ if build "av1"; then
 	download "https://aomedia.googlesource.com/aom/+archive/b52ee6d44adaef8a08f6984390de050d64df9faa.tar.gz" "av1.tar.gz" "av1"
 	make_dir "$PACKAGES"/aom_build
 	cd "$PACKAGES"/aom_build || exit
-	execute cmake -DENABLE_TESTS=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib "$PACKAGES"/av1
+	## rich
+	if [[ ( "$ARCH" == "arm64" ) && ( "$OSTYPE" == "darwin"* ) ]]; then 
+		execute cmake -DENABLE_TESTS=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCONFIG_RUNTIME_CPU_DETECT=0 "$PACKAGES"/av1 
+	else
+		execute cmake -DENABLE_TESTS=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib "$PACKAGES"/av1 
+	fi
+	## rich (added runtime detect )
 	execute make -j $MJOBS
 	execute make install
 
@@ -560,7 +588,7 @@ CONFIGURE_OPTIONS+=("--enable-libwebp")
 ##
 
 if build "libsdl"; then
-	download "https://www.libsdl.org/release/SDL2-2.0.12.tar.gz"
+	download "https://www.libsdl.org/release/SDL2-2.0.14.tar.gz"
 	execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
 	execute make -j $MJOBS
 	execute make install
