@@ -160,7 +160,7 @@ verify_binary_type () {
 	echo ""
 	case $BINARY_TYPE in
 		"Mach-O 64-bit executable arm64")
-			echo "Successfully built Apple Silicon (M1): ${BINARY_TYPE}"
+			echo "Successfully built Apple Silicon (M1) for ${OSTYPE}: ${BINARY_TYPE}"
 			;;
 		*)
 			echo "Successfully built binary for ${OSTYPE}: ${BINARY_TYPE}"
