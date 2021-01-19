@@ -399,14 +399,12 @@ fi
 ##
 
 if build "x264"; then
-	download "https://code.videolan.org/videolan/x264/-/archive/stable/x264-stable.tar.bz2"
+	download "https://code.videolan.org/videolan/x264/-/archive/0d754ec36013fee82978496cd56fbd48824910b3/x264-0d754ec36013fee82978496cd56fbd48824910b3.tar.gz" "x264-0d754ec.tar.gz"
+	cd "${PACKAGES}"/x264-0d754ec
+
 
 	if [[ "$OSTYPE" == "linux-gnu" ]]; then
 		execute ./configure --prefix="${WORKSPACE}" --enable-static --enable-pic CXXFLAGS="-fPIC"
-	elif $MACOS_M1 ; then
-		## Get latest code to support arm64
-		download "https://code.videolan.org/videolan/x264/-/archive/0d754ec36013fee82978496cd56fbd48824910b3/x264-0d754ec36013fee82978496cd56fbd48824910b3.tar.gz" "x264-0d754ec.tar.gz"
-		cd "${PACKAGES}"/x264-0d754ec
 	else
 		execute ./configure --prefix="${WORKSPACE}" --enable-static --enable-pic
 	fi
@@ -477,10 +475,10 @@ if build "vid_stab"; then
 
 	if $MACOS_M1 ; then 
 
-	curl -s -o "$PACKAGES/vid.stab-1.1.0/fix_cmake_quoting.patch" https://raw.githubusercontent.com/Homebrew/formula-patches/5bf1a0e0cfe666ee410305cece9c9c755641bfdf/libvidstab/fix_cmake_quoting.patch
+		curl -s -o "$PACKAGES/vid.stab-1.1.0/fix_cmake_quoting.patch" https://raw.githubusercontent.com/Homebrew/formula-patches/5bf1a0e0cfe666ee410305cece9c9c755641bfdf/libvidstab/fix_cmake_quoting.patch
 		patch -p1 < fix_cmake_quoting.patch
 	fi
-	## rich
+	
 	execute cmake -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DUSE_OMP=OFF -DENABLE_SHARED=off .
 	execute make
 	execute make install
