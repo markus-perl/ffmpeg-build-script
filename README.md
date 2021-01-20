@@ -25,6 +25,7 @@ because I don't have the resources or time to maintain other systems.
 ## Supported Codecs
 * `x264`: H.264 Video Codec (MPEG-4 AVC)
 * `x265`: H.265 Video Codec (HEVC)
+* `libsvtav1`, SVT-AV1 Encoder and Decoder
 * `aom`: AV1 Video Codec (Experimental and very slow!)
 * `fdk_aac`: Fraunhofer FDK AAC Codec
 * `xvidcore`: MPEG-4 video coding standard
