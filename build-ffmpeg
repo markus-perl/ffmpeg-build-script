@@ -144,9 +144,7 @@ command_exists() {
 }
 
 library_exists() {
-  local result=0
-  local output=$(pkg-config --exists --print-errors "$1" 2>&1 >/dev/null) || result=$?
-  if [ ! "$result" = "0" ]; then
+  if ! [[ -x $(pkg-config --exists --print-errors "$1" 2>&1 >/dev/null) ]]; then
     return 1
   fi
 
@@ -158,7 +156,7 @@ build_done() {
 }
 
 verify_binary_type() {
-  BINARY_TYPE=$(file $WORKSPACE/bin/ffmpeg | sed -n 's/^.*\:\ \(.*$\)/\1/p')
+  BINARY_TYPE=$(file "$WORKSPACE/bin/ffmpeg" | sed -n 's/^.*\:\ \(.*$\)/\1/p')
   echo ""
   case $BINARY_TYPE in
   "Mach-O 64-bit executable arm64")
@@ -298,7 +296,7 @@ if command_exists "python"; then
 
   if build "serd"; then
     download "https://gitlab.com/drobilla/serd/-/archive/v0.30.6/serd-v0.30.6.tar.gz" "serd-v0.30.6.tar.gz"
-    execute cp -r ${PACKAGES}/autowaf/* "${PACKAGES}/serd-v0.30.6/waflib/"
+    execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/serd-v0.30.6/waflib/"
     execute ./waf configure --prefix="${WORKSPACE}" --static --no-shared --no-posix
     execute ./waf
     execute ./waf install
@@ -316,9 +314,9 @@ if command_exists "python"; then
 
   if build "sord"; then
     download "https://gitlab.com/drobilla/sord/-/archive/v0.16.6/sord-v0.16.6.tar.gz" "sord-v0.16.6.tar.gz"
-    execute cp -r ${PACKAGES}/autowaf/* "${PACKAGES}/sord-v0.16.6/waflib/"
-    execute ./waf configure --prefix="${WORKSPACE}" CFLAGS=${CFLAGS} --static --no-shared --no-utils
-    execute ./waf CFLAGS=${CFLAGS}
+    execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/sord-v0.16.6/waflib/"
+    execute ./waf configure --prefix="${WORKSPACE}" CFLAGS="${CFLAGS}" --static --no-shared --no-utils
+    execute ./waf CFLAGS="${CFLAGS}"
     execute ./waf install
 
     build_done "sord"
@@ -326,7 +324,7 @@ if command_exists "python"; then
 
   if build "sratom"; then
     download "https://gitlab.com/lv2/sratom/-/archive/v0.6.6/sratom-v0.6.6.tar.gz" "sratom-v0.6.6.tar.gz"
-    execute cp -r ${PACKAGES}/autowaf/* "${PACKAGES}/sratom-v0.6.6/waflib/"
+    execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/sratom-v0.6.6/waflib/"
     execute ./waf configure --prefix="${WORKSPACE}" --static --no-shared
     execute ./waf
     execute ./waf install
@@ -336,7 +334,7 @@ if command_exists "python"; then
 
   if build "lilv"; then
     download "https://gitlab.com/lv2/lilv/-/archive/v0.24.10/lilv-v0.24.10.tar.gz" "lilv-v0.24.10.tar.gz"
-    execute cp -r ${PACKAGES}/autowaf/* "${PACKAGES}/lilv-v0.24.10/waflib/"
+    execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/lilv-v0.24.10/waflib/"
     execute ./waf configure --prefix="${WORKSPACE}" --static --no-shared --no-utils
     execute ./waf
     execute ./waf install
@@ -411,7 +409,7 @@ CONFIGURE_OPTIONS+=("--enable-libsvtav1")
 
 if build "x264"; then
   download "https://code.videolan.org/videolan/x264/-/archive/0d754ec36013fee82978496cd56fbd48824910b3/x264-0d754ec36013fee82978496cd56fbd48824910b3.tar.gz" "x264-0d754ec.tar.gz"
-  cd "${PACKAGES}"/x264-0d754ec
+  cd "${PACKAGES}"/x264-0d754ec || exit
 
   if [[ "$OSTYPE" == "linux-gnu" ]]; then
     execute ./configure --prefix="${WORKSPACE}" --enable-static --enable-pic CXXFLAGS="-fPIC"
