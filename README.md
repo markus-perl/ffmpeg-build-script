@@ -15,12 +15,13 @@ The FFmpeg build script provides an easy way to build a static FFmpeg on **macOS
 
 
 ## Disclaimer And Data Privacy Notice
-This script will download different packages with different licenses from various sources which may track your usage. 
+This script will download different packages with different licenses from various sources, which may track your usage. 
 These sources are out of control by the developers of this script. By downloading and using this script, you are fully aware of this.
 
 Use this script at your own risk. I maintain this script in my spare time.
-Please do not file bug reports for systems other than Debian 10 and macOS 10.15.x,
-because I don't have the resources or time to maintain other systems.
+Please do not file bug reports for systems other than Debian 10 and macOS 11.x,
+because I don't have the resources or time to maintain different systems.
+
 
 ## Supported Codecs
 * `x264`: H.264 Video Codec (MPEG-4 AVC)
@@ -63,8 +64,11 @@ because I don't have the resources or time to maintain other systems.
         * VP8 `vp8_vaapi`
         * VP9 `vp9_vaapi`
 
+### Apple M1 (Apple Silicon) Support
+The script also builds FFmpeg on a new MacBook with an Apple Silicon M1 processor.
+
 ### LV2 Plugin Support
-If Python is available the script will be built a ffmpeg binary with lv2 plugin support.
+If Python is available, the script will build a ffmpeg binary with lv2 plugin support.
 
 ## Continuos Integration
 ffmpeg-build-script is rockstable. Every commit runs against Linux and MacOS with https://github.com/markus-perl/ffmpeg-build-script/actions just to make sure everything works as expected.
