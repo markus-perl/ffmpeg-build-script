@@ -156,6 +156,10 @@ build_done() {
 }
 
 verify_binary_type() {
+  if ! command_exists "file"; then
+    return
+  fi
+
   BINARY_TYPE=$(file "$WORKSPACE/bin/ffmpeg" | sed -n 's/^.*\:\ \(.*$\)/\1/p')
   echo ""
   case $BINARY_TYPE in
