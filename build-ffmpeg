@@ -11,6 +11,7 @@ WORKSPACE="$CWD/workspace"
 CFLAGS="-I$WORKSPACE/include"
 LDFLAGS="-L$WORKSPACE/lib"
 LDEXEFLAGS=""
+CMAKEPIC=""
 EXTRALIBS="-ldl -lpthread -lm -lz"
 MACOS_M1=false
 CONFIGURE_OPTIONS=()
@@ -182,6 +183,7 @@ usage() {
   echo "      --version       Display version information"
   echo "  -b, --build         Starts the build process"
   echo "  -c, --cleanup       Remove all working dirs"
+  echo "  -p, --fpic          build with -fPIC option"
   echo "  -f, --full-static   Build a full static FFmpeg binary (eg. glibc, pthreads etc...) **only Linux**"
   echo "                      Note: Because of the NSS (Name Service Switch), glibc does not recommend static links."
   echo ""
@@ -200,6 +202,15 @@ while (($# > 0)); do
   -*)
     if [[ "$1" == "--build" || "$1" =~ 'b' ]]; then
       bflag='-b'
+    fi
+    if [[ "$1" == "--fpic" || "$1" =~ 'p' ]]; then
+      bflag='-p'
+      CONFIGURE_OPTIONS+=("--enable-pic")
+      CFLAGS+=" -fPIC"
+      CPPFLAGS=${CFLAGS}
+      export CFLAGS
+      export CPPFLAGS
+      CMAKEPIC="-DCMAKE_POSITION_INDEPENDENT_CODE=ON"
     fi
     if [[ "$1" == "--cleanup" || "$1" =~ 'c' && ! "$1" =~ '--' ]]; then
       cflag='-c'
@@ -238,6 +249,11 @@ echo "Using $MJOBS make jobs simultaneously."
 if [ -n "$LDEXEFLAGS" ]; then
   echo "Start the build in full static mode."
 fi
+
+if [ "$bflag" = "-p" ]; then
+  echo "Start the build with fPIC."
+fi
+
 
 mkdir -p "$PACKAGES"
 mkdir -p "$WORKSPACE"
@@ -394,7 +410,7 @@ fi
 if build "svtav1"; then
   download "https://github.com/AOMediaCodec/SVT-AV1/archive/v0.8.6.tar.gz"
   cd Build/linux || exit
-  execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF ../.. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
+  execute cmake ${CMAKEPIC} -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF ../.. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
   execute make -j $MJOBS
   execute make install
   execute cp SvtAv1Enc.pc "${WORKSPACE}/lib/pkgconfig/"
@@ -429,7 +445,7 @@ if build "x265"; then
   download "https://github.com/videolan/x265/archive/Release_3.5.tar.gz" "x265-3.5.tar.gz"
   cd build/linux || exit
 
-  execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF ../../source
+  execute cmake ${CMAKEPIC} -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF ../../source
   execute make -j $MJOBS
   execute make install
 
@@ -486,7 +502,7 @@ if build "vid_stab"; then
     patch -p1 <fix_cmake_quoting.patch
   fi
 
-  execute cmake -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DUSE_OMP=OFF -DENABLE_SHARED=off .
+  execute cmake ${CMAKEPIC} -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DUSE_OMP=OFF -DENABLE_SHARED=off .
   execute make
   execute make install
 
@@ -499,9 +515,9 @@ if build "av1"; then
   make_dir "$PACKAGES"/aom_build
   cd "$PACKAGES"/aom_build || exit
   if $MACOS_M1; then
-    execute cmake -DENABLE_TESTS=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCONFIG_RUNTIME_CPU_DETECT=0 "$PACKAGES"/av1
+    execute cmake ${CMAKEPIC} -DENABLE_TESTS=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCONFIG_RUNTIME_CPU_DETECT=0 "$PACKAGES"/av1
   else
-    execute cmake -DENABLE_TESTS=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib "$PACKAGES"/av1
+    execute cmake ${CMAKEPIC} -DENABLE_TESTS=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib "$PACKAGES"/av1
   fi
   execute make -j $MJOBS
   execute make install
@@ -593,7 +609,7 @@ if build "libwebp"; then
   download "https://github.com/webmproject/libwebp/archive/v1.1.0.tar.gz" "libwebp-1.1.0.tar.gz"
   make_dir build
   cd build || exit
-  execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=OFF -DENABLE_STATIC=ON ../
+  execute cmake ${CMAKEPIC} -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=OFF -DENABLE_STATIC=ON ../
   execute make -j $MJOBS
   execute make install
 
@@ -619,7 +635,7 @@ if build "srt"; then
   export OPENSSL_ROOT_DIR="${WORKSPACE}"
   export OPENSSL_LIB_DIR="${WORKSPACE}"/lib
   export OPENSSL_INCLUDE_DIR="${WORKSPACE}"/include/
-  execute cmake . -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DENABLE_APPS=OFF -DUSE_STATIC_LIBSTDCXX=ON
+  execute cmake ${CMAKEPIC}  -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DENABLE_APPS=OFF -DUSE_STATIC_LIBSTDCXX=ON
   execute make install
 
   if [ -n "$LDEXEFLAGS" ]; then

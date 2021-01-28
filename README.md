@@ -217,6 +217,7 @@ Options:
   -h, --help          Display usage information
       --version       Display version information
   -b, --build         Starts the build process
+  -p, --fpic          build with -fPIC option
   -c, --cleanup       Remove all working dirs
   -f, --full-static   Complete static build of ffmpeg (eg. glibc, pthreads etc...) **only Linux**
                       Note: Because of the NSS (Name Service Switch), glibc does not recommend static links.
