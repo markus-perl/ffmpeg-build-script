@@ -395,17 +395,19 @@ if build "cmake"; then
   build_done "cmake"
 fi
 
-if build "svtav1"; then
-  download "https://github.com/AOMediaCodec/SVT-AV1/archive/v0.8.6.tar.gz"
-  cd Build/linux || exit
-  execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF ../.. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
-  execute make -j $MJOBS
-  execute make install
-  execute cp SvtAv1Enc.pc "${WORKSPACE}/lib/pkgconfig/"
-  execute cp SvtAv1Dec.pc "${WORKSPACE}/lib/pkgconfig/"
-  build_done "svtav1"
+if ! $MACOS_M1; then
+  if build "svtav1"; then
+    download "https://github.com/AOMediaCodec/SVT-AV1/archive/v0.8.6.tar.gz"
+    cd Build/linux || exit
+    execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF ../.. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
+    execute make -j $MJOBS
+    execute make install
+    execute cp SvtAv1Enc.pc "${WORKSPACE}/lib/pkgconfig/"
+    execute cp SvtAv1Dec.pc "${WORKSPACE}/lib/pkgconfig/"
+    build_done "svtav1"
+  fi
+  CONFIGURE_OPTIONS+=("--enable-libsvtav1")
 fi
-CONFIGURE_OPTIONS+=("--enable-libsvtav1")
 
 ##
 ## video library
