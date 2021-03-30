@@ -7,8 +7,7 @@
 build-ffmpeg
 ==========
 
-The FFmpeg build script provides an easy way to build a static FFmpeg on **macOS** and **Linux** with ** non-free
-codecs** included.
+The FFmpeg build script provides an easy way to build a static FFmpeg on **macOS** and **Linux** with **non-freecodecs** included.
 
 [![How-To build FFmpeg on MacOS](https://img.youtube.com/vi/Z9p3mM757cM/0.jpg)](https://www.youtube.com/watch?v=Z9p3mM757cM "How-To build FFmpeg on OSX")
 
@@ -17,7 +16,7 @@ codecs** included.
 ## Disclaimer And Data Privacy Notice
 
 This script will download different packages with different licenses from various sources, which may track your usage.
-These sources are out of control by the developers of this script. By downloading and using this script, you are fully
+These sources are out of control by the developers of this script. Also, this script creates a non-free and unredistributable binary. By downloading and using this script, you are fully
 aware of this.
 
 Use this script at your own risk. I maintain this script in my spare time. Please do not file bug reports for systems
