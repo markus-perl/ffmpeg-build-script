@@ -7,7 +7,7 @@
 build-ffmpeg
 ==========
 
-The FFmpeg build script provides an easy way to build a static FFmpeg on **macOS** and **Linux** with **non-freecodecs** included.
+The FFmpeg build script provides an easy way to build a static FFmpeg on **macOS** and **Linux** with optional **non-free and GPL codecs** (--enable-gpl-and-non-free) included.
 
 [![How-To build FFmpeg on MacOS](https://img.youtube.com/vi/Z9p3mM757cM/0.jpg)](https://www.youtube.com/watch?v=Z9p3mM757cM "How-To build FFmpeg on OSX")
 
@@ -16,8 +16,8 @@ The FFmpeg build script provides an easy way to build a static FFmpeg on **macOS
 ## Disclaimer And Data Privacy Notice
 
 This script will download different packages with different licenses from various sources, which may track your usage.
-These sources are out of control by the developers of this script. Also, this script creates a non-free and unredistributable binary. By downloading and using this script, you are fully
-aware of this.
+These sources are out of control by the developers of this script. Also, this script can create a non-free and unredistributable binary. 
+By downloading and using this script, you are fully aware of this.
 
 Use this script at your own risk. I maintain this script in my spare time. Please do not file bug reports for systems
 other than Debian 10 and macOS 11.x, because I don't have the resources or time to maintain different systems.
@@ -238,12 +238,13 @@ $ sudo dnf install libva-devel libva-intel-driver libva-utils
 ```bash
 Usage: build-ffmpeg [OPTIONS]
 Options:
-  -h, --help          Display usage information
-      --version       Display version information
-  -b, --build         Starts the build process
-  -c, --cleanup       Remove all working dirs
-  -f, --full-static   Complete static build of ffmpeg (eg. glibc, pthreads etc...) **only Linux**
-                      Note: Because of the NSS (Name Service Switch), glibc does not recommend static links.
+  -h, --help                     Display usage information
+      --version                  Display version information
+  -b, --build                    Starts the build process
+      --enable-gpl-and-non-free  Enable non-free codecs
+  -c, --cleanup                  Remove all working dirs
+      --full-static              Complete static build of ffmpeg (eg. glibc, pthreads etc...) **only Linux**
+                                 Note: Because of the NSS (Name Service Switch), glibc does not recommend static links.
 ```
 
 ## Notes of static link

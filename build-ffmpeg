@@ -4,7 +4,7 @@
 # LICENSE: https://github.com/markus-perl/ffmpeg-build-script/blob/master/LICENSE
 
 PROGNAME=$(basename "$0")
-VERSION=1.23
+VERSION=1.24
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
 WORKSPACE="$CWD/workspace"
@@ -14,6 +14,8 @@ LDEXEFLAGS=""
 EXTRALIBS="-ldl -lpthread -lm -lz"
 MACOS_M1=false
 CONFIGURE_OPTIONS=()
+NONFREE_AND_GPL=false
+
 # Check for Apple Silicon
 if [[ ("$(uname -m)" == "arm64") && ("$OSTYPE" == "darwin"*) ]]; then
   # If arm64 AND darwin (macOS)
@@ -182,12 +184,13 @@ cleanup() {
 usage() {
   echo "Usage: $PROGNAME [OPTIONS]"
   echo "Options:"
-  echo "  -h, --help          Display usage information"
-  echo "      --version       Display version information"
-  echo "  -b, --build         Starts the build process"
-  echo "  -c, --cleanup       Remove all working dirs"
-  echo "  -f, --full-static   Build a full static FFmpeg binary (eg. glibc, pthreads etc...) **only Linux**"
-  echo "                      Note: Because of the NSS (Name Service Switch), glibc does not recommend static links."
+  echo "  -h, --help                     Display usage information"
+  echo "      --version                  Display version information"
+  echo "  -b, --build                    Starts the build process"
+  echo "      --enable-gpl-and-non-free  Enable GPL and non-free codecs  - https://ffmpeg.org/legal.html"
+  echo "  -c, --cleanup                  Remove all working dirs"
+  echo "      --full-static              Build a full static FFmpeg binary (eg. glibc, pthreads etc...) **only Linux**"
+  echo "                                 Note: Because of the NSS (Name Service Switch), glibc does not recommend static links."
   echo ""
 }
 
@@ -202,14 +205,19 @@ while (($# > 0)); do
     exit 0
     ;;
   -*)
-    if [[ "$1" == "--build" || "$1" =~ 'b' ]]; then
+    if [[ "$1" == "--build" || "$1" =~ '-b' ]]; then
       bflag='-b'
     fi
-    if [[ "$1" == "--cleanup" || "$1" =~ 'c' && ! "$1" =~ '--' ]]; then
+    if [[ "$1" == "--enable-gpl-and-non-free" ]]; then
+      CONFIGURE_OPTIONS+=("--enable-nonfree")
+      CONFIGURE_OPTIONS+=("--enable-gpl")
+      NONFREE_AND_GPL=true
+    fi
+    if [[ "$1" == "--cleanup" || "$1" =~ '-c' && ! "$1" =~ '--' ]]; then
       cflag='-c'
       cleanup
     fi
-    if [[ "$1" == "--full-static" || "$1" =~ 'f' ]]; then
+    if [[ "$1" == "--full-static" ]]; then
       if [[ "$OSTYPE" == "darwin"* ]]; then
         echo "Error: A full static binary can only be build on Linux."
         exit 1
@@ -373,6 +381,7 @@ if build "zlib"; then
   build_done "zlib"
 fi
 
+if $NONFREE_AND_GPL; then
 if build "openssl"; then
   download "https://www.openssl.org/source/openssl-1.1.1i.tar.gz"
   if $MACOS_M1; then
@@ -386,6 +395,7 @@ if build "openssl"; then
   build_done "openssl"
 fi
 CONFIGURE_OPTIONS+=("--enable-openssl")
+fi
 
 if build "cmake"; then
   download "https://cmake.org/files/v3.18/cmake-3.18.4.tar.gz"
@@ -409,10 +419,7 @@ if ! $MACOS_M1; then
   CONFIGURE_OPTIONS+=("--enable-libsvtav1")
 fi
 
-##
-## video library
-##
-
+if $NONFREE_AND_GPL; then
 if build "x264"; then
   download "https://code.videolan.org/videolan/x264/-/archive/0d754ec36013fee82978496cd56fbd48824910b3/x264-0d754ec36013fee82978496cd56fbd48824910b3.tar.gz" "x264-0d754ec.tar.gz"
   cd "${PACKAGES}"/x264-0d754ec || exit
@@ -430,7 +437,9 @@ if build "x264"; then
   build_done "x264"
 fi
 CONFIGURE_OPTIONS+=("--enable-libx264")
+fi
 
+if $NONFREE_AND_GPL; then
 if build "x265"; then
   download "https://github.com/videolan/x265/archive/Release_3.5.tar.gz" "x265-3.5.tar.gz"
   cd build/linux || exit
@@ -446,6 +455,7 @@ if build "x265"; then
   build_done "x265"
 fi
 CONFIGURE_OPTIONS+=("--enable-libx265")
+fi
 
 if build "libvpx"; then
   download "https://github.com/webmproject/libvpx/archive/v1.9.0.tar.gz" "libvpx-1.9.0.tar.gz"
@@ -464,6 +474,7 @@ if build "libvpx"; then
 fi
 CONFIGURE_OPTIONS+=("--enable-libvpx")
 
+if $NONFREE_AND_GPL; then
 if build "xvidcore"; then
   download "https://downloads.xvid.com/downloads/xvidcore-1.3.7.tar.gz"
   cd build/generic || exit
@@ -482,12 +493,13 @@ if build "xvidcore"; then
   build_done "xvidcore"
 fi
 CONFIGURE_OPTIONS+=("--enable-libxvid")
+fi
 
+if $NONFREE_AND_GPL; then
 if build "vid_stab"; then
   download "https://github.com/georgmartius/vid.stab/archive/v1.1.0.tar.gz" "vid.stab-1.1.0.tar.gz"
 
   if $MACOS_M1; then
-
     curl -s -o "$PACKAGES/vid.stab-1.1.0/fix_cmake_quoting.patch" https://raw.githubusercontent.com/Homebrew/formula-patches/5bf1a0e0cfe666ee410305cece9c9c755641bfdf/libvidstab/fix_cmake_quoting.patch
     patch -p1 <fix_cmake_quoting.patch
   fi
@@ -499,6 +511,7 @@ if build "vid_stab"; then
   build_done "vid_stab"
 fi
 CONFIGURE_OPTIONS+=("--enable-libvidstab")
+fi
 
 if build "av1"; then
   download "https://aomedia.googlesource.com/aom/+archive/b52ee6d44adaef8a08f6984390de050d64df9faa.tar.gz" "av1.tar.gz" "av1"
@@ -581,6 +594,7 @@ if build "libtheora"; then
 fi
 CONFIGURE_OPTIONS+=("--enable-libtheora")
 
+if $NONFREE_AND_GPL; then
 if build "fdk_aac"; then
   download "https://sourceforge.net/projects/opencore-amr/files/fdk-aac/fdk-aac-2.0.1.tar.gz/download?use_mirror=gigenet" "fdk-aac-2.0.1.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
@@ -590,6 +604,7 @@ if build "fdk_aac"; then
   build_done "fdk_aac"
 fi
 CONFIGURE_OPTIONS+=("--enable-libfdk-aac")
+fi
 
 ##
 ## image library
@@ -620,6 +635,7 @@ if build "libsdl"; then
   build_done "libsdl"
 fi
 
+if $NONFREE_AND_GPL; then
 if build "srt"; then
   download "https://github.com/Haivision/srt/archive/v1.4.1.tar.gz" "srt-1.4.1.tar.gz"
   export OPENSSL_ROOT_DIR="${WORKSPACE}"
@@ -635,6 +651,7 @@ if build "srt"; then
   build_done "srt"
 fi
 CONFIGURE_OPTIONS+=("--enable-libsrt")
+fi
 
 ##
 ## HWaccel library
@@ -683,8 +700,6 @@ download "https://git.ffmpeg.org/gitweb/ffmpeg.git/snapshot/553eb0773763798a6b96
   --disable-debug \
   --disable-doc \
   --disable-shared \
-  --enable-gpl \
-  --enable-nonfree \
   --enable-pthreads \
   --enable-static \
   --enable-small \
