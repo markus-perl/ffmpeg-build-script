@@ -399,7 +399,7 @@ fi
 
 if build "cmake"; then
   download "https://cmake.org/files/v3.18/cmake-3.18.4.tar.gz"
-  execute ./configure --prefix="${WORKSPACE}" --system-zlib
+  execute ./configure --prefix="${WORKSPACE}" --system-zlib --no-system-curl --no-system-nghttp2 
   execute make -j $MJOBS
   execute make install
   build_done "cmake"
