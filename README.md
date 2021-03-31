@@ -7,7 +7,7 @@
 build-ffmpeg
 ==========
 
-The FFmpeg build script provides an easy way to build a static FFmpeg on **macOS** and **Linux** with **non-freecodecs** included.
+The FFmpeg build script provides an easy way to build a static FFmpeg on **macOS** and **Linux** with optional **non-free and GPL codecs** (--enable-gpl-and-non-free) included.
 
 [![How-To build FFmpeg on MacOS](https://img.youtube.com/vi/Z9p3mM757cM/0.jpg)](https://www.youtube.com/watch?v=Z9p3mM757cM "How-To build FFmpeg on OSX")
 
@@ -16,8 +16,8 @@ The FFmpeg build script provides an easy way to build a static FFmpeg on **macOS
 ## Disclaimer And Data Privacy Notice
 
 This script will download different packages with different licenses from various sources, which may track your usage.
-These sources are out of control by the developers of this script. Also, this script creates a non-free and unredistributable binary. By downloading and using this script, you are fully
-aware of this.
+These sources are out of control by the developers of this script. Also, this script can create a non-free and unredistributable binary.
+By downloading and using this script, you are fully aware of this.
 
 Use this script at your own risk. I maintain this script in my spare time. Please do not file bug reports for systems
 other than Debian 10 and macOS 11.x, because I don't have the resources or time to maintain different systems.
@@ -126,38 +126,35 @@ $ sudo dnf install @development-tools curl
 With Docker, FFmpeg can be built reliably without altering the host system. Also, there is no need to have the CUDA SDK
 installed outside of the Docker image.
 
-A Docker engine with version 19.03 or higher is required to build images based on the following distributions:
+##### Default
 
-* Ubuntu >= 16.04 (16.04, 18.04, 20.04)
-* Centos >= 7 (7, 8)
-
-1. Enable Docker BuildKit
+If you're running an operating system other than the one above, a completely static build may work. To build a full
+statically linked binary inside Docker, just run the following command:
 
 ```bash
-$ export DOCKER_BUILDKIT=1
+$ docker build --tag=ffmpeg:default --output type=local,dest=build -f Dockerfile .
 ```
 
-2. Set the DIST (`ubuntu` or `centos`) and VER (ubuntu: `16.04` , `18.04`, `20.04` or centos: `7`, `8`) environment
-   variables to select the preferred Docker base image.
-
+##### CUDA
+These builds are always built with the --enable-gpl-and-non-free switch, as CUDA is non-free. See https://ffmpeg.org/legal.html
 ```bash
+export DOCKER_BUILDKIT=1
+
+## Set the DIST (`ubuntu` or `centos`) and VER (ubuntu: `16.04` , `18.04`, `20.04` or centos: `7`, `8`) environment variables to select the preferred Docker base image.
 $ export DIST=centos
 $ export VER=8
+
+## Start the build
+$ docker build --tag=ffmpeg:cuda-$DIST -f cuda-$DIST.dockerfile --build-arg VER=$VER .
 ```
 
-3. Start the build as follows.
+Build an `export.dockerfile` that copies only what you need from the image you just built as follows. When running,
+move the library in the lib to a location where the linker can find it or set the `LD_LIBRARY_PATH`. Since we have
+matched the operating system and version, it should work well with dynamic links. If it doesn't work, edit
+the `export.dockerfile` and copy the necessary libraries and try again.
 
 ```bash
-$ sudo -E docker build --tag=ffmpeg:cuda-$DIST -f cuda-$DIST.dockerfile --build-arg VER=$VER .
-```
-
-4. Build an `export.dockerfile` that copies only what you need from the image you just built as follows. When running,
-   move the library in the lib to a location where the linker can find it or set the `LD_LIBRARY_PATH`. Since we have
-   matched the operating system and version, it should work well with dynamic links. If it doesn't work, edit
-   the `export.dockerfile` and copy the necessary libraries and try again.
-
-```bash
-$ sudo -E docker build --output type=local,dest=build -f export.dockerfile --build-arg DIST=$DIST .
+$ docker build --output type=local,dest=build -f export.dockerfile --build-arg DIST=$DIST .
 $ ls build
 bin lib
 $ ls build/bin
@@ -166,7 +163,7 @@ $ ls build/lib
 libnppc.so.11 libnppicc.so.11 libnppidei.so.11 libnppig.so.11
 ```
 
-### Build in Docker (full static ver.) (Linux)
+##### Full static version
 
 If you're running an operating system other than the one above, a completely static build may work. To build a full
 statically linked binary inside Docker, just run the following command:
@@ -238,12 +235,13 @@ $ sudo dnf install libva-devel libva-intel-driver libva-utils
 ```bash
 Usage: build-ffmpeg [OPTIONS]
 Options:
-  -h, --help          Display usage information
-      --version       Display version information
-  -b, --build         Starts the build process
-  -c, --cleanup       Remove all working dirs
-  -f, --full-static   Complete static build of ffmpeg (eg. glibc, pthreads etc...) **only Linux**
-                      Note: Because of the NSS (Name Service Switch), glibc does not recommend static links.
+  -h, --help                     Display usage information
+      --version                  Display version information
+  -b, --build                    Starts the build process
+      --enable-gpl-and-non-free  Enable non-free codecs  - https://ffmpeg.org/legal.html
+  -c, --cleanup                  Remove all working dirs
+      --full-static              Complete static build of ffmpeg (eg. glibc, pthreads etc...) **only Linux**
+                                 Note: Because of the NSS (Name Service Switch), glibc does not recommend static links.
 ```
 
 ## Notes of static link

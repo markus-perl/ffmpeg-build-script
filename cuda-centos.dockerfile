@@ -13,7 +13,7 @@ RUN yum group install -y "Development Tools" \
 WORKDIR /app
 COPY ./build-ffmpeg /app/build-ffmpeg
 
-RUN SKIPINSTALL=yes /app/build-ffmpeg --build
+RUN SKIPINSTALL=yes /app/build-ffmpeg --build --enable-gpl-and-non-free
 
 
 FROM centos:${VER}
