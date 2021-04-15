@@ -530,6 +530,13 @@ if build "av1"; then
 fi
 CONFIGURE_OPTIONS+=("--enable-libaom")
 
+if build "rav1e"; then
+  download "https://github.com/xiph/rav1e/archive/refs/tags/v0.4.1.tar.gz" "rav1e.tar.gz"
+  execute cargo cinstall --release  --prefix="${WORKSPACE}" --library-type staticlib
+  build_done "rav1e"
+fi
+CONFIGURE_OPTIONS+=("--enable-librav1e")
+
 ##
 ## audio library
 ##
@@ -695,7 +702,7 @@ fi
 ##
 
 build "ffmpeg"
-download "https://git.ffmpeg.org/gitweb/ffmpeg.git/snapshot/553eb0773763798a6b9656b621cb125e1f6edbcc.tar.gz"
+download "https://git.ffmpeg.org/gitweb/ffmpeg.git/snapshot/652279e35becae7b4c0b6b73e4f6c074e8a8b77c.tar.gz"
 # shellcheck disable=SC2086
 ./configure "${CONFIGURE_OPTIONS[@]}" \
   --disable-debug \
