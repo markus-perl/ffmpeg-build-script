@@ -695,7 +695,7 @@ fi
 ##
 
 build "ffmpeg"
-download "https://git.ffmpeg.org/gitweb/ffmpeg.git/snapshot/553eb0773763798a6b9656b621cb125e1f6edbcc.tar.gz"
+download "https://git.ffmpeg.org/gitweb/ffmpeg.git/snapshot/dc91b913b6260e85e1304c74ff7bb3c22a8c9fb1.tar.gz"
 # shellcheck disable=SC2086
 ./configure "${CONFIGURE_OPTIONS[@]}" \
   --disable-debug \
