@@ -408,7 +408,7 @@ fi
 
 if ! $MACOS_M1; then
   if build "svtav1"; then
-    download "https://github.com/AOMediaCodec/SVT-AV1/archive/v0.8.6.tar.gz"
+    download "https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/master/SVT-AV1-master.tar.gz"
     cd Build/linux || exit
     execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF ../.. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
     execute make -j $MJOBS
@@ -421,6 +421,7 @@ if ! $MACOS_M1; then
 fi
 
 if $NONFREE_AND_GPL; then
+
 if build "x264"; then
   download "https://code.videolan.org/videolan/x264/-/archive/0d754ec36013fee82978496cd56fbd48824910b3/x264-0d754ec36013fee82978496cd56fbd48824910b3.tar.gz" "x264-0d754ec.tar.gz"
   cd "${PACKAGES}"/x264-0d754ec || exit
@@ -459,7 +460,7 @@ CONFIGURE_OPTIONS+=("--enable-libx265")
 fi
 
 if build "libvpx"; then
-  download "https://github.com/webmproject/libvpx/archive/v1.9.0.tar.gz" "libvpx-1.9.0.tar.gz"
+  download "https://github.com/webmproject/libvpx/archive/refs/tags/v1.10.0.tar.gz" "libvpx-1.10.0.tar.gz"
 
   if [[ "$OSTYPE" == "darwin"* ]]; then
     echo "Applying Darwin patch"
@@ -467,7 +468,7 @@ if build "libvpx"; then
     sed "s/-Wl,--no-undefined -Wl,-soname/-Wl,-undefined,error -Wl,-install_name/g" build/make/Makefile.patched >build/make/Makefile
   fi
 
-  execute ./configure --prefix="${WORKSPACE}" --disable-unit-tests --disable-shared --as=yasm
+  execute ./configure --prefix="${WORKSPACE}" --disable-unit-tests --disable-shared --as=yasm --enable-vp9-highbitdepth
   execute make -j $MJOBS
   execute make install
 
@@ -515,7 +516,7 @@ CONFIGURE_OPTIONS+=("--enable-libvidstab")
 fi
 
 if build "av1"; then
-  download "https://aomedia.googlesource.com/aom/+archive/b52ee6d44adaef8a08f6984390de050d64df9faa.tar.gz" "av1.tar.gz" "av1"
+  download "https://aomedia.googlesource.com/aom/+archive/refs/heads/master.tar.gz" "av1.tar.gz" "av1"
   make_dir "$PACKAGES"/aom_build
   cd "$PACKAGES"/aom_build || exit
   if $MACOS_M1; then
@@ -530,8 +531,20 @@ if build "av1"; then
 fi
 CONFIGURE_OPTIONS+=("--enable-libaom")
 
+if build "dav1d"; then
+  download "https://code.videolan.org/videolan/dav1d/-/archive/0.8.2/dav1d-0.8.2.tar.gz" "dav1d-0.8.2.tar.gz"
+  make_dir "$PACKAGES"/dav1d/build
+  cd "$PACKAGES"/dav1d/build || exit
+  execute meson .. --default-library=static -Dprefix="${WORKSPACE}"
+  execute ninja
+  execute ninja install
+  mv  ${WORKSPACE}/lib/x86_64-linux-gnu/pkgconfig/dav1d.pc ${WORKSPACE}/lib/pkgconfig/dav1d.pc 
+  build_done "dav1d"
+fi
+CONFIGURE_OPTIONS+=("--enable-libdav1d")
+
 if build "rav1e"; then
-  download "https://github.com/xiph/rav1e/archive/refs/tags/v0.4.1.tar.gz" "rav1e.tar.gz"
+  download "https://github.com/xiph/rav1e/archive/master.tar.gz" "rav1e.tar.gz"
   execute cargo cinstall --release  --prefix="${WORKSPACE}" --library-type staticlib
   build_done "rav1e"
 fi
