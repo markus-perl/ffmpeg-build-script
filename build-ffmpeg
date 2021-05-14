@@ -4,7 +4,7 @@
 # LICENSE: https://github.com/markus-perl/ffmpeg-build-script/blob/master/LICENSE
 
 PROGNAME=$(basename "$0")
-VERSION=1.24
+VERSION=1.25
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
 WORKSPACE="$CWD/workspace"
@@ -194,6 +194,10 @@ usage() {
   echo ""
 }
 
+echo "ffmpeg-build-script v$VERSION"
+echo "========================="
+echo ""
+
 while (($# > 0)); do
   case $1 in
   -h | --help)
@@ -232,10 +236,6 @@ while (($# > 0)); do
     ;;
   esac
 done
-
-echo "ffmpeg-build-script v$VERSION"
-echo "========================="
-echo ""
 
 if [ -z "$bflag" ]; then
   if [ -z "$cflag" ]; then
