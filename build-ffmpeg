@@ -293,7 +293,7 @@ fi
 if command_exists "python"; then
 
   if build "lv2"; then
-    download "https://lv2plug.in/spec/lv2-1.18.0.tar.bz2" "lv2-1.18.0.tar.bz2"
+    download "https://lv2plug.in/spec/lv2-1.18.2.tar.bz2" "lv2-1.18.2.tar.bz2"
     execute ./waf configure --prefix="${WORKSPACE}" --lv2-user
     execute ./waf
     execute ./waf install
@@ -302,13 +302,13 @@ if command_exists "python"; then
   fi
 
   if build "waflib"; then
-    download "https://gitlab.com/drobilla/autowaf/-/archive/cc37724b9bfa889baebd8cb10f38b8c7cab83e37/autowaf-cc37724b9bfa889baebd8cb10f38b8c7cab83e37.tar.gz" "autowaf.tar.gz"
+    download "https://gitlab.com/drobilla/autowaf/-/archive/b600c928b221a001faeab7bd92786d0b25714bc8/autowaf-b600c928b221a001faeab7bd92786d0b25714bc8.tar.gz" "autowaf.tar.gz"
     build_done "waflib"
   fi
 
   if build "serd"; then
-    download "https://gitlab.com/drobilla/serd/-/archive/v0.30.6/serd-v0.30.6.tar.gz" "serd-v0.30.6.tar.gz"
-    execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/serd-v0.30.6/waflib/"
+    download "https://gitlab.com/drobilla/serd/-/archive/v0.30.10/serd-v0.30.10.tar.gz" "serd-v0.30.10.tar.gz"
+    execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/serd-v0.30.10/waflib/"
     execute ./waf configure --prefix="${WORKSPACE}" --static --no-shared --no-posix
     execute ./waf
     execute ./waf install
@@ -325,8 +325,8 @@ if command_exists "python"; then
   fi
 
   if build "sord"; then
-    download "https://gitlab.com/drobilla/sord/-/archive/v0.16.6/sord-v0.16.6.tar.gz" "sord-v0.16.6.tar.gz"
-    execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/sord-v0.16.6/waflib/"
+    download "https://gitlab.com/drobilla/sord/-/archive/v0.16.8/sord-v0.16.8.tar.gz" "sord-v0.16.8.tar.gz"
+    execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/sord-v0.16.8/waflib/"
     execute ./waf configure --prefix="${WORKSPACE}" CFLAGS="${CFLAGS}" --static --no-shared --no-utils
     execute ./waf CFLAGS="${CFLAGS}"
     execute ./waf install
@@ -335,8 +335,8 @@ if command_exists "python"; then
   fi
 
   if build "sratom"; then
-    download "https://gitlab.com/lv2/sratom/-/archive/v0.6.6/sratom-v0.6.6.tar.gz" "sratom-v0.6.6.tar.gz"
-    execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/sratom-v0.6.6/waflib/"
+    download "https://gitlab.com/lv2/sratom/-/archive/v0.6.8/sratom-v0.6.8.tar.gz" "sratom-v0.6.8.tar.gz"
+    execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/sratom-v0.6.8/waflib/"
     execute ./waf configure --prefix="${WORKSPACE}" --static --no-shared
     execute ./waf
     execute ./waf install
@@ -345,8 +345,8 @@ if command_exists "python"; then
   fi
 
   if build "lilv"; then
-    download "https://gitlab.com/lv2/lilv/-/archive/v0.24.10/lilv-v0.24.10.tar.gz" "lilv-v0.24.10.tar.gz"
-    execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/lilv-v0.24.10/waflib/"
+    download "https://gitlab.com/lv2/lilv/-/archive/v0.24.12/lilv-v0.24.12.tar.gz" "lilv-v0.24.12.tar.gz"
+    execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/lilv-v0.24.12/waflib/"
     execute ./waf configure --prefix="${WORKSPACE}" --static --no-shared --no-utils
     execute ./waf
     execute ./waf install
@@ -383,7 +383,7 @@ fi
 
 if $NONFREE_AND_GPL; then
 if build "openssl"; then
-  download "https://www.openssl.org/source/openssl-1.1.1i.tar.gz"
+  download "https://www.openssl.org/source/openssl-1.1.1k.tar.gz"
   if $MACOS_M1; then
     sed -n 's/\(##### GNU Hurd\)/"darwin64-arm64-cc" => { \n    inherit_from     => [ "darwin-common", asm("aarch64_asm") ],\n    CFLAGS           => add("-Wall"),\n    cflags           => add("-arch arm64 "),\n    lib_cppflags     => add("-DL_ENDIAN"),\n    bn_ops           => "SIXTY_FOUR_BIT_LONG", \n    perlasm_scheme   => "macosx", \n}, \n\1/g' Configurations/10-main.conf
     execute ./configure --prefix="${WORKSPACE}" no-shared no-asm darwin64-arm64-cc
@@ -398,9 +398,8 @@ CONFIGURE_OPTIONS+=("--enable-openssl")
 fi
 
 if build "cmake"; then
-  download "https://cmake.org/files/v3.18/cmake-3.18.4.tar.gz"
-  execute ./bootstrap -- -DCMAKE_USE_OPENSSL=OFF
-  execute ./configure --prefix="${WORKSPACE}"
+  download "https://cmake.org/files/LatestRelease/cmake-3.20.2.tar.gz"
+  execute ./configure --prefix="${WORKSPACE}" --parallel="${MJOBS}" -- -DCMAKE_USE_OPENSSL=OFF
   execute make -j $MJOBS
   execute make install
   build_done "cmake"
@@ -422,8 +421,8 @@ fi
 
 if $NONFREE_AND_GPL; then
 if build "x264"; then
-  download "https://code.videolan.org/videolan/x264/-/archive/0d754ec36013fee82978496cd56fbd48824910b3/x264-0d754ec36013fee82978496cd56fbd48824910b3.tar.gz" "x264-0d754ec.tar.gz"
-  cd "${PACKAGES}"/x264-0d754ec || exit
+  download "https://code.videolan.org/videolan/x264/-/archive/stable/x264-stable.tar.gz" "x264-stable.tar.gz"
+  cd "${PACKAGES}"/x264-stable || exit
 
   if [[ "$OSTYPE" == "linux-gnu" ]]; then
     execute ./configure --prefix="${WORKSPACE}" --enable-static --enable-pic CXXFLAGS="-fPIC"
@@ -459,7 +458,7 @@ CONFIGURE_OPTIONS+=("--enable-libx265")
 fi
 
 if build "libvpx"; then
-  download "https://github.com/webmproject/libvpx/archive/v1.9.0.tar.gz" "libvpx-1.9.0.tar.gz"
+  download "https://github.com/webmproject/libvpx/archive/refs/tags/v1.10.0.tar.gz" "libvpx-1.10.0.tar.gz"
 
   if [[ "$OSTYPE" == "darwin"* ]]; then
     echo "Applying Darwin patch"
@@ -515,7 +514,7 @@ CONFIGURE_OPTIONS+=("--enable-libvidstab")
 fi
 
 if build "av1"; then
-  download "https://aomedia.googlesource.com/aom/+archive/b52ee6d44adaef8a08f6984390de050d64df9faa.tar.gz" "av1.tar.gz" "av1"
+  download "https://aomedia.googlesource.com/aom/+archive/c0f14141bd71414b004dccd66d48b27570299fa3.tar.gz" "av1.tar.gz" "av1"
   make_dir "$PACKAGES"/aom_build
   cd "$PACKAGES"/aom_build || exit
   if $MACOS_M1; then
@@ -597,8 +596,8 @@ CONFIGURE_OPTIONS+=("--enable-libtheora")
 
 if $NONFREE_AND_GPL; then
 if build "fdk_aac"; then
-  download "https://sourceforge.net/projects/opencore-amr/files/fdk-aac/fdk-aac-2.0.1.tar.gz/download?use_mirror=gigenet" "fdk-aac-2.0.1.tar.gz"
-  execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+  download "https://sourceforge.net/projects/opencore-amr/files/fdk-aac/fdk-aac-2.0.2.tar.gz/download?use_mirror=gigenet" "fdk-aac-2.0.2.tar.gz"
+  execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --enable-pic
   execute make -j $MJOBS
   execute make install
 
@@ -612,7 +611,7 @@ fi
 ##
 
 if build "libwebp"; then
-  download "https://github.com/webmproject/libwebp/archive/v1.1.0.tar.gz" "libwebp-1.1.0.tar.gz"
+  download "https://github.com/webmproject/libwebp/archive/v1.2.0.tar.gz" "libwebp-1.2.0.tar.gz"
   make_dir build
   cd build || exit
   execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=OFF -DENABLE_STATIC=ON ../
@@ -638,7 +637,7 @@ fi
 
 if $NONFREE_AND_GPL; then
 if build "srt"; then
-  download "https://github.com/Haivision/srt/archive/v1.4.1.tar.gz" "srt-1.4.1.tar.gz"
+  download "https://github.com/Haivision/srt/archive/v1.4.3.tar.gz" "srt-1.4.3.tar.gz"
   export OPENSSL_ROOT_DIR="${WORKSPACE}"
   export OPENSSL_LIB_DIR="${WORKSPACE}"/lib
   export OPENSSL_INCLUDE_DIR="${WORKSPACE}"/include/
@@ -661,7 +660,7 @@ fi
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
   if command_exists "nvcc"; then
     if build "nv-codec"; then
-      download "https://github.com/FFmpeg/nv-codec-headers/releases/download/n11.0.10.0/nv-codec-headers-11.0.10.0.tar.gz"
+      download "https://github.com/FFmpeg/nv-codec-headers/releases/download/n11.0.10.1/nv-codec-headers-11.0.10.1.tar.gz"
       execute make PREFIX="${WORKSPACE}"
       execute make install PREFIX="${WORKSPACE}"
       build_done "nv-codec"
