@@ -382,19 +382,19 @@ if build "zlib"; then
 fi
 
 if $NONFREE_AND_GPL; then
-if build "openssl"; then
-  download "https://www.openssl.org/source/openssl-1.1.1k.tar.gz"
-  if $MACOS_M1; then
-    sed -n 's/\(##### GNU Hurd\)/"darwin64-arm64-cc" => { \n    inherit_from     => [ "darwin-common", asm("aarch64_asm") ],\n    CFLAGS           => add("-Wall"),\n    cflags           => add("-arch arm64 "),\n    lib_cppflags     => add("-DL_ENDIAN"),\n    bn_ops           => "SIXTY_FOUR_BIT_LONG", \n    perlasm_scheme   => "macosx", \n}, \n\1/g' Configurations/10-main.conf
-    execute ./configure --prefix="${WORKSPACE}" no-shared no-asm darwin64-arm64-cc
-  else
-    execute ./config --prefix="${WORKSPACE}" --openssldir="${WORKSPACE}" --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib no-shared zlib
+  if build "openssl"; then
+    download "https://www.openssl.org/source/openssl-1.1.1k.tar.gz"
+    if $MACOS_M1; then
+      sed -n 's/\(##### GNU Hurd\)/"darwin64-arm64-cc" => { \n    inherit_from     => [ "darwin-common", asm("aarch64_asm") ],\n    CFLAGS           => add("-Wall"),\n    cflags           => add("-arch arm64 "),\n    lib_cppflags     => add("-DL_ENDIAN"),\n    bn_ops           => "SIXTY_FOUR_BIT_LONG", \n    perlasm_scheme   => "macosx", \n}, \n\1/g' Configurations/10-main.conf
+      execute ./configure --prefix="${WORKSPACE}" no-shared no-asm darwin64-arm64-cc
+    else
+      execute ./config --prefix="${WORKSPACE}" --openssldir="${WORKSPACE}" --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib no-shared zlib
+    fi
+    execute make -j $MJOBS
+    execute make install_sw
+    build_done "openssl"
   fi
-  execute make -j $MJOBS
-  execute make install_sw
-  build_done "openssl"
-fi
-CONFIGURE_OPTIONS+=("--enable-openssl")
+  CONFIGURE_OPTIONS+=("--enable-openssl")
 fi
 
 if build "cmake"; then
@@ -407,7 +407,7 @@ fi
 
 if ! $MACOS_M1; then
   if build "svtav1"; then
-    download "https://github.com/AOMediaCodec/SVT-AV1/archive/v0.8.6.tar.gz"
+    download "https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/master/SVT-AV1-master.tar.gz"
     cd Build/linux || exit
     execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF ../.. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
     execute make -j $MJOBS
@@ -420,41 +420,42 @@ if ! $MACOS_M1; then
 fi
 
 if $NONFREE_AND_GPL; then
-if build "x264"; then
-  download "https://code.videolan.org/videolan/x264/-/archive/stable/x264-stable.tar.gz" "x264-stable.tar.gz"
-  cd "${PACKAGES}"/x264-stable || exit
 
-  if [[ "$OSTYPE" == "linux-gnu" ]]; then
-    execute ./configure --prefix="${WORKSPACE}" --enable-static --enable-pic CXXFLAGS="-fPIC"
-  else
-    execute ./configure --prefix="${WORKSPACE}" --enable-static --enable-pic
+  if build "x264"; then
+    download "https://code.videolan.org/videolan/x264/-/archive/b684ebe04a6f80f8207a57940a1fa00e25274f81/x264-b684ebe04a6f80f8207a57940a1fa00e25274f81.tar.gz" "x264-b684eb.tar.gz"
+    cd "${PACKAGES}"/x264-b684eb || exit
+
+    if [[ "$OSTYPE" == "linux-gnu" ]]; then
+      execute ./configure --prefix="${WORKSPACE}" --enable-static --enable-pic CXXFLAGS="-fPIC"
+    else
+      execute ./configure --prefix="${WORKSPACE}" --enable-static --enable-pic
+    fi
+
+    execute make -j $MJOBS
+    execute make install
+    execute make install-lib-static
+
+    build_done "x264"
   fi
-
-  execute make -j $MJOBS
-  execute make install
-  execute make install-lib-static
-
-  build_done "x264"
-fi
-CONFIGURE_OPTIONS+=("--enable-libx264")
+  CONFIGURE_OPTIONS+=("--enable-libx264")
 fi
 
 if $NONFREE_AND_GPL; then
-if build "x265"; then
-  download "https://github.com/videolan/x265/archive/Release_3.5.tar.gz" "x265-3.5.tar.gz"
-  cd build/linux || exit
+  if build "x265"; then
+    download "https://github.com/videolan/x265/archive/Release_3.5.tar.gz" "x265-3.5.tar.gz"
+    cd build/linux || exit
 
-  execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF ../../source
-  execute make -j $MJOBS
-  execute make install
+    execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF ../../source
+    execute make -j $MJOBS
+    execute make install
 
-  if [ -n "$LDEXEFLAGS" ]; then
-    sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "${WORKSPACE}/lib/pkgconfig/x265.pc" # The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
+    if [ -n "$LDEXEFLAGS" ]; then
+      sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "${WORKSPACE}/lib/pkgconfig/x265.pc" # The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
+    fi
+
+    build_done "x265"
   fi
-
-  build_done "x265"
-fi
-CONFIGURE_OPTIONS+=("--enable-libx265")
+  CONFIGURE_OPTIONS+=("--enable-libx265")
 fi
 
 if build "libvpx"; then
@@ -466,7 +467,7 @@ if build "libvpx"; then
     sed "s/-Wl,--no-undefined -Wl,-soname/-Wl,-undefined,error -Wl,-install_name/g" build/make/Makefile.patched >build/make/Makefile
   fi
 
-  execute ./configure --prefix="${WORKSPACE}" --disable-unit-tests --disable-shared --as=yasm
+  execute ./configure --prefix="${WORKSPACE}" --disable-unit-tests --disable-shared --as=yasm --enable-vp9-highbitdepth
   execute make -j $MJOBS
   execute make install
 
@@ -475,42 +476,42 @@ fi
 CONFIGURE_OPTIONS+=("--enable-libvpx")
 
 if $NONFREE_AND_GPL; then
-if build "xvidcore"; then
-  download "https://downloads.xvid.com/downloads/xvidcore-1.3.7.tar.gz"
-  cd build/generic || exit
-  execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
-  execute make -j $MJOBS
-  execute make install
+  if build "xvidcore"; then
+    download "https://downloads.xvid.com/downloads/xvidcore-1.3.7.tar.gz"
+    cd build/generic || exit
+    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+    execute make -j $MJOBS
+    execute make install
 
-  if [[ -f ${WORKSPACE}/lib/libxvidcore.4.dylib ]]; then
-    execute rm "${WORKSPACE}/lib/libxvidcore.4.dylib"
+    if [[ -f ${WORKSPACE}/lib/libxvidcore.4.dylib ]]; then
+      execute rm "${WORKSPACE}/lib/libxvidcore.4.dylib"
+    fi
+
+    if [[ -f ${WORKSPACE}/lib/libxvidcore.so ]]; then
+      execute rm "${WORKSPACE}"/lib/libxvidcore.so*
+    fi
+
+    build_done "xvidcore"
   fi
-
-  if [[ -f ${WORKSPACE}/lib/libxvidcore.so ]]; then
-    execute rm "${WORKSPACE}"/lib/libxvidcore.so*
-  fi
-
-  build_done "xvidcore"
-fi
-CONFIGURE_OPTIONS+=("--enable-libxvid")
+  CONFIGURE_OPTIONS+=("--enable-libxvid")
 fi
 
 if $NONFREE_AND_GPL; then
-if build "vid_stab"; then
-  download "https://github.com/georgmartius/vid.stab/archive/v1.1.0.tar.gz" "vid.stab-1.1.0.tar.gz"
+  if build "vid_stab"; then
+    download "https://github.com/georgmartius/vid.stab/archive/v1.1.0.tar.gz" "vid.stab-1.1.0.tar.gz"
 
-  if $MACOS_M1; then
-    curl -s -o "$PACKAGES/vid.stab-1.1.0/fix_cmake_quoting.patch" https://raw.githubusercontent.com/Homebrew/formula-patches/5bf1a0e0cfe666ee410305cece9c9c755641bfdf/libvidstab/fix_cmake_quoting.patch
-    patch -p1 <fix_cmake_quoting.patch
+    if $MACOS_M1; then
+      curl -s -o "$PACKAGES/vid.stab-1.1.0/fix_cmake_quoting.patch" https://raw.githubusercontent.com/Homebrew/formula-patches/5bf1a0e0cfe666ee410305cece9c9c755641bfdf/libvidstab/fix_cmake_quoting.patch
+      patch -p1 <fix_cmake_quoting.patch
+    fi
+
+    execute cmake -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DUSE_OMP=OFF -DENABLE_SHARED=off .
+    execute make
+    execute make install
+
+    build_done "vid_stab"
   fi
-
-  execute cmake -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DUSE_OMP=OFF -DENABLE_SHARED=off .
-  execute make
-  execute make install
-
-  build_done "vid_stab"
-fi
-CONFIGURE_OPTIONS+=("--enable-libvidstab")
+  CONFIGURE_OPTIONS+=("--enable-libvidstab")
 fi
 
 if build "av1"; then
@@ -528,6 +529,25 @@ if build "av1"; then
   build_done "av1"
 fi
 CONFIGURE_OPTIONS+=("--enable-libaom")
+
+if build "dav1d"; then
+  download "https://code.videolan.org/videolan/dav1d/-/archive/0.8.2/dav1d-0.8.2.tar.gz" "dav1d-0.8.2.tar.gz"
+  make_dir "$PACKAGES"/dav1d/build
+  cd "$PACKAGES"/dav1d/build || exit
+  execute meson .. --default-library=static -Dprefix="${WORKSPACE}"
+  execute ninja
+  execute ninja install
+  mv ${WORKSPACE}/lib/x86_64-linux-gnu/pkgconfig/dav1d.pc ${WORKSPACE}/lib/pkgconfig/dav1d.pc
+  build_done "dav1d"
+fi
+CONFIGURE_OPTIONS+=("--enable-libdav1d")
+
+if build "rav1e"; then
+  download "https://github.com/xiph/rav1e/archive/master.tar.gz" "rav1e.tar.gz"
+  execute cargo cinstall --release --prefix="${WORKSPACE}" --library-type staticlib
+  build_done "rav1e"
+fi
+CONFIGURE_OPTIONS+=("--enable-librav1e")
 
 ##
 ## audio library
@@ -595,15 +615,15 @@ fi
 CONFIGURE_OPTIONS+=("--enable-libtheora")
 
 if $NONFREE_AND_GPL; then
-if build "fdk_aac"; then
-  download "https://sourceforge.net/projects/opencore-amr/files/fdk-aac/fdk-aac-2.0.2.tar.gz/download?use_mirror=gigenet" "fdk-aac-2.0.2.tar.gz"
-  execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --enable-pic
-  execute make -j $MJOBS
-  execute make install
+  if build "fdk_aac"; then
+    download "https://sourceforge.net/projects/opencore-amr/files/fdk-aac/fdk-aac-2.0.2.tar.gz/download?use_mirror=gigenet" "fdk-aac-2.0.2.tar.gz"
+    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --enable-pic
+    execute make -j $MJOBS
+    execute make install
 
-  build_done "fdk_aac"
-fi
-CONFIGURE_OPTIONS+=("--enable-libfdk-aac")
+    build_done "fdk_aac"
+  fi
+  CONFIGURE_OPTIONS+=("--enable-libfdk-aac")
 fi
 
 ##
@@ -636,21 +656,21 @@ if build "libsdl"; then
 fi
 
 if $NONFREE_AND_GPL; then
-if build "srt"; then
-  download "https://github.com/Haivision/srt/archive/v1.4.3.tar.gz" "srt-1.4.3.tar.gz"
-  export OPENSSL_ROOT_DIR="${WORKSPACE}"
-  export OPENSSL_LIB_DIR="${WORKSPACE}"/lib
-  export OPENSSL_INCLUDE_DIR="${WORKSPACE}"/include/
-  execute cmake . -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DENABLE_APPS=OFF -DUSE_STATIC_LIBSTDCXX=ON
-  execute make install
+  if build "srt"; then
+    download "https://github.com/Haivision/srt/archive/v1.4.3.tar.gz" "srt-1.4.3.tar.gz"
+    export OPENSSL_ROOT_DIR="${WORKSPACE}"
+    export OPENSSL_LIB_DIR="${WORKSPACE}"/lib
+    export OPENSSL_INCLUDE_DIR="${WORKSPACE}"/include/
+    execute cmake . -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DENABLE_APPS=OFF -DUSE_STATIC_LIBSTDCXX=ON
+    execute make install
 
-  if [ -n "$LDEXEFLAGS" ]; then
-    sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "${WORKSPACE}"/lib/pkgconfig/srt.pc # The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
+    if [ -n "$LDEXEFLAGS" ]; then
+      sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "${WORKSPACE}"/lib/pkgconfig/srt.pc # The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
+    fi
+
+    build_done "srt"
   fi
-
-  build_done "srt"
-fi
-CONFIGURE_OPTIONS+=("--enable-libsrt")
+  CONFIGURE_OPTIONS+=("--enable-libsrt")
 fi
 
 ##
