@@ -4,7 +4,7 @@
 # LICENSE: https://github.com/markus-perl/ffmpeg-build-script/blob/master/LICENSE
 
 PROGNAME=$(basename "$0")
-VERSION=1.25
+VERSION=1.26
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
 WORKSPACE="$CWD/workspace"
@@ -529,25 +529,6 @@ if build "av1"; then
   build_done "av1"
 fi
 CONFIGURE_OPTIONS+=("--enable-libaom")
-
-if build "dav1d"; then
-  download "https://code.videolan.org/videolan/dav1d/-/archive/0.8.2/dav1d-0.8.2.tar.gz" "dav1d-0.8.2.tar.gz"
-  make_dir "$PACKAGES"/dav1d/build
-  cd "$PACKAGES"/dav1d/build || exit
-  execute meson .. --default-library=static -Dprefix="${WORKSPACE}"
-  execute ninja
-  execute ninja install
-  mv ${WORKSPACE}/lib/x86_64-linux-gnu/pkgconfig/dav1d.pc ${WORKSPACE}/lib/pkgconfig/dav1d.pc
-  build_done "dav1d"
-fi
-CONFIGURE_OPTIONS+=("--enable-libdav1d")
-
-if build "rav1e"; then
-  download "https://github.com/xiph/rav1e/archive/master.tar.gz" "rav1e.tar.gz"
-  execute cargo cinstall --release --prefix="${WORKSPACE}" --library-type staticlib
-  build_done "rav1e"
-fi
-CONFIGURE_OPTIONS+=("--enable-librav1e")
 
 ##
 ## audio library
