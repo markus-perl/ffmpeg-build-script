@@ -247,6 +247,10 @@ fi
 
 echo "Using $MJOBS make jobs simultaneously."
 
+if $NONFREE_AND_GPL; then
+echo "With GPL and non-free codecs"
+fi
+
 if [ -n "$LDEXEFLAGS" ]; then
   echo "Start the build in full static mode."
 fi
@@ -695,7 +699,7 @@ fi
 ##
 
 build "ffmpeg"
-download "https://git.ffmpeg.org/gitweb/ffmpeg.git/snapshot/dc91b913b6260e85e1304c74ff7bb3c22a8c9fb1.tar.gz"
+download "https://www.ffmpeg.org/releases/ffmpeg-4.4.tar.gz"
 # shellcheck disable=SC2086
 ./configure "${CONFIGURE_OPTIONS[@]}" \
   --disable-debug \
