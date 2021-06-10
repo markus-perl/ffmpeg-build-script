@@ -29,6 +29,11 @@ other than Debian 10 and macOS 11.x, because I don't have the resources or time 
 Open your command line and run (curl needs to be installed):
 
 ```bash
+
+# Without GPL and non-free codes, see https://ffmpeg.org/legal.html 
+$ bash <(curl -s "https://raw.githubusercontent.com/markus-perl/ffmpeg-build-script/master/web-install.sh?v1")
+
+# With GPL and non-free codes, see https://ffmpeg.org/legal.html 
 $ bash <(curl -s "https://raw.githubusercontent.com/markus-perl/ffmpeg-build-script/master/web-install.sh?v1")
 ```
 
