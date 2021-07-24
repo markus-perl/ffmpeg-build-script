@@ -4,7 +4,7 @@
 # LICENSE: https://github.com/markus-perl/ffmpeg-build-script/blob/master/LICENSE
 
 PROGNAME=$(basename "$0")
-VERSION=1.26
+VERSION=1.27
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
 WORKSPACE="$CWD/workspace"
@@ -611,12 +611,29 @@ if $NONFREE_AND_GPL; then
   CONFIGURE_OPTIONS+=("--enable-libfdk-aac")
 fi
 
+if build "libtiff"; then
+  download "https://download.osgeo.org/libtiff/tiff-4.3.0.tar.gz"
+  execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+  execute make -j $MJOBS
+  execute make install
+  build_done "libtiff"
+fi
+
+if build "libpng"; then
+  download "https://deac-riga.dl.sourceforge.net/project/libpng/libpng16/1.6.37/libpng-1.6.37.tar.gz"
+  execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+  execute make -j $MJOBS
+  execute make install
+  build_done "libpng"
+fi
+
 ##
 ## image library
 ##
 
 if build "libwebp"; then
-  download "https://github.com/webmproject/libwebp/archive/v1.2.0.tar.gz" "libwebp-1.2.0.tar.gz"
+  download "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-1.2.0.tar.gz" "libwebp-1.2.0.tar.gz"
+  execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   make_dir build
   cd build || exit
   execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=OFF -DENABLE_STATIC=ON ../
