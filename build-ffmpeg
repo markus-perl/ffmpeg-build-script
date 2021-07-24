@@ -402,7 +402,7 @@ if $NONFREE_AND_GPL; then
 fi
 
 if build "cmake"; then
-  download "https://cmake.org/files/LatestRelease/cmake-3.20.2.tar.gz"
+  download "https://cmake.org/files/LatestRelease/cmake-3.21.0.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --parallel="${MJOBS}" -- -DCMAKE_USE_OPENSSL=OFF
   execute make -j $MJOBS
   execute make install
