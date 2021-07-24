@@ -699,7 +699,7 @@ fi
 ##
 
 build "ffmpeg"
-download "https://www.ffmpeg.org/releases/ffmpeg-4.4.tar.gz"
+download "https://github.com/FFmpeg/FFmpeg/archive/refs/heads/release/4.4.tar.gz" "FFmpeg-release-4.4.tar.gz"
 # shellcheck disable=SC2086
 ./configure "${CONFIGURE_OPTIONS[@]}" \
   --disable-debug \
