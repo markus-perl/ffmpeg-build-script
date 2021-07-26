@@ -382,6 +382,7 @@ if build "zlib"; then
   execute ./configure --static --prefix="${WORKSPACE}"
   execute make -j $MJOBS
   execute make install
+  LDFLAGS+=" -L/zlib/lib"
   build_done "zlib"
 fi
 
@@ -621,6 +622,8 @@ fi
 
 if build "libpng"; then
   download "https://deac-riga.dl.sourceforge.net/project/libpng/libpng16/1.6.37/libpng-1.6.37.tar.gz"
+  export LDFLAGS="${LDFLAGS}"
+  export CPPFLAGS="${CFLAGS}"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j $MJOBS
   execute make install
