@@ -450,7 +450,7 @@ if $NONFREE_AND_GPL; then
     download "https://github.com/videolan/x265/archive/Release_3.5.tar.gz" "x265-3.5.tar.gz"
     cd build/linux || exit
 
-    execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF ../../source
+    execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DHIGH_BIT_DEPTH=ON -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF ../../source
     execute make -j $MJOBS
     execute make install
 
