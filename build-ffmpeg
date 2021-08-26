@@ -613,7 +613,7 @@ if $NONFREE_AND_GPL; then
 fi
 
 if build "libtiff"; then
-  download "https://download.osgeo.org/libtiff/tiff-4.3.0.tar.gz"
+  download "https://download.osgeo.org/libtiff/tiff-4.2.0.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j $MJOBS
   execute make install
