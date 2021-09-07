@@ -125,7 +125,7 @@ with https://github.com/markus-perl/ffmpeg-build-script/actions to make sure eve
 
 ```bash
 # Debian and Ubuntu
-$ sudo apt install build-essential curl libzip-dev
+$ sudo apt install build-essential curl libzip-dev libtool
 
 # Fedora
 $ sudo dnf install @development-tools curl
