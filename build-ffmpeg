@@ -34,6 +34,7 @@ elif [[ -f /proc/cpuinfo ]]; then
 elif [[ "$OSTYPE" == "darwin"* ]]; then
   MJOBS=$(sysctl -n machdep.cpu.thread_count)
   CONFIGURE_OPTIONS=("--enable-videotoolbox")
+  MACOS_LIBTOOL="$(which libtool)" # gnu libtool is installed in this script and need to avoid name conflict
 else
   MJOBS=4
 fi
@@ -460,7 +461,7 @@ if build "cmake" "3.21.0"; then
 fi
 
 if ! $MACOS_M1; then
-  if build "svtav1" $(date -I); then
+  if build "svtav1" "$(date)"; then
     execute rm -f "${PACKAGES}/SVT-AV1-master.tar.gz"
     download "https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/master/SVT-AV1-master.tar.gz"
     cd Build/linux || exit
@@ -469,7 +470,7 @@ if ! $MACOS_M1; then
     execute make install
     execute cp SvtAv1Enc.pc "${WORKSPACE}/lib/pkgconfig/"
     execute cp SvtAv1Dec.pc "${WORKSPACE}/lib/pkgconfig/"
-    build_done "svtav1" $(date -I)
+    build_done "svtav1" "$(date)";
   fi
   CONFIGURE_OPTIONS+=("--enable-libsvtav1")
 fi
@@ -507,11 +508,37 @@ fi
 
 if $NONFREE_AND_GPL; then
   if build "x265" "3.5"; then
-    download "https://github.com/videolan/x265/archive/Release_3.5.tar.gz" "x265-3.5.tar.gz"
+    download "https://github.com/videolan/x265/archive/Release_3.5.tar.gz" "x265-3.5.tar.gz" # This is actually 3.4 if looking at x265Version.txt
     cd build/linux || exit
-
-    execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DHIGH_BIT_DEPTH=ON -DENABLE_HDR10_PLUS=ON -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF ../../source
+    rm -rf 8bit 10bit 12bit
+    mkdir 8bit 10bit 12bit
+    cd 12bit || exit
+    execute cmake ../../../source -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DHIGH_BIT_DEPTH=ON -DENABLE_HDR10_PLUS=ON -DEXPORT_C_API=OFF -DENABLE_CLI=OFF -DMAIN12=ON
     execute make -j $MJOBS
+    cd ../10bit || exit
+    execute cmake ../../../source -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DHIGH_BIT_DEPTH=ON -DENABLE_HDR10_PLUS=ON -DEXPORT_C_API=OFF -DENABLE_CLI=OFF
+    execute make -j $MJOBS
+    cd ../8bit || exit
+    ln -sf ../10bit/libx265.a libx265_main10.a
+    ln -sf ../12bit/libx265.a libx265_main12.a
+    execute cmake ../../../source -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DEXTRA_LIB="x265_main10.a;x265_main12.a;-ldl" -DEXTRA_LINK_FLAGS=-L. -DLINKED_10BIT=ON -DLINKED_12BIT=ON
+    execute make -j $MJOBS
+
+    mv libx265.a libx265_main.a
+
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+      execute "${MACOS_LIBTOOL}" -static -o libx265.a libx265_main.a libx265_main10.a libx265_main12.a 2>/dev/null
+    else
+      execute ar -M <<EOF
+CREATE libx265.a
+ADDLIB libx265_main.a
+ADDLIB libx265_main10.a
+ADDLIB libx265_main12.a
+SAVE
+END
+EOF
+    fi
+
     execute make install
 
     if [ -n "$LDEXEFLAGS" ]; then
@@ -712,7 +739,7 @@ CONFIGURE_OPTIONS+=("--enable-libwebp")
 if build "zimg" "3.0.3"; then
   download "https://github.com/sekrit-twc/zimg/archive/refs/tags/release-3.0.3.tar.gz" "zimg-3.0.3.tar.gz" "zimg"
   cd zimg-release-3.0.3 || exit
-  execute ${WORKSPACE}/bin/libtoolize -i -f -q
+  execute "${WORKSPACE}/bin/libtoolize" -i -f -q
   execute ./autogen.sh --prefix="${WORKSPACE}"
   execute ./configure --prefix="${WORKSPACE}" --enable-static --disable-shared
   execute make -j $MJOBS
@@ -790,9 +817,9 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
 
   if build "amf" "1.4.21.0"; then
     download "https://github.com/GPUOpen-LibrariesAndSDKs/AMF/archive/refs/tags/v.1.4.21.tar.gz" "AMF-1.4.21.tar.gz" "AMF-1.4.21"
-    execute rm -rf ${WORKSPACE}/include/AMF
-    execute mkdir -p ${WORKSPACE}/include/AMF
-    execute cp -r ${PACKAGES}/AMF-1.4.21/AMF-v.1.4.21/amf/public/include/* ${WORKSPACE}/include/AMF/
+    execute rm -rf "${WORKSPACE}/include/AMF"
+    execute mkdir -p "${WORKSPACE}/include/AMF"
+    execute cp -r "${PACKAGES}"/AMF-1.4.21/AMF-v.1.4.21/amf/public/include/* "${WORKSPACE}/include/AMF/"
     build_done "amf" "1.4.21.0"
   fi
   CONFIGURE_OPTIONS+=("--enable-amf")
