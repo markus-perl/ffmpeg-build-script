@@ -830,6 +830,11 @@ fi
 ## FFmpeg
 ##
 
+EXTRA_VERSION=""
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  EXTRA_VERSION="${FFMPEG_VERSION}"
+fi
+
 build "ffmpeg" "$FFMPEG_VERSION"
 download "https://github.com/FFmpeg/FFmpeg/archive/refs/heads/release/$FFMPEG_VERSION.tar.gz" "FFmpeg-release-$FFMPEG_VERSION.tar.gz"
 # shellcheck disable=SC2086
@@ -848,7 +853,7 @@ download "https://github.com/FFmpeg/FFmpeg/archive/refs/heads/release/$FFMPEG_VE
   --pkgconfigdir="$WORKSPACE/lib/pkgconfig" \
   --pkg-config-flags="--static" \
   --prefix="${WORKSPACE}" \
-  --extra-version="${FFMPEG_VERSION}"
+  --extra-version="${EXTRA_VERSION}"
 
 execute make -j $MJOBS
 execute make install
