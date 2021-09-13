@@ -4,7 +4,7 @@
 # LICENSE: https://github.com/markus-perl/ffmpeg-build-script/blob/master/LICENSE
 
 PROGNAME=$(basename "$0")
-VERSION=1.28
+SCRIPT_VERSION=1.28
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
 WORKSPACE="$CWD/workspace"
@@ -194,7 +194,7 @@ usage() {
   echo ""
 }
 
-echo "ffmpeg-build-script v$VERSION"
+echo "ffmpeg-build-script v$SCRIPT_VERSION"
 echo "========================="
 echo ""
 
@@ -205,7 +205,7 @@ while (($# > 0)); do
     exit 0
     ;;
   --version)
-    echo "$VERSION"
+    echo "$SCRIPT_VERSION"
     exit 0
     ;;
   -*)
