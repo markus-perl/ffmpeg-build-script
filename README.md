@@ -51,8 +51,9 @@ $ ./build-ffmpeg --build
 
 * `x264`: H.264 Video Codec (MPEG-4 AVC)
 * `x265`: H.265 Video Codec (HEVC)
-* `libsvtav1`, SVT-AV1 Encoder and Decoder
+* `libsvtav1`: SVT-AV1 Encoder and Decoder
 * `aom`: AV1 Video Codec (Experimental and very slow!)
+* `librav1e`: rust based AV1 encoder (only available if [`cargo` is installed](https://doc.rust-lang.org/cargo/getting-started/installation.html)) 
 * `fdk_aac`: Fraunhofer FDK AAC Codec
 * `xvidcore`: MPEG-4 video coding standard
 * `VP8/VP9/webm`: VP8 / VP9 Video Codec for the WebM video file format
@@ -61,7 +62,6 @@ $ ./build-ffmpeg --build
 * `vorbis`: Lossy audio compression format
 * `theora`: Free lossy video compression format
 * `opus`: Lossy audio coding format
-* `srt`: Secure Reliable Transport
 * `srt`: Secure Reliable Transport
 * `webp`: Image format both lossless and lossy
 
@@ -93,6 +93,11 @@ $ ./build-ffmpeg --build
         * MPEG2 video `mpeg2_vaapi`
         * VP8 `vp8_vaapi`
         * VP9 `vp9_vaapi`
+* `AMF`: [AMD's Advanced Media Framework](https://github.com/GPUOpen-LibrariesAndSDKs/AMF). These encoders will only 
+  be available if `amdgpu` drivers are detected in use on the system with `lspci -v`. 
+    * Encoders
+        * H264 `h264_amf` 
+
 
 ### Apple M1 (Apple Silicon) Support
 
@@ -235,6 +240,15 @@ $ sudo apt install libva-dev vainfo
 $ sudo dnf install libva-devel libva-intel-driver libva-utils
 ```
 
+## AMF installation
+
+To use the AMF encoder, you will need to be using the AMD GPU Pro drivers with OpenCL support.
+Download the drivers from https://www.amd.com/en/support and install the appropriate opencl versions.
+
+```bash
+./amdgpu-pro-install -y --opencl=rocr,legacy
+```
+
 ## Usage
 
 ```bash
@@ -244,6 +258,7 @@ Options:
       --version                  Display version information
   -b, --build                    Starts the build process
       --enable-gpl-and-non-free  Enable non-free codecs  - https://ffmpeg.org/legal.html
+      --latest                   Build latest version of dependencies if newer available
   -c, --cleanup                  Remove all working dirs
       --full-static              Complete static build of ffmpeg (eg. glibc, pthreads etc...) **only Linux**
                                  Note: Because of the NSS (Name Service Switch), glibc does not recommend static links.
