@@ -4,7 +4,8 @@
 # LICENSE: https://github.com/markus-perl/ffmpeg-build-script/blob/master/LICENSE
 
 PROGNAME=$(basename "$0")
-SCRIPT_VERSION=1.28
+SCRIPT_VERSION=1.30
+FFMPEG_VERSION=4.4
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
 WORKSPACE="$CWD/workspace"
@@ -132,7 +133,7 @@ build() {
   echo "======================="
 
   if [ -f "$PACKAGES/$1.done" ]; then
-    if grep -Fx "$2" "$PACKAGES/$1.done"; then
+    if grep -Fx "$2" "$PACKAGES/$1.done" >/dev/null; then
       echo "$1 version $2 already built. Remove $PACKAGES/$1.done lockfile to rebuild it."
       return 1
     elif $LATEST; then
@@ -829,8 +830,8 @@ fi
 ## FFmpeg
 ##
 
-build "ffmpeg" "4.4"
-download "https://github.com/FFmpeg/FFmpeg/archive/refs/heads/release/4.4.tar.gz" "FFmpeg-release-4.4.tar.gz"
+build "ffmpeg" "$FFMPEG_VERSION"
+download "https://github.com/FFmpeg/FFmpeg/archive/refs/heads/release/$FFMPEG_VERSION.tar.gz" "FFmpeg-release-$FFMPEG_VERSION.tar.gz"
 # shellcheck disable=SC2086
 ./configure "${CONFIGURE_OPTIONS[@]}" \
   --disable-debug \
@@ -846,7 +847,8 @@ download "https://github.com/FFmpeg/FFmpeg/archive/refs/heads/release/4.4.tar.gz
   --extra-libs="${EXTRALIBS}" \
   --pkgconfigdir="$WORKSPACE/lib/pkgconfig" \
   --pkg-config-flags="--static" \
-  --prefix="${WORKSPACE}"
+  --prefix="${WORKSPACE}" \
+  --extra-version="${FFMPEG_VERSION}"
 
 execute make -j $MJOBS
 execute make install
