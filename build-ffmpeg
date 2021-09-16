@@ -888,7 +888,6 @@ echo "Building done. The following binaries can be found here:"
 echo "- ffmpeg: $WORKSPACE/bin/ffmpeg"
 echo "- ffprobe: $WORKSPACE/bin/ffprobe"
 echo "- ffplay: $WORKSPACE/bin/ffplay"
-
 echo ""
 
 if [[ "$AUTOINSTALL" == "yes" ]]; then
