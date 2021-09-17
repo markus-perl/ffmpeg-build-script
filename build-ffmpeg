@@ -297,11 +297,8 @@ if ! command_exists "cargo"; then
   echo "cargo not installed. rav1e encoder will not be available."
 fi
 
-if ! command_exists "python"; then
-  echo "python command not found. Lv2 filter will not be available."
-fi
 if ! command_exists "python3"; then
-  echo "python3 command not found. dav1d decoder will not be available."
+  echo "python3 command not found. Lv2 filter and dav1d decoder will not be available."
 fi
 
 ##
@@ -314,74 +311,6 @@ if build "pkg-config" "0.29.2"; then
   execute make -j $MJOBS
   execute make install
   build_done "pkg-config" "0.29.2"
-fi
-
-if command_exists "python"; then
-
-  if build "lv2" "1.18.2"; then
-    download "https://lv2plug.in/spec/lv2-1.18.2.tar.bz2" "lv2-1.18.2.tar.bz2"
-    execute ./waf configure --prefix="${WORKSPACE}" --lv2-user
-    execute ./waf
-    execute ./waf install
-
-    build_done "lv2" "1.18.2"
-  fi
-
-  if build "waflib" "b600c92"; then
-    download "https://gitlab.com/drobilla/autowaf/-/archive/b600c928b221a001faeab7bd92786d0b25714bc8/autowaf-b600c928b221a001faeab7bd92786d0b25714bc8.tar.gz" "autowaf.tar.gz"
-    build_done "waflib" "b600c92"
-  fi
-
-  if build "serd" "0.30.10"; then
-    download "https://gitlab.com/drobilla/serd/-/archive/v0.30.10/serd-v0.30.10.tar.gz" "serd-v0.30.10.tar.gz"
-    execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/serd-v0.30.10/waflib/"
-    execute ./waf configure --prefix="${WORKSPACE}" --static --no-shared --no-posix
-    execute ./waf
-    execute ./waf install
-    build_done "serd" "0.30.10"
-  fi
-
-  if build "pcre" "8.44"; then
-    download "https://ftp.pcre.org/pub/pcre/pcre-8.44.tar.gz" "pcre-8.44.tar.gz"
-    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
-    execute make -j $MJOBS
-    execute make install
-
-    build_done "pcre" "8.44"
-  fi
-
-  if build "sord" "0.16.8"; then
-    download "https://gitlab.com/drobilla/sord/-/archive/v0.16.8/sord-v0.16.8.tar.gz" "sord-v0.16.8.tar.gz"
-    execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/sord-v0.16.8/waflib/"
-    execute ./waf configure --prefix="${WORKSPACE}" CFLAGS="${CFLAGS}" --static --no-shared --no-utils
-    execute ./waf CFLAGS="${CFLAGS}"
-    execute ./waf install
-
-    build_done "sord" "0.16.8"
-  fi
-
-  if build "sratom" "0.6.8"; then
-    download "https://gitlab.com/lv2/sratom/-/archive/v0.6.8/sratom-v0.6.8.tar.gz" "sratom-v0.6.8.tar.gz"
-    execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/sratom-v0.6.8/waflib/"
-    execute ./waf configure --prefix="${WORKSPACE}" --static --no-shared
-    execute ./waf
-    execute ./waf install
-
-    build_done "sratom" "0.6.8"
-  fi
-
-  if build "lilv" "0.24.12"; then
-    download "https://gitlab.com/lv2/lilv/-/archive/v0.24.12/lilv-v0.24.12.tar.gz" "lilv-v0.24.12.tar.gz"
-    execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/lilv-v0.24.12/waflib/"
-    execute ./waf configure --prefix="${WORKSPACE}" --static --no-shared --no-utils
-    execute ./waf
-    execute ./waf install
-    build_done "lilv" "0.24.12"
-  fi
-  CFLAGS+=" -I$WORKSPACE/include/lilv-0"
-
-  CONFIGURE_OPTIONS+=("--enable-lv2")
-
 fi
 
 if build "yasm" "1.3.0"; then
@@ -457,18 +386,30 @@ if $NONFREE_AND_GPL; then
   CONFIGURE_OPTIONS+=("--enable-openssl")
 fi
 
-if build "cmake" "3.21.0"; then
-  download "https://cmake.org/files/LatestRelease/cmake-3.21.0.tar.gz"
+if build "cmake" "3.21.2"; then
+  download "https://cmake.org/files/LatestRelease/cmake-3.21.2.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --parallel="${MJOBS}" -- -DCMAKE_USE_OPENSSL=OFF
   execute make -j $MJOBS
   execute make install
-  build_done "cmake" "3.21.0"
+  build_done "cmake" "3.21.2"
 fi
 
+##
+## video library
+##
+
 if command_exists "python3"; then
+  # dav1d needs meson and ninja along with nasm to be built
+  if command_exists "pip3"; then
+    # meson and ninja can be installed via pip3
+    execute pip3 install pip setuptools --quiet --upgrade --no-cache-dir --disable-pip-version-check
+    for r in meson ninja; do
+      if ! command_exists ${r}; then
+        execute pip3 install ${r} --quiet --upgrade --no-cache-dir --disable-pip-version-check
+      fi
+    done
+  fi
   if build "dav1d" "0.9.2"; then
-    # dav1d needs meson and ninja with nasm to be built
-    execute python3 -m pip install meson ninja --quiet --no-cache-dir --disable-pip-version-check
     download "https://code.videolan.org/videolan/dav1d/-/archive/0.9.2/dav1d-0.9.2.tar.gz"
     make_dir build
     execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
@@ -480,16 +421,17 @@ if command_exists "python3"; then
 fi
 
 if ! $MACOS_M1; then
-  if build "svtav1" "$(date)"; then
-    execute rm -f "${PACKAGES}/SVT-AV1-master.tar.gz"
-    download "https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/master/SVT-AV1-master.tar.gz"
-    cd Build/linux || exit
+  if build "svtav1" "1a3e32b"; then
+    execute rm -f "${PACKAGES}/SVT-AV1-master.tar.gz" "${PACKAGES}/svtav1-1a3e32b.tar.gz"
+    # Last known working commit which passed CI Tests from HEAD branch
+    download "https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/1a3e32b8fdc4abf5c093ee01dfa82803afc75fb4/SVT-AV1-1a3e32b8fdc4abf5c093ee01dfa82803afc75fb4.tar.gz" "svtav1-1a3e32b.tar.gz"
+    cd "${PACKAGES}"/svtav1-1a3e32b/Build/linux || exit
     execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF ../.. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
     execute make -j $MJOBS
     execute make install
     execute cp SvtAv1Enc.pc "${WORKSPACE}/lib/pkgconfig/"
     execute cp SvtAv1Dec.pc "${WORKSPACE}/lib/pkgconfig/"
-    build_done "svtav1" "$(date)";
+    build_done "svtav1" "1a3e32b";
   fi
   CONFIGURE_OPTIONS+=("--enable-libsvtav1")
 fi
@@ -506,9 +448,9 @@ fi
 
 if $NONFREE_AND_GPL; then
 
-  if build "x264" "b684ebe"; then
-    download "https://code.videolan.org/videolan/x264/-/archive/b684ebe04a6f80f8207a57940a1fa00e25274f81/x264-b684ebe04a6f80f8207a57940a1fa00e25274f81.tar.gz" "x264-b684eb.tar.gz"
-    cd "${PACKAGES}"/x264-b684eb || exit
+  if build "x264" "5db6aa6"; then
+    download "https://code.videolan.org/videolan/x264/-/archive/5db6aa6cab1b146e07b60cc1736a01f21da01154/x264-5db6aa6cab1b146e07b60cc1736a01f21da01154.tar.gz" "x264-5db6aa6.tar.gz"
+    cd "${PACKAGES}"/x264-5db6aa6 || exit
 
     if [[ "$OSTYPE" == "linux-gnu" ]]; then
       execute ./configure --prefix="${WORKSPACE}" --enable-static --enable-pic CXXFLAGS="-fPIC"
@@ -520,7 +462,7 @@ if $NONFREE_AND_GPL; then
     execute make install
     execute make install-lib-static
 
-    build_done "x264" "b684ebe"
+    build_done "x264" "5db6aa6"
   fi
   CONFIGURE_OPTIONS+=("--enable-libx264")
 fi
@@ -529,8 +471,8 @@ if $NONFREE_AND_GPL; then
   if build "x265" "3.5"; then
     download "https://github.com/videolan/x265/archive/Release_3.5.tar.gz" "x265-3.5.tar.gz" # This is actually 3.4 if looking at x265Version.txt
     cd build/linux || exit
-    rm -rf 8bit 10bit 12bit
-    mkdir 8bit 10bit 12bit
+    rm -rf 8bit 10bit 12bit 2>/dev/null
+    mkdir -p 8bit 10bit 12bit
     cd 12bit || exit
     execute cmake ../../../source -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DHIGH_BIT_DEPTH=ON -DENABLE_HDR10_PLUS=ON -DEXPORT_C_API=OFF -DENABLE_CLI=OFF -DMAIN12=ON
     execute make -j $MJOBS
@@ -625,8 +567,9 @@ if $NONFREE_AND_GPL; then
   CONFIGURE_OPTIONS+=("--enable-libvidstab")
 fi
 
-if build "av1" "c0f1414"; then
-  download "https://aomedia.googlesource.com/aom/+archive/c0f14141bd71414b004dccd66d48b27570299fa3.tar.gz" "av1.tar.gz" "av1"
+if build "av1" "ae2be80"; then
+  # libaom ae2be80 == v3.1.2
+  download "https://aomedia.googlesource.com/aom/+archive/ae2be8030200925895fa6e98bd274ffdb595cbf6.tar.gz" "av1.tar.gz" "av1"
   make_dir "$PACKAGES"/aom_build
   cd "$PACKAGES"/aom_build || exit
   if $MACOS_M1; then
@@ -637,16 +580,90 @@ if build "av1" "c0f1414"; then
   execute make -j $MJOBS
   execute make install
 
-  build_done "av1" "c0f1414"
+  build_done "av1" "ae2be80"
 fi
 CONFIGURE_OPTIONS+=("--enable-libaom")
+
+if build "zimg" "3.0.3"; then
+  download "https://github.com/sekrit-twc/zimg/archive/refs/tags/release-3.0.3.tar.gz" "zimg-3.0.3.tar.gz" "zimg"
+  cd zimg-release-3.0.3 || exit
+  execute "${WORKSPACE}/bin/libtoolize" -i -f -q
+  execute ./autogen.sh --prefix="${WORKSPACE}"
+  execute ./configure --prefix="${WORKSPACE}" --enable-static --disable-shared
+  execute make -j $MJOBS
+  execute make install
+  build_done "zimg" "3.0.3"
+fi
+CONFIGURE_OPTIONS+=("--enable-libzimg")
 
 ##
 ## audio library
 ##
 
+if command_exists "python3"; then
+
+  if build "lv2" "1.18.2"; then
+    download "https://lv2plug.in/spec/lv2-1.18.2.tar.bz2" "lv2-1.18.2.tar.bz2"
+    execute ./waf configure --prefix="${WORKSPACE}" --lv2-user
+    execute ./waf
+    execute ./waf install
+
+    build_done "lv2" "1.18.2"
+  fi
+  if build "waflib" "b600c92"; then
+    download "https://gitlab.com/drobilla/autowaf/-/archive/b600c928b221a001faeab7bd92786d0b25714bc8/autowaf-b600c928b221a001faeab7bd92786d0b25714bc8.tar.gz" "autowaf.tar.gz"
+    build_done "waflib" "b600c92"
+  fi
+  if build "serd" "0.30.10"; then
+    download "https://gitlab.com/drobilla/serd/-/archive/v0.30.10/serd-v0.30.10.tar.gz" "serd-v0.30.10.tar.gz"
+    execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/serd-v0.30.10/waflib/"
+    execute ./waf configure --prefix="${WORKSPACE}" --static --no-shared --no-posix
+    execute ./waf
+    execute ./waf install
+    build_done "serd" "0.30.10"
+  fi
+  if build "pcre" "8.44"; then
+    download "https://ftp.pcre.org/pub/pcre/pcre-8.44.tar.gz" "pcre-8.44.tar.gz"
+    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+    execute make -j $MJOBS
+    execute make install
+
+    build_done "pcre" "8.44"
+  fi
+  if build "sord" "0.16.8"; then
+    download "https://gitlab.com/drobilla/sord/-/archive/v0.16.8/sord-v0.16.8.tar.gz" "sord-v0.16.8.tar.gz"
+    execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/sord-v0.16.8/waflib/"
+    execute ./waf configure --prefix="${WORKSPACE}" CFLAGS="${CFLAGS}" --static --no-shared --no-utils
+    execute ./waf CFLAGS="${CFLAGS}"
+    execute ./waf install
+
+    build_done "sord" "0.16.8"
+  fi
+  if build "sratom" "0.6.8"; then
+    download "https://gitlab.com/lv2/sratom/-/archive/v0.6.8/sratom-v0.6.8.tar.gz" "sratom-v0.6.8.tar.gz"
+    execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/sratom-v0.6.8/waflib/"
+    execute ./waf configure --prefix="${WORKSPACE}" --static --no-shared
+    execute ./waf
+    execute ./waf install
+
+    build_done "sratom" "0.6.8"
+  fi
+  if build "lilv" "0.24.12"; then
+    download "https://gitlab.com/lv2/lilv/-/archive/v0.24.12/lilv-v0.24.12.tar.gz" "lilv-v0.24.12.tar.gz"
+    execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/lilv-v0.24.12/waflib/"
+    execute ./waf configure --prefix="${WORKSPACE}" --static --no-shared --no-utils
+    execute ./waf
+    execute ./waf install
+    build_done "lilv" "0.24.12"
+  fi
+  CFLAGS+=" -I$WORKSPACE/include/lilv-0"
+
+  CONFIGURE_OPTIONS+=("--enable-lv2")
+
+fi
+
 if build "opencore" "0.1.5"; then
-  download "https://deac-riga.dl.sourceforge.net/project/opencore-amr/opencore-amr/opencore-amr-0.1.5.tar.gz"
+  download "https://sourceforge.net/projects/opencore-amr/files/opencore-amr/opencore-amr-0.1.5.tar.gz/download?use_mirror=gigenet" "opencore-amr-0.1.5.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j $MJOBS
   execute make install
@@ -656,7 +673,7 @@ fi
 CONFIGURE_OPTIONS+=("--enable-libopencore_amrnb" "--enable-libopencore_amrwb")
 
 if build "lame" "3.100"; then
-  download "https://netcologne.dl.sourceforge.net/project/lame/lame/3.100/lame-3.100.tar.gz"
+  download "https://sourceforge.net/projects/lame/files/lame/3.100/lame-3.100.tar.gz/download?use_mirror=gigenet" "lame-3.100.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j $MJOBS
   execute make install
@@ -718,6 +735,10 @@ if $NONFREE_AND_GPL; then
   CONFIGURE_OPTIONS+=("--enable-libfdk-aac")
 fi
 
+##
+## image library
+##
+
 if build "libtiff" "4.3.0"; then
   download "https://download.osgeo.org/libtiff/tiff-4.3.0.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
@@ -725,9 +746,8 @@ if build "libtiff" "4.3.0"; then
   execute make install
   build_done "libtiff" "4.3.0"
 fi
-
 if build "libpng" "1.6.37"; then
-  download "https://deac-riga.dl.sourceforge.net/project/libpng/libpng16/1.6.37/libpng-1.6.37.tar.gz"
+  download "https://sourceforge.net/projects/libpng/files/libpng16/1.6.37/libpng-1.6.37.tar.gz/download?use_mirror=gigenet" "libpng-1.6.37.tar.gz"
   export LDFLAGS="${LDFLAGS}"
   export CPPFLAGS="${CFLAGS}"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
@@ -737,10 +757,6 @@ if build "libpng" "1.6.37"; then
 fi
 # libwebp can fail to compile on Ubuntu if these flags were left set to CFLAGS
 CPPFLAGS=
-
-##
-## image library
-##
 
 if build "libwebp" "1.2.0"; then
   download "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-1.2.0.tar.gz" "libwebp-1.2.0.tar.gz"
@@ -754,19 +770,6 @@ if build "libwebp" "1.2.0"; then
   build_done "libwebp" "1.2.0"
 fi
 CONFIGURE_OPTIONS+=("--enable-libwebp")
-
-if build "zimg" "3.0.3"; then
-  download "https://github.com/sekrit-twc/zimg/archive/refs/tags/release-3.0.3.tar.gz" "zimg-3.0.3.tar.gz" "zimg"
-  cd zimg-release-3.0.3 || exit
-  execute "${WORKSPACE}/bin/libtoolize" -i -f -q
-  execute ./autogen.sh --prefix="${WORKSPACE}"
-  execute ./configure --prefix="${WORKSPACE}" --enable-static --disable-shared
-  execute make -j $MJOBS
-  execute make install
-  build_done "zimg" "3.0.3"
-fi
-CONFIGURE_OPTIONS+=("--enable-libzimg")
-
 
 ##
 ## other library
@@ -805,11 +808,11 @@ fi
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
   if command_exists "nvcc"; then
-    if build "nv-codec" "11.0.10.1"; then
-      download "https://github.com/FFmpeg/nv-codec-headers/releases/download/n11.0.10.1/nv-codec-headers-11.0.10.1.tar.gz"
+    if build "nv-codec" "11.1.5.0"; then
+      download "https://github.com/FFmpeg/nv-codec-headers/releases/download/n11.1.5.0/nv-codec-headers-11.1.5.0.tar.gz"
       execute make PREFIX="${WORKSPACE}"
       execute make install PREFIX="${WORKSPACE}"
-      build_done "nv-codec" "11.0.10.1"
+      build_done "nv-codec" "11.1.5.0"
     fi
     CFLAGS+=" -I/usr/local/cuda/include"
     LDFLAGS+=" -L/usr/local/cuda/lib64"
