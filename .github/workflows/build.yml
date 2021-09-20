@@ -89,12 +89,12 @@ jobs:
       - name: pull base image
         id: cuda_ubuntu_pull
         run: |
-          docker pull nvidia/cuda:11.1-devel-ubuntu20.04
+          docker pull nvidia/cuda:11.4.2-devel-ubuntu20.04
           docker pull ubuntu:20.04
       - name: run if cuda_ubuntu_pull failed
         if: failure() && steps.cuda_ubuntu_pull.outcome == 'failure'
         run: |
-          docker pull nvidia/cuda:11.1-devel-ubuntu20.04
+          docker pull nvidia/cuda:11.4.2-devel-ubuntu20.04
           docker pull ubuntu:20.04
       - name: build ffmpeg
         run: |
@@ -113,12 +113,12 @@ jobs:
       - name: pull base image
         id: cuda_centos_pull
         run: |
-          docker pull nvidia/cuda:11.1-devel-centos8
+          docker pull nvidia/cuda:11.4.2-devel-centos8
           docker pull centos:8
       - name: run if cuda_centos_pull failed
         if: failure() && steps.cuda_centos_pull.outcome == 'failure'
         run: |
-          docker pull nvidia/cuda:11.1-devel-centos8
+          docker pull nvidia/cuda:11.4.2-devel-centos8
           docker pull centos:8
       - name: build ffmpeg
         run: |
@@ -137,11 +137,11 @@ jobs:
       - name: pull base image
         id: cuda_ubuntu_pull
         run: |
-          docker pull nvidia/cuda:11.1-devel-ubuntu20.04
+          docker pull nvidia/cuda:11.4.2-devel-ubuntu20.04
       - name: run if cuda_ubuntu_pull failed
         if: failure() && steps.cuda_ubuntu_pull.outcome == 'failure'
         run: |
-          docker pull nvidia/cuda:11.1-devel-ubuntu20.04
+          docker pull nvidia/cuda:11.4.2-devel-ubuntu20.04
       - name: build ffmpeg
         run: |
           docker build -t ffmpeg:cuda-static -f full-static.dockerfile .
