@@ -533,7 +533,7 @@ if $NONFREE_AND_GPL; then
     download "https://downloads.xvid.com/downloads/xvidcore-1.3.7.tar.gz"
     cd build/generic || exit
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
-    execute make -j $MJOBS
+    execute make -j $MJOBS -Wno-ignored-optimization-argument
     execute make install
 
     if [[ -f ${WORKSPACE}/lib/libxvidcore.4.dylib ]]; then
