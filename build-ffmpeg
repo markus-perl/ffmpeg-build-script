@@ -339,7 +339,7 @@ if build "x265"; then
 	execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=on -DBUILD_SHARED_LIBS=on ../../source
 	execute make -j $MJOBS
 
-	set_mac_install_name "libx265.198.dylib"
+	set_mac_install_name "libx265.199.dylib"
 
 	execute make install
 
