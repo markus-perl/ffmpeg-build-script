@@ -758,8 +758,8 @@ fi
 # libwebp can fail to compile on Ubuntu if these flags were left set to CFLAGS
 CPPFLAGS=
 
-if build "libwebp" "1.2.0"; then
-  download "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-1.2.0.tar.gz" "libwebp-1.2.0.tar.gz"
+if build "libwebp" "1.2.1"; then
+  download "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-1.2.1.tar.gz" "libwebp-1.2.1.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   make_dir build
   cd build || exit
@@ -767,7 +767,7 @@ if build "libwebp" "1.2.0"; then
   execute make -j $MJOBS
   execute make install
 
-  build_done "libwebp" "1.2.0"
+  build_done "libwebp" "1.2.1"
 fi
 CONFIGURE_OPTIONS+=("--enable-libwebp")
 
