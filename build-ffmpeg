@@ -5,7 +5,7 @@
 
 PROGNAME=$(basename "$0")
 FFMPEG_VERSION=4.4
-SCRIPT_VERSION=1.32
+SCRIPT_VERSION=1.33
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
 WORKSPACE="$CWD/workspace"
@@ -336,7 +336,6 @@ if build "zlib" "1.2.11"; then
   execute make install
   build_done "zlib" "1.2.11"
 fi
-LDFLAGS+=" -L/zlib/lib"
 
 if build "m4" "1.4.19"; then
   download "https://ftp.gnu.org/gnu/m4/m4-1.4.19.tar.gz"
