@@ -755,12 +755,12 @@ if build "libpng" "1.6.37"; then
   execute make install
   build_done "libpng" "1.6.37"
 fi
-# libwebp can fail to compile on Ubuntu if these flags were left set to CFLAGS
-CPPFLAGS=
 
 if build "libwebp" "1.2.1"; then
+  # libwebp can fail to compile on Ubuntu if these flags were left set to CFLAGS
+  CPPFLAGS=
   download "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-1.2.1.tar.gz" "libwebp-1.2.1.tar.gz"
-  execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+  execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib
   make_dir build
   cd build || exit
   execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=OFF -DENABLE_STATIC=ON ../
