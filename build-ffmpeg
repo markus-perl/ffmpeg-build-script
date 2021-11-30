@@ -93,6 +93,10 @@ download() {
 
   make_dir "$DOWNLOAD_PATH/$TARGETDIR"
 
+  if [[ "$DOWNLOAD_FILE" == *"patch"* ]]; then
+    return
+  fi
+
   if [ -n "$3" ]; then
     if ! tar -xvf "$DOWNLOAD_PATH/$DOWNLOAD_FILE" -C "$DOWNLOAD_PATH/$TARGETDIR" 2>/dev/null >/dev/null; then
       echo "Failed to extract $DOWNLOAD_FILE"
@@ -305,6 +309,17 @@ fi
 ## build tools
 ##
 
+if build "giflib" "5.2.1"; then
+  download "https://sourceforge.net/projects/giflib/files/giflib-5.2.1.tar.gz"
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+      download "https://sourceforge.net/p/giflib/bugs/_discuss/thread/4e811ad29b/c323/attachment/Makefile.patch"
+      execute patch "${PACKAGES}/giflib-5.2.1/Makefile" ${PACKAGES}/Makefile.patch""
+    fi
+  execute make -j $MJOBS
+  execute make PREFIX="${WORKSPACE}" install
+  build_done "giflib" "5.2.1"
+fi
+
 if build "pkg-config" "0.29.2"; then
   download "https://pkgconfig.freedesktop.org/releases/pkg-config-0.29.2.tar.gz"
   execute ./configure --silent --prefix="${WORKSPACE}" --with-pc-path="${WORKSPACE}"/lib/pkgconfig --with-internal-glib
@@ -385,12 +400,12 @@ if $NONFREE_AND_GPL; then
   CONFIGURE_OPTIONS+=("--enable-openssl")
 fi
 
-if build "cmake" "3.21.2"; then
-  download "https://cmake.org/files/LatestRelease/cmake-3.21.2.tar.gz"
+if build "cmake" "3.22.0"; then
+  download "https://github.com/Kitware/CMake/releases/download/v3.22.0/cmake-3.22.0.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --parallel="${MJOBS}" -- -DCMAKE_USE_OPENSSL=OFF
   execute make -j $MJOBS
   execute make install
-  build_done "cmake" "3.21.2"
+  build_done "cmake" "3.22.0"
 fi
 
 ##
@@ -408,15 +423,17 @@ if command_exists "python3"; then
       fi
     done
   fi
-  if build "dav1d" "0.9.2"; then
-    download "https://code.videolan.org/videolan/dav1d/-/archive/0.9.2/dav1d-0.9.2.tar.gz"
-    make_dir build
-    execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
-    execute ninja -C build
-    execute ninja -C build install
-    build_done "dav1d" "0.9.2"
+  if command_exists "meson"; then
+    if build "dav1d" "0.9.2"; then
+      download "https://code.videolan.org/videolan/dav1d/-/archive/0.9.2/dav1d-0.9.2.tar.gz"
+      make_dir build
+      execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
+      execute ninja -C build
+      execute ninja -C build install
+      build_done "dav1d" "0.9.2"
+    fi
+    CONFIGURE_OPTIONS+=("--enable-libdav1d")
   fi
-  CONFIGURE_OPTIONS+=("--enable-libdav1d")
 fi
 
 if ! $MACOS_M1; then
@@ -738,12 +755,12 @@ fi
 ## image library
 ##
 
-if build "libtiff" "4.3.0"; then
-  download "https://download.osgeo.org/libtiff/tiff-4.3.0.tar.gz"
-  execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+if build "libtiff" "4.2.0"; then
+  download "https://download.osgeo.org/libtiff/tiff-4.2.0.tar.gz"
+  execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-dependency-tracking --disable-lzma --disable-webp --disable-zstd --without-x
   execute make -j $MJOBS
   execute make install
-  build_done "libtiff" "4.3.0"
+  build_done "libtiff" "4.2.0"
 fi
 if build "libpng" "1.6.37"; then
   download "https://sourceforge.net/projects/libpng/files/libpng16/1.6.37/libpng-1.6.37.tar.gz/download?use_mirror=gigenet" "libpng-1.6.37.tar.gz"
@@ -755,21 +772,23 @@ if build "libpng" "1.6.37"; then
   build_done "libpng" "1.6.37"
 fi
 
-if build "libwebp" "1.2.1"; then
-  # libwebp can fail to compile on Ubuntu if these flags were left set to CFLAGS
-  CPPFLAGS=
-  download "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-1.2.1.tar.gz" "libwebp-1.2.1.tar.gz"
-  execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-gif --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib
-  make_dir build
-  cd build || exit
-  execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=OFF -DENABLE_STATIC=ON ../
-  execute make -j $MJOBS
-  execute make install
+## does not compile on monterey -> _PrintGifError
+if [[ "$OSTYPE" != "darwin"* ]]; then
+  if build "libwebp" "1.2.1"; then
+    # libwebp can fail to compile on Ubuntu if these flags were left set to CFLAGS
+    CPPFLAGS=
+    download "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-1.2.1.tar.gz" "libwebp-1.2.1.tar.gz"
+    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-dependency-tracking --disable-gl --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib
+    make_dir build
+    cd build || exit
+    execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=OFF -DENABLE_STATIC=ON ../
+    execute make -j $MJOBS
+    execute make install
 
-  build_done "libwebp" "1.2.1"
+    build_done "libwebp" "1.2.1"
+  fi
+  CONFIGURE_OPTIONS+=("--enable-libwebp")
 fi
-CONFIGURE_OPTIONS+=("--enable-libwebp")
-
 ##
 ## other library
 ##
