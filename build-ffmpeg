@@ -4,7 +4,7 @@
 # LICENSE: https://github.com/markus-perl/ffmpeg-build-script/blob/master/LICENSE
 
 PROGNAME=$(basename "$0")
-FFMPEG_VERSION=4.4
+FFMPEG_VERSION=5.0
 SCRIPT_VERSION=1.33
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
@@ -368,12 +368,12 @@ if build "autoconf" "2.71"; then
   build_done "autoconf" "2.71"
 fi
 
-if build "automake" "1.16.4"; then
-  download "https://ftp.gnu.org/gnu/automake/automake-1.16.4.tar.gz"
+if build "automake" "1.16.5"; then
+  download "https://ftp.gnu.org/gnu/automake/automake-1.16.5.tar.gz"
   execute ./configure --prefix="${WORKSPACE}"
   execute make -j $MJOBS
   execute make install
-  build_done "automake" "1.16.4"
+  build_done "automake" "1.16.5"
 fi
 
 if build "libtool" "2.4.6"; then
@@ -385,8 +385,8 @@ if build "libtool" "2.4.6"; then
 fi
 
 if $NONFREE_AND_GPL; then
-  if build "openssl" "1.1.1l"; then
-    download "https://www.openssl.org/source/openssl-1.1.1l.tar.gz"
+  if build "openssl" "1.1.1m"; then
+    download "https://www.openssl.org/source/openssl-1.1.1m.tar.gz"
     if $MACOS_M1; then
       sed -n 's/\(##### GNU Hurd\)/"darwin64-arm64-cc" => { \n    inherit_from     => [ "darwin-common", asm("aarch64_asm") ],\n    CFLAGS           => add("-Wall"),\n    cflags           => add("-arch arm64 "),\n    lib_cppflags     => add("-DL_ENDIAN"),\n    bn_ops           => "SIXTY_FOUR_BIT_LONG", \n    perlasm_scheme   => "macosx", \n}, \n\1/g' Configurations/10-main.conf
       execute ./configure --prefix="${WORKSPACE}" no-shared no-asm darwin64-arm64-cc
@@ -395,17 +395,17 @@ if $NONFREE_AND_GPL; then
     fi
     execute make -j $MJOBS
     execute make install_sw
-    build_done "openssl" "1.1.1l"
+    build_done "openssl" "1.1.1m"
   fi
   CONFIGURE_OPTIONS+=("--enable-openssl")
 fi
 
-if build "cmake" "3.22.0"; then
-  download "https://github.com/Kitware/CMake/releases/download/v3.22.0/cmake-3.22.0.tar.gz"
+if build "cmake" "3.22.1"; then
+  download "https://github.com/Kitware/CMake/releases/download/v3.22.0/cmake-3.22.1.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --parallel="${MJOBS}" -- -DCMAKE_USE_OPENSSL=OFF
   execute make -j $MJOBS
   execute make install
-  build_done "cmake" "3.22.0"
+  build_done "cmake" "3.22.1"
 fi
 
 ##
@@ -437,17 +437,16 @@ if command_exists "python3"; then
 fi
 
 if ! $MACOS_M1; then
-  if build "svtav1" "1a3e32b"; then
-    execute rm -f "${PACKAGES}/SVT-AV1-master.tar.gz" "${PACKAGES}/svtav1-1a3e32b.tar.gz"
+  if build "svtav1" "0.9.0"; then
     # Last known working commit which passed CI Tests from HEAD branch
-    download "https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/1a3e32b8fdc4abf5c093ee01dfa82803afc75fb4/SVT-AV1-1a3e32b8fdc4abf5c093ee01dfa82803afc75fb4.tar.gz" "svtav1-1a3e32b.tar.gz"
+    download "https://github.com/AOMediaCodec/SVT-AV1/archive/refs/tags/v0.9.0.tar.gz" "svtav1-0.9.0.tar.gz"
     cd "${PACKAGES}"/svtav1-1a3e32b/Build/linux || exit
     execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF ../.. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
     execute make -j $MJOBS
     execute make install
     execute cp SvtAv1Enc.pc "${WORKSPACE}/lib/pkgconfig/"
     execute cp SvtAv1Dec.pc "${WORKSPACE}/lib/pkgconfig/"
-    build_done "svtav1" "1a3e32b";
+    build_done "svtav1" "0.9.0";
   fi
   CONFIGURE_OPTIONS+=("--enable-libsvtav1")
 fi
