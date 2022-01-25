@@ -310,7 +310,7 @@ fi
 ##
 
 if build "giflib" "5.2.1"; then
-  download "https://sourceforge.net/projects/giflib/files/giflib-5.2.1.tar.gz"
+  download "https://netcologne.dl.sourceforge.net/project/giflib/giflib-5.2.1.tar.gz"
     if [[ "$OSTYPE" == "darwin"* ]]; then
       download "https://sourceforge.net/p/giflib/bugs/_discuss/thread/4e811ad29b/c323/attachment/Makefile.patch"
       execute patch "${PACKAGES}/giflib-5.2.1/Makefile" ${PACKAGES}/Makefile.patch""
