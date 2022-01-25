@@ -33,6 +33,7 @@ COPY --from=build /usr/local/cuda-11.4/targets/x86_64-linux/lib/libnppc.so.11 /l
 COPY --from=build /usr/local/cuda-11.4/targets/x86_64-linux/lib/libnppig.so.11 /lib64/libnppig.so.11
 COPY --from=build /usr/local/cuda-11.4/targets/x86_64-linux/lib/libnppicc.so.11 /lib64/libnppicc.so.11
 COPY --from=build /usr/local/cuda-11.4/targets/x86_64-linux/lib/libnppidei.so.11 /lib64/libnppidei.so.11
+COPY --from=build /usr/local/cuda-11.4/targets/x86_64-linux/lib/libnppif.so.11 /lib64/libnppif.so.11
 
 # Copy ffmpeg
 COPY --from=build /app/workspace/bin/ffmpeg /usr/bin/ffmpeg
