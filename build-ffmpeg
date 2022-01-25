@@ -267,7 +267,7 @@ fi
 echo "Using $MJOBS make jobs simultaneously."
 
 if $NONFREE_AND_GPL; then
-echo "With GPL and non-free codecs"
+  echo "With GPL and non-free codecs"
 fi
 
 if [ -n "$LDEXEFLAGS" ]; then
