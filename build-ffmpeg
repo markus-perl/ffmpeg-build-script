@@ -313,9 +313,11 @@ if build "giflib" "5.2.1"; then
   download "https://netcologne.dl.sourceforge.net/project/giflib/giflib-5.2.1.tar.gz"
     if [[ "$OSTYPE" == "darwin"* ]]; then
       download "https://sourceforge.net/p/giflib/bugs/_discuss/thread/4e811ad29b/c323/attachment/Makefile.patch"
-      execute patch "${PACKAGES}/giflib-5.2.1/Makefile" ${PACKAGES}/Makefile.patch""
+      execute patch -p0 --forward "${PACKAGES}/giflib-5.2.1/Makefile" "${PACKAGES}/Makefile.patch" || true
     fi
-  execute make -j $MJOBS
+  cd "${PACKAGES}"/giflib-5.2.1 || exit
+  #multicore build disabled for this library
+  execute make
   execute make PREFIX="${WORKSPACE}" install
   build_done "giflib" "5.2.1"
 fi
