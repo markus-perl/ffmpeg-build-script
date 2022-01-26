@@ -429,9 +429,20 @@ if command_exists "python3"; then
     if build "dav1d" "0.9.2"; then
       download "https://code.videolan.org/videolan/dav1d/-/archive/0.9.2/dav1d-0.9.2.tar.gz"
       make_dir build
+      
+      CFLAGSBACKUP=$CFLAGS
+      if $MACOS_M1; then
+        export CFLAGS="-arch arm64"
+      fi
+      
       execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
       execute ninja -C build
       execute ninja -C build install
+      
+      if $MACOS_M1; then
+        export CFLAGS=$CFLAGSBACKUP
+      fi
+      
       build_done "dav1d" "0.9.2"
     fi
     CONFIGURE_OPTIONS+=("--enable-libdav1d")
