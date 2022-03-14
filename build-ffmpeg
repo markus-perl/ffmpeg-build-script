@@ -743,6 +743,11 @@ if build "libtheora" "1.1.1"; then
   sed "s/-fforce-addr//g" configure >configure.patched
   chmod +x configure.patched
   mv configure.patched configure
+  ##BEGIN CONFIG.GUESS PATCH -- Updating config.guess file. Which allowed me to compile on aarch64 (ARMv8) [linux kernel 4.9 Ubuntu 20.04]
+  rm config.guess
+  wget --quiet -O config.guess - https://raw.githubusercontent.com/gcc-mirror/gcc/master/config.guess
+  chmod +x config.guess
+  ##END OF CONFIG.GUESS PATCH
   execute ./configure --prefix="${WORKSPACE}" --with-ogg-libraries="${WORKSPACE}"/lib --with-ogg-includes="${WORKSPACE}"/include/ --with-vorbis-libraries="${WORKSPACE}"/lib --with-vorbis-includes="${WORKSPACE}"/include/ --enable-static --disable-shared --disable-oggtest --disable-vorbistest --disable-examples --disable-asm --disable-spec
   execute make -j $MJOBS
   execute make install
