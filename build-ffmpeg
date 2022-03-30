@@ -346,12 +346,12 @@ if build "nasm" "2.15.05"; then
   build_done "nasm" "2.15.05"
 fi
 
-if build "zlib" "1.2.11"; then
-  download "https://www.zlib.net/zlib-1.2.11.tar.gz"
+if build "zlib" "1.2.12"; then
+  download "https://www.zlib.net/zlib-1.2.12.tar.gz"
   execute ./configure --static --prefix="${WORKSPACE}"
   execute make -j $MJOBS
   execute make install
-  build_done "zlib" "1.2.11"
+  build_done "zlib" "1.2.12"
 fi
 
 if build "m4" "1.4.19"; then
