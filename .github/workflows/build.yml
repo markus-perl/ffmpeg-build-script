@@ -103,30 +103,6 @@ jobs:
         run: |
           docker run --rm ffmpeg:cuda-ubuntu -buildconf
 
-  build-cuda-centos-docker:
-    name: build in centos docker with cuda
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: pull base image
-        id: cuda_centos_pull
-        run: |
-          docker pull nvidia/cuda:11.4.2-devel-centos8
-          docker pull centos:8
-      - name: run if cuda_centos_pull failed
-        if: failure() && steps.cuda_centos_pull.outcome == 'failure'
-        run: |
-          docker pull nvidia/cuda:11.4.2-devel-centos8
-          docker pull centos:8
-      - name: build ffmpeg
-        run: |
-          docker build -t ffmpeg:cuda-centos -f cuda-centos.dockerfile .
-      - name: test run ffmepg
-        run: |
-          docker run --rm ffmpeg:cuda-centos -buildconf
-
   build-full-static:
     name: full static build in docker
     runs-on: ubuntu-20.04
