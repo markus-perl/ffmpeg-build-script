@@ -1,4 +1,4 @@
-ARG VER=8
+ARG VER=7
 
 FROM nvidia/cuda:11.4.2-devel-centos${VER} AS build
 
