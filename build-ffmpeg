@@ -69,7 +69,7 @@ download() {
 
   if [ ! -f "$DOWNLOAD_PATH/$DOWNLOAD_FILE" ]; then
     echo "Downloading $1 as $DOWNLOAD_FILE"
-    curl -L --silent -o "$DOWNLOAD_PATH/$DOWNLOAD_FILE" "$1"
+    ^"$DOWNLOAD_PATH/$DOWNLOAD_FILE" "$1"
 
     EXITCODE=$?
     if [ $EXITCODE -ne 0 ]; then
@@ -582,7 +582,7 @@ if $NONFREE_AND_GPL; then
     download "https://github.com/georgmartius/vid.stab/archive/v1.1.0.tar.gz" "vid.stab-1.1.0.tar.gz"
 
     if $MACOS_M1; then
-      curl -s -o "$PACKAGES/vid.stab-1.1.0/fix_cmake_quoting.patch" https://raw.githubusercontent.com/Homebrew/formula-patches/5bf1a0e0cfe666ee410305cece9c9c755641bfdf/libvidstab/fix_cmake_quoting.patch
+      curl -L --silent -o "$PACKAGES/vid.stab-1.1.0/fix_cmake_quoting.patch" "https://raw.githubusercontent.com/Homebrew/formula-patches/5bf1a0e0cfe666ee410305cece9c9c755641bfdf/libvidstab/fix_cmake_quoting.patch"
       patch -p1 <fix_cmake_quoting.patch
     fi
 
@@ -745,7 +745,7 @@ if build "libtheora" "1.1.1"; then
   mv configure.patched configure
   ##BEGIN CONFIG.GUESS PATCH -- Updating config.guess file. Which allowed me to compile on aarch64 (ARMv8) [linux kernel 4.9 Ubuntu 20.04]
   rm config.guess
-  wget --quiet -O config.guess - https://raw.githubusercontent.com/gcc-mirror/gcc/master/config.guess
+  curl -L --silent -o "config.guess" "https://raw.githubusercontent.com/gcc-mirror/gcc/master/config.guess"
   chmod +x config.guess
   ##END OF CONFIG.GUESS PATCH
   execute ./configure --prefix="${WORKSPACE}" --with-ogg-libraries="${WORKSPACE}"/lib --with-ogg-includes="${WORKSPACE}"/include/ --with-vorbis-libraries="${WORKSPACE}"/lib --with-vorbis-includes="${WORKSPACE}"/include/ --enable-static --disable-shared --disable-oggtest --disable-vorbistest --disable-examples --disable-asm --disable-spec
