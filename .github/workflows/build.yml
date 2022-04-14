@@ -103,6 +103,30 @@ jobs:
         run: |
           docker run --rm ffmpeg:cuda-ubuntu -buildconf
 
+  build-cuda-rocky-docker:
+    name: build in Rockylinux docker with cuda
+    runs-on: rockylinux-8
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: pull base image
+        id: cuda_centos_pull
+        run: |
+          docker pull nvidia/cuda:11.6.0-devel-centos8
+          docker pull rockylinux:8
+      - name: run if cuda_centos_pull failed
+        if: failure() && steps.cuda_centos_pull.outcome == 'failure'
+        run: |
+          docker pull nvidia/cuda:11.6.0-devel-centos8
+          docker pull rockylinux:8
+      - name: build ffmpeg
+        run: |
+          docker build -t ffmpeg:cuda-rocky -f cuda-rocky.dockerfile .
+      - name: test run ffmepg
+        run: |
+          docker run --rm ffmpeg:cuda-rocky -buildconf
+
   build-full-static:
     name: full static build in docker
     runs-on: ubuntu-20.04
