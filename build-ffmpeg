@@ -391,7 +391,7 @@ if $NONFREE_AND_GPL; then
     download "https://www.openssl.org/source/openssl-1.1.1m.tar.gz"
     if $MACOS_M1; then
       sed -n 's/\(##### GNU Hurd\)/"darwin64-arm64-cc" => { \n    inherit_from     => [ "darwin-common", asm("aarch64_asm") ],\n    CFLAGS           => add("-Wall"),\n    cflags           => add("-arch arm64 "),\n    lib_cppflags     => add("-DL_ENDIAN"),\n    bn_ops           => "SIXTY_FOUR_BIT_LONG", \n    perlasm_scheme   => "macosx", \n}, \n\1/g' Configurations/10-main.conf
-      execute ./configure --prefix="${WORKSPACE}" no-shared no-asm darwin64-arm64-cc
+      execute ./Configure --prefix="${WORKSPACE}" no-shared no-asm darwin64-arm64-cc
     else
       execute ./config --prefix="${WORKSPACE}" --openssldir="${WORKSPACE}" --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib no-shared zlib
     fi
@@ -402,12 +402,12 @@ if $NONFREE_AND_GPL; then
   CONFIGURE_OPTIONS+=("--enable-openssl")
 fi
 
-if build "cmake" "3.22.1"; then
-  download "https://github.com/Kitware/CMake/releases/download/v3.22.1/cmake-3.22.1.tar.gz"
+if build "cmake" "3.23.1"; then
+  download "https://github.com/Kitware/CMake/releases/download/v3.23.1/cmake-3.23.1.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --parallel="${MJOBS}" -- -DCMAKE_USE_OPENSSL=OFF
   execute make -j $MJOBS
   execute make install
-  build_done "cmake" "3.22.1"
+  build_done "cmake" "3.23.1"
 fi
 
 ##
@@ -632,9 +632,9 @@ if command_exists "python3"; then
 
   if build "lv2" "1.18.2"; then
     download "https://lv2plug.in/spec/lv2-1.18.2.tar.bz2" "lv2-1.18.2.tar.bz2"
-    execute ./waf configure --prefix="${WORKSPACE}" --lv2-user
-    execute ./waf
-    execute ./waf install
+    execute python3 ./waf configure --prefix="${WORKSPACE}" --lv2-user
+    execute python3 ./waf
+    execute python3 ./waf install
 
     build_done "lv2" "1.18.2"
   fi
@@ -645,9 +645,9 @@ if command_exists "python3"; then
   if build "serd" "0.30.10"; then
     download "https://gitlab.com/drobilla/serd/-/archive/v0.30.10/serd-v0.30.10.tar.gz" "serd-v0.30.10.tar.gz"
     execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/serd-v0.30.10/waflib/"
-    execute ./waf configure --prefix="${WORKSPACE}" --static --no-shared --no-posix
-    execute ./waf
-    execute ./waf install
+    execute python3 ./waf configure --prefix="${WORKSPACE}" --static --no-shared --no-posix
+    execute python3 ./waf
+    execute python3 ./waf install
     build_done "serd" "0.30.10"
   fi
   if build "pcre" "8.45"; then
@@ -661,27 +661,27 @@ if command_exists "python3"; then
   if build "sord" "0.16.8"; then
     download "https://gitlab.com/drobilla/sord/-/archive/v0.16.8/sord-v0.16.8.tar.gz" "sord-v0.16.8.tar.gz"
     execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/sord-v0.16.8/waflib/"
-    execute ./waf configure --prefix="${WORKSPACE}" CFLAGS="${CFLAGS}" --static --no-shared --no-utils
-    execute ./waf CFLAGS="${CFLAGS}"
-    execute ./waf install
+    execute python3 ./waf configure --prefix="${WORKSPACE}" CFLAGS="${CFLAGS}" --static --no-shared --no-utils
+    execute python3 ./waf CFLAGS="${CFLAGS}"
+    execute python3 ./waf install
 
     build_done "sord" "0.16.8"
   fi
   if build "sratom" "0.6.8"; then
     download "https://gitlab.com/lv2/sratom/-/archive/v0.6.8/sratom-v0.6.8.tar.gz" "sratom-v0.6.8.tar.gz"
     execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/sratom-v0.6.8/waflib/"
-    execute ./waf configure --prefix="${WORKSPACE}" --static --no-shared
-    execute ./waf
-    execute ./waf install
+    execute python3 ./waf configure --prefix="${WORKSPACE}" --static --no-shared
+    execute python3 ./waf
+    execute python3 ./waf install
 
     build_done "sratom" "0.6.8"
   fi
   if build "lilv" "0.24.12"; then
     download "https://gitlab.com/lv2/lilv/-/archive/v0.24.12/lilv-v0.24.12.tar.gz" "lilv-v0.24.12.tar.gz"
     execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/lilv-v0.24.12/waflib/"
-    execute ./waf configure --prefix="${WORKSPACE}" --static --no-shared --no-utils
-    execute ./waf
-    execute ./waf install
+    execute python3 ./waf configure --prefix="${WORKSPACE}" --static --no-shared --no-utils
+    execute python3 ./waf
+    execute python3 ./waf install
     build_done "lilv" "0.24.12"
   fi
   CFLAGS+=" -I$WORKSPACE/include/lilv-0"
@@ -805,13 +805,13 @@ fi
 ## other library
 ##
 
-if build "libsdl" "2.0.14"; then
-  download "https://www.libsdl.org/release/SDL2-2.0.14.tar.gz"
+if build "libsdl" "2.0.20"; then
+  download "https://www.libsdl.org/release/SDL2-2.0.20.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j $MJOBS
   execute make install
 
-  build_done "libsdl" "2.0.14"
+  build_done "libsdl" "2.0.20"
 fi
 
 if $NONFREE_AND_GPL; then
