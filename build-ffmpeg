@@ -69,7 +69,7 @@ download() {
 
   if [ ! -f "$DOWNLOAD_PATH/$DOWNLOAD_FILE" ]; then
     echo "Downloading $1 as $DOWNLOAD_FILE"
-    ^"$DOWNLOAD_PATH/$DOWNLOAD_FILE" "$1"
+    curl -L --silent -o "$DOWNLOAD_PATH/$DOWNLOAD_FILE" "$1"
 
     EXITCODE=$?
     if [ $EXITCODE -ne 0 ]; then
