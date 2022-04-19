@@ -105,7 +105,7 @@ jobs:
 
   build-cuda-rocky-docker:
     name: build in Rockylinux docker with cuda
-    runs-on: rockylinux-8
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
