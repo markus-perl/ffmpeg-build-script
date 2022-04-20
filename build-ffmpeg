@@ -9,8 +9,10 @@ SCRIPT_VERSION=1.36
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
 WORKSPACE="$CWD/workspace"
-CFLAGS="-I$WORKSPACE/include"
-LDFLAGS="-L$WORKSPACE/lib"
+export CFLAGS="-I$WORKSPACE/include -march=native -mtune=native -O3 -fomit-frame-pointer -flto -fuse-ld=gold -pipe"
+export CXXFLAGS="$CFLAGS"
+export CPPFLAGS="$CFLAGS"
+export LDFLAGS="-L$WORKSPACE/lib -Wl,-flto -Wl,-fuse-ld=gold"
 LDEXEFLAGS=""
 EXTRALIBS="-ldl -lpthread -lm -lz"
 MACOS_M1=false
@@ -465,13 +467,16 @@ if ! $MACOS_M1; then
 fi
 
 if command_exists "cargo"; then
-  if build "rav1e" "0.5.0-beta"; then
-    execute cargo install cargo-c
-    download "https://github.com/xiph/rav1e/archive/refs/tags/v0.5.0-beta.tar.gz"
-    execute cargo cinstall --prefix="${WORKSPACE}" --library-type=staticlib --crt-static --release
-    build_done "rav1e" "0.5.0-beta"
+  if (
+    if build "rav1e" "0.5.0-beta"; then
+      execute cargo install cargo-c
+      download "https://github.com/xiph/rav1e/archive/refs/tags/v0.5.0-beta.tar.gz"
+      execute cargo cinstall --prefix="${WORKSPACE}" --library-type=staticlib --crt-static --release
+      build_done "rav1e" "0.5.0-beta"
+    fi
+  ) ; then
+    CONFIGURE_OPTIONS+=("--enable-librav1e")
   fi
-  CONFIGURE_OPTIONS+=("--enable-librav1e")
 fi
 
 if $NONFREE_AND_GPL; then
@@ -548,7 +553,7 @@ if build "libvpx" "1.10.0"; then
     sed "s/-Wl,--no-undefined -Wl,-soname/-Wl,-undefined,error -Wl,-install_name/g" build/make/Makefile.patched >build/make/Makefile
   fi
 
-  execute ./configure --prefix="${WORKSPACE}" --disable-unit-tests --disable-shared --as=yasm --enable-vp9-highbitdepth
+  execute ./configure --prefix="${WORKSPACE}" --disable-unit-tests --disable-examples --disable-shared --as=yasm --enable-vp9-highbitdepth
   execute make -j $MJOBS
   execute make install
 
