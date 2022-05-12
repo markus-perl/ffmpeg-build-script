@@ -378,7 +378,7 @@ if build "nasm"; then
 fi
 
 if build "zlib"; then
-  download "https://www.zlib.net/zlib-1.2.11.tar.gz"
+  download "https://www.zlib.net/zlib-1.2.12.tar.gz"
   execute ./configure --static --prefix="${WORKSPACE}"
   execute make -j $MJOBS
   execute make install
