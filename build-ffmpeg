@@ -4,8 +4,8 @@
 # LICENSE: https://github.com/markus-perl/ffmpeg-build-script/blob/master/LICENSE
 
 PROGNAME=$(basename "$0")
-FFMPEG_VERSION=5.0
-SCRIPT_VERSION=1.36
+FFMPEG_VERSION=5.0.1
+SCRIPT_VERSION=1.37
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
 WORKSPACE="$CWD/workspace"
@@ -387,8 +387,8 @@ if build "libtool" "2.4.6"; then
 fi
 
 if $NONFREE_AND_GPL; then
-  if build "openssl" "1.1.1m"; then
-    download "https://www.openssl.org/source/openssl-1.1.1m.tar.gz"
+  if build "openssl" "1.1.1q"; then
+    download "https://www.openssl.org/source/openssl-1.1.1q.tar.gz"
     if $MACOS_M1; then
       sed -n 's/\(##### GNU Hurd\)/"darwin64-arm64-cc" => { \n    inherit_from     => [ "darwin-common", asm("aarch64_asm") ],\n    CFLAGS           => add("-Wall"),\n    cflags           => add("-arch arm64 "),\n    lib_cppflags     => add("-DL_ENDIAN"),\n    bn_ops           => "SIXTY_FOUR_BIT_LONG", \n    perlasm_scheme   => "macosx", \n}, \n\1/g' Configurations/10-main.conf
       execute ./Configure --prefix="${WORKSPACE}" no-shared no-asm darwin64-arm64-cc
@@ -397,7 +397,7 @@ if $NONFREE_AND_GPL; then
     fi
     execute make -j $MJOBS
     execute make install_sw
-    build_done "openssl" "1.1.1m"
+    build_done "openssl" "1.1.1q"
   fi
   CONFIGURE_OPTIONS+=("--enable-openssl")
 fi
@@ -427,7 +427,7 @@ if command_exists "python3"; then
   fi
   if command_exists "meson"; then
     if build "dav1d" "0.9.2"; then
-      download "https://code.videolan.org/videolan/dav1d/-/archive/0.9.2/dav1d-0.9.2.tar.gz"
+      download "https://code.videolan.org/videolan/dav1d/-/archive/1.0.0/dav1d-1.0.0.tar.gz"
       make_dir build
       
       CFLAGSBACKUP=$CFLAGS
@@ -548,7 +548,7 @@ if build "libvpx" "1.10.0"; then
     sed "s/-Wl,--no-undefined -Wl,-soname/-Wl,-undefined,error -Wl,-install_name/g" build/make/Makefile.patched >build/make/Makefile
   fi
 
-  execute ./configure --prefix="${WORKSPACE}" --disable-unit-tests --disable-shared --as=yasm --enable-vp9-highbitdepth
+  execute ./configure --prefix="${WORKSPACE}" --disable-unit-tests --disable-shared --disable-examples --as=yasm --enable-vp9-highbitdepth
   execute make -j $MJOBS
   execute make install
 
@@ -601,9 +601,9 @@ if build "av1" "ae2be80"; then
   make_dir "$PACKAGES"/aom_build
   cd "$PACKAGES"/aom_build || exit
   if $MACOS_M1; then
-    execute cmake -DENABLE_TESTS=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCONFIG_RUNTIME_CPU_DETECT=0 "$PACKAGES"/av1
+    execute cmake -DENABLE_TESTS=0 -DENABLE_EXAMPLES=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCONFIG_RUNTIME_CPU_DETECT=0 "$PACKAGES"/av1
   else
-    execute cmake -DENABLE_TESTS=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib "$PACKAGES"/av1
+    execute cmake -DENABLE_TESTS=0 -DENABLE_EXAMPLES=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib "$PACKAGES"/av1
   fi
   execute make -j $MJOBS
   execute make install
