@@ -477,7 +477,7 @@ fi
 if ! $MACOS_M1; then
   if build "svtav1" "0.9.0"; then
     # Last known working commit which passed CI Tests from HEAD branch
-    download "https://github.com/AOMediaCodec/SVT-AV1/archive/refs/tags/v0.9.0.tar.gz" "svtav1-0.9.0.tar.gz"
+    download "https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/v0.9.0/SVT-AV1-v0.9.0.tar.gz" "svtav1-0.9.0.tar.gz"
     cd "${PACKAGES}"/svtav1-0.9.0//Build/linux || exit
     execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF ../.. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
     execute make -j $MJOBS
