@@ -5,6 +5,8 @@
 
 PROGNAME=$(basename "$0")
 FFMPEG_VERSION=5.1
+FFMPEG_GIT_URL="https://git.ffmpeg.org/ffmpeg.git"
+FFMPEG_GIT_TAG=n${FFMPEG_VERSION}
 SCRIPT_VERSION=1.38
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
@@ -112,6 +114,32 @@ download() {
   echo "Extracted $DOWNLOAD_FILE"
 
   cd "$DOWNLOAD_PATH/$TARGETDIR" || (
+    echo "Error has occurred."
+    exit 1
+  )
+}
+
+git_clone() {
+  # git_clone URL BRANCH DIRECTORY
+  local GIT_URL=$1
+  local GIT_BRANCH=$2
+  local DOWNLOAD_PATH=$3
+
+  if [[ ! -d "$DOWNLOAD_PATH" ]]; then
+    git clone -b ${GIT_BRANCH} --depath=1 ${GIT_URL} ${DOWNLOAD_PATH}
+
+    EXITCODE=$?
+    if [ $EXITCODE -ne 0 ]; then
+      echo ""
+      echo "Failed to clone $1. Exitcode $EXITCODE"
+      exit 1
+    fi
+
+  else
+    echo "$DOWNLOAD_PATH has already cloned."
+  fi
+
+  cd "$DOWNLOAD_PATH" || (
     echo "Error has occurred."
     exit 1
   )
@@ -917,7 +945,8 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 fi
 
 build "ffmpeg" "$FFMPEG_VERSION"
-download "https://github.com/FFmpeg/FFmpeg/archive/refs/heads/release/$FFMPEG_VERSION.tar.gz" "FFmpeg-release-$FFMPEG_VERSION.tar.gz"
+git_clone "${FFMPEG_GIT_URL}" "${FFMPEG_GIT_TAG}" "${PACKAGES}/FFmpeg-${FFMPEG_GIT_TAG}"
+
 # shellcheck disable=SC2086
 ./configure "${CONFIGURE_OPTIONS[@]}" \
   --disable-debug \
