@@ -31,10 +31,9 @@ Open your command line and run (curl needs to be installed):
 ```bash
 
 # Without GPL and non-free codes, see https://ffmpeg.org/legal.html 
-$ bash <(curl -s "https://raw.githubusercontent.com/markus-perl/ffmpeg-build-script/master/web-install.sh?v1")
-
+bash <(curl -s "https://raw.githubusercontent.com/slyfox1186/ffmpeg-build-script/master/web-install.sh?v1")
 # With GPL and non-free codes, see https://ffmpeg.org/legal.html 
-$ bash <(curl -s "https://raw.githubusercontent.com/markus-perl/ffmpeg-build-script/master/web-install-gpl-and-non-free.sh?v1")
+bash <(curl -s "https://raw.githubusercontent.com/slyfox1186/ffmpeg-build-script/master/web-install-gpl-and-non-free.sh?v1")
 ```
 
 This command downloads the build script and automatically starts the build process.
@@ -42,7 +41,7 @@ This command downloads the build script and automatically starts the build proce
 ### Common installation (macOS, Linux)
 
 ```bash
-$ git clone https://github.com/markus-perl/ffmpeg-build-script.git
+$ git clone https://github.com/slyfox1186/ffmpeg-build-script.git
 $ cd ffmpeg-build-script
 $ ./build-ffmpeg --build
 ```
