@@ -56,13 +56,13 @@ download()
 
     if [ ! -f "$DOWNLOAD_PATH/$DOWNLOAD_FILE" ]; then
         echo "Downloading $1 as $DOWNLOAD_FILE"
-        aria2c -x 1 -j 16 -q -o "$DOWNLOAD_PATH/$DOWNLOAD_FILE" "$1"
+        wget -cqO "$DOWNLOAD_PATH/$DOWNLOAD_FILE" "$1"
 
         EXITCODE=$?
         if [ $EXITCODE -ne 0 ]; then
             echo -e "Failed to download $1. Exitcode $EXITCODE. Retrying in 10 seconds.\\n"
             sleep 10
-            aria2c -x 1 -j 16 -q -o "$DOWNLOAD_PATH/$DOWNLOAD_FILE" "$1"
+            wget -cqO "$DOWNLOAD_PATH/$DOWNLOAD_FILE" "$1"
         fi
 
         EXITCODE=$?
@@ -78,15 +78,17 @@ download()
 
     make_dir "$DOWNLOAD_PATH/$TARGETDIR"
 
-    if [[ "$DOWNLOAD_FILE" == *"patch"* ]]; then return; fi
+    if [[ "$DOWNLOAD_FILE" == *"patch"* ]]; then
+        return
+    fi
 
     if [ -n "$3" ]; then
-        if ! tar -xvf "$DOWNLOAD_PATH/$DOWNLOAD_FILE" -C "$DOWNLOAD_PATH/$TARGETDIR" 2>/dev/null >/dev/null; then
+        if ! tar -xf "$DOWNLOAD_PATH/$DOWNLOAD_FILE" -C "$DOWNLOAD_PATH/$TARGETDIR" 2>/dev/null >/dev/null; then
             echo "Failed to extract $DOWNLOAD_FILE"
             exit 1
         fi
     else
-        if ! tar -xvf "$DOWNLOAD_PATH/$DOWNLOAD_FILE" -C "$DOWNLOAD_PATH/$TARGETDIR" --strip-components 1 2>/dev/null >/dev/null; then
+        if ! tar -xf "$DOWNLOAD_PATH/$DOWNLOAD_FILE" -C "$DOWNLOAD_PATH/$TARGETDIR" --strip-components 1 2>/dev/null >/dev/null; then
             echo "Failed to extract $DOWNLOAD_FILE"
             exit 1
         fi
@@ -548,7 +550,7 @@ if $NONFREE_AND_GPL; then
         download "https://github.com/georgmartius/vid.stab/archive/v1.1.0.tar.gz" "vid.stab-1.1.0.tar.gz"
 
         if $MACOS_M1; then
-            aria2c -x 1 -j 16 -q -o "$PACKAGES/vid.stab-1.1.0/fix_cmake_quoting.patch" "https://raw.githubusercontent.com/Homebrew/formula-patches/5bf1a0e0cfe666ee410305cece9c9c755641bfdf/libvidstab/fix_cmake_quoting.patch"
+            wget -cqO "$PACKAGES/vid.stab-1.1.0/fix_cmake_quoting.patch" "https://raw.githubusercontent.com/Homebrew/formula-patches/5bf1a0e0cfe666ee410305cece9c9c755641bfdf/libvidstab/fix_cmake_quoting.patch"
             patch -p1 <fix_cmake_quoting.patch
         fi
 
@@ -713,7 +715,7 @@ if build "libtheora" "1.1.1"; then
     if ! $MACOS_M1; then
         ##BEGIN CONFIG.GUESS PATCH -- Updating config.guess file. Which allowed me to compile on aarch64 (ARMv8) [linux kernel 4.9 Ubuntu 20.04]
         rm config.guess
-        aria2c -x 1 -j 16 -q -o "config.guess" "https://raw.githubusercontent.com/gcc-mirror/gcc/master/config.guess"
+        wget -cqO "config.guess" "https://raw.githubusercontent.com/gcc-mirror/gcc/master/config.guess"
         chmod +x config.guess
         ##END OF CONFIG.GUESS PATCH
     fi
