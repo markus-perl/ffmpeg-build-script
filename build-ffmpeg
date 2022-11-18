@@ -895,19 +895,19 @@ if [[ "$i" -eq "Y" ]]; then
         cp -f "$WORKSPACE/bin/ffplay" "$USER_LBIN/ffplay"
     fi
 elif [[ "$i" -eq "N" ]]; then
-    echo -e "\\nBuilding done. The following binaries can be found here:"
+    echo -e "\\nBuilding complete. The following binaries can be found here:"
     echo -e "- ffmpeg: $WORKSPACE/ffmpeg"
     echo -e "- ffprobe: $WORKSPACE/ffprobe"
     echo -e "- ffplay: $WORKSPACE/ffplay\\n"
-    echo "Done. FFmpeg is now installed to your system [1]."
+    echo "FFmpeg is now installed to your system."
     unset i
     exit 0
 fi
 
-echo -e "\\nBuilding done. The following binaries can be found here:"
+echo -e "\\nBuilding complete. The following binaries can be found here:"
 echo -e "- ffmpeg: $USER_LBIN/ffmpeg"
 echo -e "- ffprobe: $USER_LBIN/ffprobe"
 echo -e "- ffplay: $USER_LBIN/ffplay\\n"
-echo "Done. FFmpeg is now installed to your system [2]."
+echo "FFmpeg is now installed to your system."
 unset i
 exit 0
