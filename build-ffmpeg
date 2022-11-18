@@ -24,8 +24,6 @@ if [[ -n "$NUMJOBS" ]]; then
   MJOBS="$NUMJOBS"
 elif [[ -f /proc/cpuinfo ]]; then
   MJOBS=$(grep -c processor /proc/cpuinfo)
-else
-  MJOBS=4
 fi
 
 make_dir()
@@ -248,13 +246,9 @@ fi
 
 echo "Using $MJOBS make jobs simultaneously."
 
-if $NONFREE_AND_GPL; then
-  echo "With GPL and non-free codecs"
-fi
+if $NONFREE_AND_GPL; then echo "With GPL and non-free codecs"; fi
 
-if [ -n "$LDEXEFLAGS" ]; then
-  echo "Start the build in full static mode."
-fi
+if [ -n "$LDEXEFLAGS" ]; then echo "Start the build in full static mode."; fi
 
 mkdir -p "$PACKAGES"
 mkdir -p "$WORKSPACE"
@@ -419,9 +413,7 @@ if command_exists "python3"; then
     # meson and ninja can be installed via pip3
     execute pip3 install pip setuptools --quiet --upgrade --no-cache-dir --disable-pip-version-check
     for r in meson ninja; do
-      if ! command_exists ${r}; then
-        execute pip3 install ${r} --quiet --upgrade --no-cache-dir --disable-pip-version-check
-      fi
+      if ! command_exists ${r}; then execute pip3 install ${r} --quiet --upgrade --no-cache-dir --disable-pip-version-check; fi
     done
   fi
   if command_exists "meson"; then
@@ -430,17 +422,13 @@ if command_exists "python3"; then
       make_dir build
       
       CFLAGSBACKUP=$CFLAGS
-      if $MACOS_M1; then
-        export CFLAGS="-arch arm64"
-      fi
+      if $MACOS_M1; then export CFLAGS="-arch arm64"; fi
       
       execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
       execute ninja -C build
       execute ninja -C build install
       
-      if $MACOS_M1; then
-        export CFLAGS=$CFLAGSBACKUP
-      fi
+      if $MACOS_M1; then export CFLAGS=$CFLAGSBACKUP; fi
       
       build_done "dav1d" "0.9.2"
     fi
@@ -530,8 +518,7 @@ EOF
     execute make install
 
     if [ -n "$LDEXEFLAGS" ]; then
-      sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "${WORKSPACE}/lib/pkgconfig/x265.pc" # The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
-    fi
+      sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "${WORKSPACE}/lib/pkgconfig/x265.pc"; fi # The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
 
     build_done "x265" "3.5"
   fi
@@ -556,13 +543,9 @@ if $NONFREE_AND_GPL; then
     execute make -j $MJOBS
     execute make install
 
-    if [[ -f ${WORKSPACE}/lib/libxvidcore.4.dylib ]]; then
-      execute rm "${WORKSPACE}/lib/libxvidcore.4.dylib"
-    fi
+    if [[ -f ${WORKSPACE}/lib/libxvidcore.4.dylib ]]; then execute rm "${WORKSPACE}/lib/libxvidcore.4.dylib"; fi
 
-    if [[ -f ${WORKSPACE}/lib/libxvidcore.so ]]; then
-      execute rm "${WORKSPACE}"/lib/libxvidcore.so*
-    fi
+    if [[ -f ${WORKSPACE}/lib/libxvidcore.so ]]; then execute rm "${WORKSPACE}"/lib/libxvidcore.so*; fi
 
     build_done "xvidcore" "1.3.7"
   fi
@@ -616,9 +599,9 @@ if build "zimg" "3.0.3"; then
 fi
 CONFIGURE_OPTIONS+=("--enable-libzimg")
 
-##
-## audio library
-##
+###################
+## audio library ##
+###################
 
 if command_exists "python3"; then
 
@@ -764,9 +747,9 @@ if $NONFREE_AND_GPL; then
   CONFIGURE_OPTIONS+=("--enable-libfdk-aac")
 fi
 
-##
-## image library
-##
+###################
+## image library ##
+###################
 
 if build "libtiff" "4.2.0"; then
   download "https://download.osgeo.org/libtiff/tiff-4.2.0.tar.gz"
@@ -824,18 +807,16 @@ if $NONFREE_AND_GPL; then
     execute cmake . -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DENABLE_APPS=OFF -DUSE_STATIC_LIBSTDCXX=ON
     execute make install
 
-    if [ -n "$LDEXEFLAGS" ]; then
-      sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "${WORKSPACE}"/lib/pkgconfig/srt.pc # The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
-    fi
+    if [ -n "$LDEXEFLAGS" ]; then sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "${WORKSPACE}"/lib/pkgconfig/srt.pc; fi # The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
 
     build_done "srt" "1.4.3"
   fi
   CONFIGURE_OPTIONS+=("--enable-libsrt")
 fi
 
-##
-## HWaccel library
-##
+#####################
+## HWaccel library ##
+#####################
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
   if command_exists "nvcc"; then
@@ -849,9 +830,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     LDFLAGS+=" -L/usr/local/cuda/lib64"
     CONFIGURE_OPTIONS+=("--enable-cuda-nvcc" "--enable-cuvid" "--enable-nvenc" "--enable-cuda-llvm")
 
-    if [ -z "$LDEXEFLAGS" ]; then
-      CONFIGURE_OPTIONS+=("--enable-libnpp") # Only libnpp cannot be statically linked.
-    fi
+    if [ -z "$LDEXEFLAGS" ]; then CONFIGURE_OPTIONS+=("--enable-libnpp"); fi # Only libnpp cannot be statically linked.
 
     # https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/ # CONFIGURE_OPTIONS+=("--nvccflags=-gencode arch=compute_52,code=sm_52")
     CONFIGURE_OPTIONS+=("--nvccflags=-gencode arch=compute_86,code=sm_86")
@@ -861,9 +840,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
   if [ -z "$LDEXEFLAGS" ]; then
     # If the libva development SDK is installed, enable vaapi.
     if library_exists "libva"; then
-      if build "vaapi" "1"; then
-        build_done "vaapi" "1"
-      fi
+      if build "vaapi" "1"; then build_done "vaapi" "1"; fi
       CONFIGURE_OPTIONS+=("--enable-vaapi")
     fi
   fi
@@ -916,34 +893,20 @@ echo "- ffprobe: $WORKSPACE/bin/ffprobe"
 echo "- ffplay: $WORKSPACE/bin/ffplay"
 echo ""
 
-if [[ "$AUTOINSTALL" == "yes" ]]; then
+read -r -p "Install these binaries to your /usr/local/bin folder? Existing binaries will be replaced. [Y/n] " response
+case $response in
+[yY][eE][sS] | [yY])
   if command_exists "sudo"; then
     sudo cp "$WORKSPACE/bin/ffmpeg" "/usr/local/bin/ffmpeg"
     sudo cp "$WORKSPACE/bin/ffprobe" "/usr/local/bin/ffprobe"
     sudo cp "$WORKSPACE/bin/ffplay" "/usr/local/bin/ffplay"
-    echo "Done. FFmpeg is now installed to your system."
   else
     cp "$WORKSPACE/bin/ffmpeg" "/usr/local/bin/ffmpeg"
     cp "$WORKSPACE/bin/ffprobe" "/usr/local/bin/ffprobe"
     cp "$WORKSPACE/bin/ffplay" "/usr/local/bin/ffplay"
-    echo "Done. FFmpeg is now installed to your system."
   fi
-elif [[ ! "$SKIPINSTALL" == "yes" ]]; then
-  read -r -p "Install these binaries to your /usr/local/bin folder? Existing binaries will be replaced. [Y/n] " response
-  case $response in
-  [yY][eE][sS] | [yY])
-    if command_exists "sudo"; then
-      sudo cp "$WORKSPACE/bin/ffmpeg" "/usr/local/bin/ffmpeg"
-      sudo cp "$WORKSPACE/bin/ffprobe" "/usr/local/bin/ffprobe"
-      sudo cp "$WORKSPACE/bin/ffplay" "/usr/local/bin/ffplay"
-    else
-      cp "$WORKSPACE/bin/ffmpeg" "/usr/local/bin/ffmpeg"
-      cp "$WORKSPACE/bin/ffprobe" "/usr/local/bin/ffprobe"
-      cp "$WORKSPACE/bin/ffplay" "/usr/local/bin/ffplay"
-    fi
-    echo "Done. FFmpeg is now installed to your system."
-    ;;
-  esac
-fi
+  echo "Done. FFmpeg is now installed to your system."
+  ;;
+esac
 
 exit 0
