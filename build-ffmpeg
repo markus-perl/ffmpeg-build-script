@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# HOMEPAGE: https://github.com/markus-perl/ffmpeg-build-script
-# LICENSE: https://github.com/markus-perl/ffmpeg-build-script/blob/master/LICENSE
+# HOMEPAGE: https://github.com/slyfox1186/ffmpeg-build-script/edit/master/build-ffmpeg
+
+clear
 
 PROGNAME=${0:2}
 FFMPEG_VERSION=5.1
