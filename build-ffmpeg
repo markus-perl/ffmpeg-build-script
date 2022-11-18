@@ -7,7 +7,7 @@ clear
 PROGNAME="${0:2}"
 FFMPEG_VERSION=5.1.2
 SCRIPT_VERSION=1.00
-ULB='/usr/local/bin'
+ULB=/usr/local/bin
 PACKAGES="$PWD/packages"
 WORKSPACE="$PWD/workspace"
 CFLAGS="-I$WORKSPACE/include"
@@ -899,7 +899,7 @@ elif [[ "$i" -eq "N" ]]; then
     echo -e "- ffmpeg: $WORKSPACE/ffmpeg"
     echo -e "- ffprobe: $WORKSPACE/ffprobe"
     echo -e "- ffplay: $WORKSPACE/ffplay\\n"
-    echo "Done. FFmpeg is now installed to your system."
+    echo "Done. FFmpeg is now installed to your system [1]."
     unset i
     exit 0
 fi
@@ -908,7 +908,6 @@ echo -e "\\nBuilding done. The following binaries can be found here:"
 echo -e "- ffmpeg: $ULB/ffmpeg"
 echo -e "- ffprobe: $ULB/ffprobe"
 echo -e "- ffplay: $ULB/ffplay\\n"
-echo "Done. FFmpeg is now installed to your system."
+echo "Done. FFmpeg is now installed to your system [2]."
 unset i
 exit 0
-
