@@ -918,28 +918,28 @@ echo ""
 
 if [[ "$AUTOINSTALL" == "yes" ]]; then
   if command_exists "sudo"; then
-    sudo cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
-    sudo cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
-    sudo cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/ffplay"
+    sudo cp "$WORKSPACE/bin/ffmpeg" "/usr/local/bin/ffmpeg"
+    sudo cp "$WORKSPACE/bin/ffprobe" "/usr/local/bin/ffprobe"
+    sudo cp "$WORKSPACE/bin/ffplay" "/usr/local/bin/ffplay"
     echo "Done. FFmpeg is now installed to your system."
   else
-    cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
-    cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
-    cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/ffplay"
+    cp "$WORKSPACE/bin/ffmpeg" "/usr/local/bin/ffmpeg"
+    cp "$WORKSPACE/bin/ffprobe" "/usr/local/bin/ffprobe"
+    cp "$WORKSPACE/bin/ffplay" "/usr/local/bin/ffplay"
     echo "Done. FFmpeg is now installed to your system."
   fi
 elif [[ ! "$SKIPINSTALL" == "yes" ]]; then
-  read -r -p "Install these binaries to your $INSTALL_FOLDER folder? Existing binaries will be replaced. [Y/n] " response
+  read -r -p "Install these binaries to your /usr/local/bin folder? Existing binaries will be replaced. [Y/n] " response
   case $response in
   [yY][eE][sS] | [yY])
     if command_exists "sudo"; then
-      sudo cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
-      sudo cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
-      sudo cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/ffplay"
+      sudo cp "$WORKSPACE/bin/ffmpeg" "/usr/local/bin/ffmpeg"
+      sudo cp "$WORKSPACE/bin/ffprobe" "/usr/local/bin/ffprobe"
+      sudo cp "$WORKSPACE/bin/ffplay" "/usr/local/bin/ffplay"
     else
-      cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
-      cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
-      cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/ffplay"
+      cp "$WORKSPACE/bin/ffmpeg" "/usr/local/bin/ffmpeg"
+      cp "$WORKSPACE/bin/ffprobe" "/usr/local/bin/ffprobe"
+      cp "$WORKSPACE/bin/ffplay" "/usr/local/bin/ffplay"
     fi
     echo "Done. FFmpeg is now installed to your system."
     ;;
