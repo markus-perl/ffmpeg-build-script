@@ -17,14 +17,14 @@ Open your command line and run (curl needs to be installed):
 
 ## Without GPL and non-free: https://ffmpeg.org/legal.html 
 ```
-curl -s 'https://raw.githubusercontent.com/slyfox1186/ffmpeg-build-script/master/web-install.sh' | bash
+curl -s 'https://raw.githubusercontent.com/slyfox1186/ffmpeg-build-script/master/scripts/web-install.sh' | bash
 
 ```
 
 ## With GPL and non-free: https://ffmpeg.org/legal.html
 
 ```
-curl -s 'https://raw.githubusercontent.com/slyfox1186/ffmpeg-build-script/master/web-install-gpl-and-non-free.sh' | bash
+curl -s 'https://raw.githubusercontent.com/slyfox1186/ffmpeg-build-script/master/scripts/web-install-gpl-and-non-free.sh' | bash
 
 ```
 
