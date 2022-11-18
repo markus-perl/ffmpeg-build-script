@@ -19,24 +19,12 @@ CONFIGURE_OPTIONS=()
 NONFREE_AND_GPL=false
 LATEST=false
 
-# Check for Apple Silicon
-if [[ ("$(uname -m)" == "arm64") && ("$OSTYPE" == "darwin"*) ]]; then
-  # If arm64 AND darwin (macOS)
-  export ARCH=arm64
-  export MACOSX_DEPLOYMENT_TARGET=11.0
-  MACOS_M1=true
-fi
-
 # Speed up the process
 # Env Var NUMJOBS overrides automatic detection
 if [[ -n "$NUMJOBS" ]]; then
   MJOBS="$NUMJOBS"
 elif [[ -f /proc/cpuinfo ]]; then
   MJOBS=$(grep -c processor /proc/cpuinfo)
-elif [[ "$OSTYPE" == "darwin"* ]]; then
-  MJOBS=$(sysctl -n machdep.cpu.thread_count)
-  CONFIGURE_OPTIONS=("--enable-videotoolbox")
-  MACOS_LIBTOOL="$(which libtool)" # gnu libtool is installed in this script and need to avoid name conflict
 else
   MJOBS=4
 fi
@@ -238,16 +226,8 @@ while (($# > 0)); do
       cflag='-c'
       cleanup
     fi
-    if [[ "$1" == "--full-static" ]]; then
-      if [[ "$OSTYPE" == "darwin"* ]]; then
-        echo "Error: A full static binary can only be build on Linux."
-        exit 1
-      fi
-      LDEXEFLAGS="-static"
-    fi
-    if [[ "$1" == "--latest" ]]; then
-      LATEST=true
-    fi
+    if [[ "$1" == "--full-static" ]]; then LDEXEFLAGS="-static"; fi
+    if [[ "$1" == "--latest" ]]; then LATEST=true; fi
     shift
     ;;
   *)
@@ -312,10 +292,6 @@ fi
 
 if build "giflib" "5.2.1"; then
   download "https://netcologne.dl.sourceforge.net/project/giflib/giflib-5.2.1.tar.gz"
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-      download "https://sourceforge.net/p/giflib/bugs/_discuss/thread/4e811ad29b/c323/attachment/Makefile.patch"
-      execute patch -p0 --forward "${PACKAGES}/giflib-5.2.1/Makefile" "${PACKAGES}/Makefile.patch" || true
-    fi
   cd "${PACKAGES}"/giflib-5.2.1 || exit
   #multicore build disabled for this library
   execute make
@@ -567,13 +543,6 @@ fi
 
 if build "libvpx" "1.10.0"; then
   download "https://github.com/webmproject/libvpx/archive/refs/tags/v1.10.0.tar.gz" "libvpx-1.10.0.tar.gz"
-
-  if [[ "$OSTYPE" == "darwin"* ]]; then
-    echo "Applying Darwin patch"
-    sed "s/,--version-script//g" build/make/Makefile >build/make/Makefile.patched
-    sed "s/-Wl,--no-undefined -Wl,-soname/-Wl,-undefined,error -Wl,-install_name/g" build/make/Makefile.patched >build/make/Makefile
-  fi
-
   execute ./configure --prefix="${WORKSPACE}" --disable-unit-tests --disable-shared --disable-examples --as=yasm --enable-vp9-highbitdepth
   execute make -j $MJOBS
   execute make install
@@ -670,7 +639,7 @@ if command_exists "python3"; then
   fi
   if build "serd" "0.30.10"; then
     download "https://gitlab.com/drobilla/serd/-/archive/v0.30.10/serd-v0.30.10.tar.gz" "serd-v0.30.10.tar.gz"
-    execute cp -r "${PACKAGES}/autowaf/*" "${PACKAGES}/serd-v0.30.10/waflib/"
+    execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/serd-v0.30.10/waflib/"
     execute python3 ./waf configure --prefix="${WORKSPACE}" --static --no-shared --no-posix
     execute python3 ./waf
     execute python3 ./waf install
@@ -686,7 +655,7 @@ if command_exists "python3"; then
   fi
   if build "sord" "0.16.8"; then
     download "https://gitlab.com/drobilla/sord/-/archive/v0.16.8/sord-v0.16.8.tar.gz" "sord-v0.16.8.tar.gz"
-    execute cp -r "${PACKAGES}/autowaf/*" "${PACKAGES}/sord-v0.16.8/waflib/"
+    execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/sord-v0.16.8/waflib/"
     execute python3 ./waf configure --prefix="${WORKSPACE}" CFLAGS="${CFLAGS}" --static --no-shared --no-utils
     execute python3 ./waf CFLAGS="${CFLAGS}"
     execute python3 ./waf install
@@ -695,7 +664,7 @@ if command_exists "python3"; then
   fi
   if build "sratom" "0.6.8"; then
     download "https://gitlab.com/lv2/sratom/-/archive/v0.6.8/sratom-v0.6.8.tar.gz" "sratom-v0.6.8.tar.gz"
-    execute cp -r "${PACKAGES}/autowaf/*" "${PACKAGES}/sratom-v0.6.8/waflib/"
+    execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/sratom-v0.6.8/waflib/"
     execute python3 ./waf configure --prefix="${WORKSPACE}" --static --no-shared
     execute python3 ./waf
     execute python3 ./waf install
@@ -704,7 +673,7 @@ if command_exists "python3"; then
   fi
   if build "lilv" "0.24.12"; then
     download "https://gitlab.com/lv2/lilv/-/archive/v0.24.12/lilv-v0.24.12.tar.gz" "lilv-v0.24.12.tar.gz"
-    execute cp -r "${PACKAGES}/autowaf/*" "${PACKAGES}/lilv-v0.24.12/waflib/"
+    execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/lilv-v0.24.12/waflib/"
     execute python3 ./waf configure --prefix="${WORKSPACE}" --static --no-shared --no-utils
     execute python3 ./waf
     execute python3 ./waf install
@@ -917,10 +886,6 @@ fi
 ##
 
 EXTRA_VERSION=""
-if [[ "$OSTYPE" == "darwin"* ]]; then
-  EXTRA_VERSION="${FFMPEG_VERSION}"
-fi
-
 build "ffmpeg" "$FFMPEG_VERSION"
 download "https://github.com/FFmpeg/FFmpeg/archive/refs/heads/release/$FFMPEG_VERSION.tar.gz" "FFmpeg-release-$FFMPEG_VERSION.tar.gz"
 # shellcheck disable=SC2086
@@ -945,12 +910,6 @@ download "https://github.com/FFmpeg/FFmpeg/archive/refs/heads/release/$FFMPEG_VE
 
 execute make -j $MJOBS
 execute make install
-
-INSTALL_FOLDER="/usr/bin"
-if [[ "$OSTYPE" == "darwin"* ]]; then
-  INSTALL_FOLDER="/usr/local/bin"
-fi
-
 verify_binary_type
 
 echo ""
