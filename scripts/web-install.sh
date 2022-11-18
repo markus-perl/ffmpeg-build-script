@@ -33,5 +33,4 @@ make_dir $TARGET
 cd $TARGET
 
 echo -e "Now we download and execute the build script\\n"
-
-bash <(curl -s https://raw.githubusercontent.com/slyfox1186/ffmpeg-build-script/master/build-ffmpeg) --build
+bash <(curl -s https://raw.githubusercontent.com/slyfox1186/ffmpeg-build-script/master/scripts/build-ffmpeg) --build
