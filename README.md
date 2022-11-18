@@ -1,6 +1,6 @@
 [![build test](https://github.com/markus-perl/ffmpeg-build-script/workflows/build%20test/badge.svg?branch=master)](https://github.com/markus-perl/ffmpeg-build-script/actions)
 
-![FFmpeg build script](https://raw.github.com/markus-perl/ffmpeg-build-script/master/ffmpeg-build-script.png)
+![FFmpeg build script](https://i.imgur.com/idsdNhe.png)
 
 ### If you like the script, please "★" this project!
 
@@ -8,19 +8,6 @@ build-ffmpeg
 ==========
 
 The FFmpeg build script provides an easy way to build a **static** FFmpeg on **macOS** and **Linux** with optional **non-free and GPL codecs** (--enable-gpl-and-non-free, see https://ffmpeg.org/legal.html) included.
-
-[![How-To build FFmpeg on MacOS](https://img.youtube.com/vi/Z9p3mM757cM/0.jpg)](https://www.youtube.com/watch?v=Z9p3mM757cM "How-To build FFmpeg on OSX")
-
-*Youtube: How-To build and install FFmpeg on macOS*
-
-## Disclaimer And Data Privacy Notice
-
-This script will download different packages with different licenses from various sources, which may track your usage.
-These sources are out of control by the developers of this script. Also, this script can create a non-free and unredistributable binary.
-By downloading and using this script, you are fully aware of this.
-
-Use this script at your own risk. I maintain this script in my spare time. Please do not file bug reports for systems
-other than Debian and macOS, because I don't have the resources or time to maintain different systems.
 
 ## Installation
 
@@ -130,98 +117,20 @@ with https://github.com/markus-perl/ffmpeg-build-script/actions to make sure eve
 * Rocky Linux 8
 * A development environment and curl is required
 
-```bash
+```
 # Debian and Ubuntu
-$ sudo apt install build-essential curl
+sudo apt install build-essential curl
 
-# Fedora
-$ sudo dnf install @development-tools curl
 ```
-
-### Build in Docker (Linux)
-
-With Docker, FFmpeg can be built reliably without altering the host system. Also, there is no need to have the CUDA SDK
-installed outside of the Docker image.
-
-##### Default
-
-If you're running an operating system other than the one above, a completely static build may work. To build a full
-statically linked binary inside Docker, just run the following command:
-
-```bash
-$ docker build --tag=ffmpeg:default --output type=local,dest=build -f Dockerfile .
-```
-
-##### CUDA
-These builds are always built with the --enable-gpl-and-non-free switch, as CUDA is non-free. See https://ffmpeg.org/legal.html
-```bash
-export DOCKER_BUILDKIT=1
-
-## Set the DIST (`ubuntu` or `rocky`) and VER (ubuntu: `16.04` , `18.04`, `20.04` or rocky: `8`) environment variables to select the preferred Docker base image.
-$ export DIST=centos
-$ export VER=8
-
-## Start the build
-$ docker build --tag=ffmpeg:cuda-$DIST -f cuda-$DIST.dockerfile --build-arg VER=$VER .
-```
-
-Build an `export.dockerfile` that copies only what you need from the image you just built as follows. When running,
-move the library in the lib to a location where the linker can find it or set the `LD_LIBRARY_PATH`. Since we have
-matched the operating system and version, it should work well with dynamic links. If it doesn't work, edit
-the `export.dockerfile` and copy the necessary libraries and try again.
-
-```bash
-$ docker build --output type=local,dest=build -f export.dockerfile --build-arg DIST=$DIST .
-$ ls build
-bin lib
-$ ls build/bin
-ffmpeg ffprobe
-$ ls build/lib
-libnppc.so.11 libnppicc.so.11 libnppidei.so.11 libnppig.so.11
-```
-
-##### Full static version
-
-If you're running an operating system other than the one above, a completely static build may work. To build a full
-statically linked binary inside Docker, just run the following command:
-
-```bash
-$ sudo -E docker build --tag=ffmpeg:cuda-static --output type=local,dest=build -f full-static.dockerfile .
-```
-
-### Run with Docker (macOS, Linux)
-
-You can also run the FFmpeg directly inside a Docker container.
-
-#### Default - Without CUDA (macOS, Linux)
-
-If CUDA is not required, a dockerized FFmpeg build can be executed with the following command:
-
-```bash
-$ sudo docker build --tag=ffmpeg .
-$ sudo docker run ffmpeg -i https://files.coconut.co.s3.amazonaws.com/test.mp4 -f webm -c:v libvpx -c:a libvorbis - > test.mp4
-```
-
-#### With CUDA (Linux)
-
-To use CUDA from inside the container, the installed Docker version must be >= 19.03. Install the driver
-and `nvidia-docker2`
-from [here](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#installing-docker-ce).
-You can then run FFmpeg inside Docker with GPU hardware acceleration enabled, as follows:
-
-```bash
-$ sudo docker build --tag=ffmpeg:cuda -f cuda-ubuntu.dockerfile .
-$ sudo docker run --gpus all ffmpeg-cuda -hwaccel cuvid -c:v h264_cuvid -i https://files.coconut.co.s3.amazonaws.com/test.mp4 -c:v hevc_nvenc -vf scale_npp=-1:1080 - > test.mp4
-```
-
 ### Common build (macOS, Linux)
 
 If you want to enable CUDA, please refer to [these](#Cuda-installation) and install the SDK.
 
 If you want to enable Vaapi, please refer to [these](#Vaapi-installation) and install the driver.
 
-```bash
-$ ./build-ffmpeg --build
+```
+bash build-ffmpeg --build
+
 ```
 
 ## Cuda installation
@@ -239,12 +148,10 @@ need a compatible NVIDIA GPU.
 
 You will need the libva driver, so please install it below.
 
-```bash
+```
 # Debian and Ubuntu
-$ sudo apt install libva-dev vainfo
+sudo apt install libva-dev vainfo
 
-# Fedora and CentOS
-$ sudo dnf install libva-devel libva-intel-driver libva-utils
 ```
 
 ## AMF installation
@@ -252,8 +159,9 @@ $ sudo dnf install libva-devel libva-intel-driver libva-utils
 To use the AMF encoder, you will need to be using the AMD GPU Pro drivers with OpenCL support.
 Download the drivers from https://www.amd.com/en/support and install the appropriate opencl versions.
 
-```bash
+```
 ./amdgpu-pro-install -y --opencl=rocr,legacy
+
 ```
 
 ## Usage
@@ -278,18 +186,6 @@ Options:
 
 - The libnpp in the CUDA SDK cannot be statically linked.
 - Vaapi cannot be statically linked.
-
-Contact
--------
-
-* Github: [http://www.github.com/markus-perl/](https://github.com/markus-perl/ffmpeg-build-script)
-
-Tested on
----------
-
-* MacOS 10.15
-* Debian 10
-* Ubuntu 20.04
 
 Example
 -------
