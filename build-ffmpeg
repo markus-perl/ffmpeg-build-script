@@ -7,7 +7,7 @@ clear
 PROGNAME="${0:2}"
 FFMPEG_VERSION=5.1.2
 SCRIPT_VERSION=1.00
-ULB=/usr/local/bin
+USER_LBIN=/usr/local/bin
 PACKAGES="$PWD/packages"
 WORKSPACE="$PWD/workspace"
 CFLAGS="-I$WORKSPACE/include"
@@ -56,13 +56,13 @@ download()
 
     if [ ! -f "$DOWNLOAD_PATH/$DOWNLOAD_FILE" ]; then
         echo "Downloading $1 as $DOWNLOAD_FILE"
-        curl -L --silent -o "$DOWNLOAD_PATH/$DOWNLOAD_FILE" "$1"
+        aria2c -x 1 -j 16 -q -o "$DOWNLOAD_PATH/$DOWNLOAD_FILE" "$1"
 
         EXITCODE=$?
         if [ $EXITCODE -ne 0 ]; then
             echo -e "Failed to download $1. Exitcode $EXITCODE. Retrying in 10 seconds.\\n"
             sleep 10
-            curl -L --silent -o "$DOWNLOAD_PATH/$DOWNLOAD_FILE" "$1"
+            aria2c -x 1 -j 16 -q -o "$DOWNLOAD_PATH/$DOWNLOAD_FILE" "$1"
         fi
 
         EXITCODE=$?
@@ -548,7 +548,7 @@ if $NONFREE_AND_GPL; then
         download "https://github.com/georgmartius/vid.stab/archive/v1.1.0.tar.gz" "vid.stab-1.1.0.tar.gz"
 
         if $MACOS_M1; then
-            curl -L --silent -o "$PACKAGES/vid.stab-1.1.0/fix_cmake_quoting.patch" "https://raw.githubusercontent.com/Homebrew/formula-patches/5bf1a0e0cfe666ee410305cece9c9c755641bfdf/libvidstab/fix_cmake_quoting.patch"
+            aria2c -x 1 -j 16 -q -o "$PACKAGES/vid.stab-1.1.0/fix_cmake_quoting.patch" "https://raw.githubusercontent.com/Homebrew/formula-patches/5bf1a0e0cfe666ee410305cece9c9c755641bfdf/libvidstab/fix_cmake_quoting.patch"
             patch -p1 <fix_cmake_quoting.patch
         fi
 
@@ -713,7 +713,7 @@ if build "libtheora" "1.1.1"; then
     if ! $MACOS_M1; then
         ##BEGIN CONFIG.GUESS PATCH -- Updating config.guess file. Which allowed me to compile on aarch64 (ARMv8) [linux kernel 4.9 Ubuntu 20.04]
         rm config.guess
-        curl -L --silent -o "config.guess" "https://raw.githubusercontent.com/gcc-mirror/gcc/master/config.guess"
+        aria2c -x 1 -j 16 -q -o "config.guess" "https://raw.githubusercontent.com/gcc-mirror/gcc/master/config.guess"
         chmod +x config.guess
         ##END OF CONFIG.GUESS PATCH
     fi
@@ -886,13 +886,13 @@ echo
 read -p "Install these binaries to your /usr/local/bin folder? Existing binaries will be replaced. [Y/n] " i
 if [[ "$i" -eq "Y" ]]; then
     if command_exists "sudo"; then
-        sudo cp -f "$WORKSPACE/bin/ffmpeg" "$ULB/ffmpeg"
-        sudo cp -f "$WORKSPACE/bin/ffprobe" "$ULB/ffprobe"
-        sudo cp -f "$WORKSPACE/bin/ffplay" "$ULB/ffplay"
+        sudo cp -f "$WORKSPACE/bin/ffmpeg" "$USER_LBIN/ffmpeg"
+        sudo cp -f "$WORKSPACE/bin/ffprobe" "$USER_LBIN/ffprobe"
+        sudo cp -f "$WORKSPACE/bin/ffplay" "$USER_LBIN/ffplay"
     else
-        cp -f "$WORKSPACE/bin/ffmpeg" "$ULB/ffmpeg"
-        cp -f "$WORKSPACE/bin/ffprobe" "$ULB/ffprobe"
-        cp -f "$WORKSPACE/bin/ffplay" "$ULB/ffplay"
+        cp -f "$WORKSPACE/bin/ffmpeg" "$USER_LBIN/ffmpeg"
+        cp -f "$WORKSPACE/bin/ffprobe" "$USER_LBIN/ffprobe"
+        cp -f "$WORKSPACE/bin/ffplay" "$USER_LBIN/ffplay"
     fi
 elif [[ "$i" -eq "N" ]]; then
     echo -e "\\nBuilding done. The following binaries can be found here:"
@@ -905,9 +905,9 @@ elif [[ "$i" -eq "N" ]]; then
 fi
 
 echo -e "\\nBuilding done. The following binaries can be found here:"
-echo -e "- ffmpeg: $ULB/ffmpeg"
-echo -e "- ffprobe: $ULB/ffprobe"
-echo -e "- ffplay: $ULB/ffplay\\n"
+echo -e "- ffmpeg: $USER_LBIN/ffmpeg"
+echo -e "- ffprobe: $USER_LBIN/ffprobe"
+echo -e "- ffplay: $USER_LBIN/ffplay\\n"
 echo "Done. FFmpeg is now installed to your system [2]."
 unset i
 exit 0
