@@ -1,20 +1,20 @@
 #!/bin/bash
+
 # Helper script to download and run the build-ffmpeg script.
 
-make_dir () {
+make_dir()
+{
     if [ ! -d $1 ]; then
-        if ! mkdir $1; then            
+        if ! mkdir $1; then
             printf "\n Failed to create dir %s" "$1";
             exit 1
         fi
-    fi    
+    fi
 }
 
-command_exists() {
-    if ! [[ -x $(command -v "$1") ]]; then
-        return 1
-    fi
-
+command_exists()
+{
+    if ! [[ -x $(command -v "$1") ]]; then return 1; fi
     return 0
 }
 
@@ -26,14 +26,12 @@ if ! command_exists "curl"; then
 fi
 
 echo "ffmpeg-build-script-downloader v0.1"
-echo "========================================="
-echo ""
+echo -e "=========================================\\n"
 
 echo "First we create the ffmpeg build directory $TARGET"
 make_dir $TARGET
 cd $TARGET
 
-echo "Now we download and execute the build script"
-echo ""
+echo -e "Now we download and execute the build script\\n"
 
 bash <(curl -s https://raw.githubusercontent.com/slyfox1186/ffmpeg-build-script/master/build-ffmpeg) --build
