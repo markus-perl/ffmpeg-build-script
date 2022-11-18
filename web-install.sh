@@ -36,4 +36,4 @@ cd $TARGET
 echo "Now we download and execute the build script"
 echo ""
 
-bash <(curl -s 'https://raw.githubusercontent.com/slyfox1186/ffmpeg-build-script/master/build-ffmpeg') --build
+bash <(curl -s https://raw.githubusercontent.com/slyfox1186/ffmpeg-build-script/master/build-ffmpeg) --build
