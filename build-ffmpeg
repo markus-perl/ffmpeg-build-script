@@ -3,12 +3,12 @@
 # HOMEPAGE: https://github.com/markus-perl/ffmpeg-build-script
 # LICENSE: https://github.com/markus-perl/ffmpeg-build-script/blob/master/LICENSE
 
-PROGNAME=$(basename "$0")
+PROGNAME=${0:2}
 FFMPEG_VERSION=5.1
 SCRIPT_VERSION=1.41
-CWD=$(pwd)
-PACKAGES="$CWD/packages"
-WORKSPACE="$CWD/workspace"
+# CWD=$(pwd)
+PACKAGES="$PWD/packages"
+WORKSPACE="$PWD/workspace"
 CFLAGS="-I$WORKSPACE/include"
 LDFLAGS="-L$WORKSPACE/lib"
 LDEXEFLAGS=""
@@ -669,7 +669,7 @@ if command_exists "python3"; then
   fi
   if build "serd" "0.30.10"; then
     download "https://gitlab.com/drobilla/serd/-/archive/v0.30.10/serd-v0.30.10.tar.gz" "serd-v0.30.10.tar.gz"
-    execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/serd-v0.30.10/waflib/"
+    execute cp -r "${PACKAGES}/autowaf/*" "${PACKAGES}/serd-v0.30.10/waflib/"
     execute python3 ./waf configure --prefix="${WORKSPACE}" --static --no-shared --no-posix
     execute python3 ./waf
     execute python3 ./waf install
@@ -685,7 +685,7 @@ if command_exists "python3"; then
   fi
   if build "sord" "0.16.8"; then
     download "https://gitlab.com/drobilla/sord/-/archive/v0.16.8/sord-v0.16.8.tar.gz" "sord-v0.16.8.tar.gz"
-    execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/sord-v0.16.8/waflib/"
+    execute cp -r "${PACKAGES}/autowaf/*" "${PACKAGES}/sord-v0.16.8/waflib/"
     execute python3 ./waf configure --prefix="${WORKSPACE}" CFLAGS="${CFLAGS}" --static --no-shared --no-utils
     execute python3 ./waf CFLAGS="${CFLAGS}"
     execute python3 ./waf install
@@ -694,7 +694,7 @@ if command_exists "python3"; then
   fi
   if build "sratom" "0.6.8"; then
     download "https://gitlab.com/lv2/sratom/-/archive/v0.6.8/sratom-v0.6.8.tar.gz" "sratom-v0.6.8.tar.gz"
-    execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/sratom-v0.6.8/waflib/"
+    execute cp -r "${PACKAGES}/autowaf/*" "${PACKAGES}/sratom-v0.6.8/waflib/"
     execute python3 ./waf configure --prefix="${WORKSPACE}" --static --no-shared
     execute python3 ./waf
     execute python3 ./waf install
@@ -703,7 +703,7 @@ if command_exists "python3"; then
   fi
   if build "lilv" "0.24.12"; then
     download "https://gitlab.com/lv2/lilv/-/archive/v0.24.12/lilv-v0.24.12.tar.gz" "lilv-v0.24.12.tar.gz"
-    execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/lilv-v0.24.12/waflib/"
+    execute cp -r "${PACKAGES}/autowaf/*" "${PACKAGES}/lilv-v0.24.12/waflib/"
     execute python3 ./waf configure --prefix="${WORKSPACE}" --static --no-shared --no-utils
     execute python3 ./waf
     execute python3 ./waf install
@@ -886,8 +886,8 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
       CONFIGURE_OPTIONS+=("--enable-libnpp") # Only libnpp cannot be statically linked.
     fi
 
-    # https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
-    CONFIGURE_OPTIONS+=("--nvccflags=-gencode arch=compute_52,code=sm_52")
+    # https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/ # CONFIGURE_OPTIONS+=("--nvccflags=-gencode arch=compute_52,code=sm_52")
+    CONFIGURE_OPTIONS+=("--nvccflags=-gencode arch=compute_86,code=sm_86")
   fi
 
   # Vaapi doesn't work well with static links FFmpeg.
@@ -905,7 +905,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     download "https://github.com/GPUOpen-LibrariesAndSDKs/AMF/archive/refs/tags/v.1.4.21.tar.gz" "AMF-1.4.21.tar.gz" "AMF-1.4.21"
     execute rm -rf "${WORKSPACE}/include/AMF"
     execute mkdir -p "${WORKSPACE}/include/AMF"
-    execute cp -r "${PACKAGES}"/AMF-1.4.21/AMF-v.1.4.21/amf/public/include/* "${WORKSPACE}/include/AMF/"
+    execute cp -r "${PACKAGES}/AMF-1.4.21/AMF-v.1.4.21/amf/public/include/*" "${WORKSPACE}/include/AMF/"
     build_done "amf" "1.4.21.0"
   fi
   CONFIGURE_OPTIONS+=("--enable-amf")
@@ -924,6 +924,9 @@ build "ffmpeg" "$FFMPEG_VERSION"
 download "https://github.com/FFmpeg/FFmpeg/archive/refs/heads/release/$FFMPEG_VERSION.tar.gz" "FFmpeg-release-$FFMPEG_VERSION.tar.gz"
 # shellcheck disable=SC2086
 ./configure "${CONFIGURE_OPTIONS[@]}" \
+  --cpus=16 \
+  --arch=x86_64 \
+  --target=linux-gnu \
   --disable-debug \
   --disable-doc \
   --disable-shared \
