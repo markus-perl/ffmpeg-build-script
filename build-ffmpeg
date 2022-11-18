@@ -926,7 +926,6 @@ download "https://github.com/FFmpeg/FFmpeg/archive/refs/heads/release/$FFMPEG_VE
 ./configure "${CONFIGURE_OPTIONS[@]}" \
   --arch=x86_64 \
   --cpu=16 \
-  --target=linux-gnu \
   --disable-debug \
   --disable-doc \
   --disable-shared \
