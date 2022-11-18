@@ -4,10 +4,9 @@
 
 clear
 
-PROGNAME=${0:2}
+PROGNAME="${0:2}"
 FFMPEG_VERSION=5.1
 SCRIPT_VERSION=1.41
-# CWD=$(pwd)
 PACKAGES="$PWD/packages"
 WORKSPACE="$PWD/workspace"
 CFLAGS="-I$WORKSPACE/include"
@@ -29,7 +28,8 @@ else
   MJOBS=4
 fi
 
-make_dir() {
+make_dir()
+{
   remove_dir "$1"
   if ! mkdir "$1"; then
     printf "\n Failed to create dir %s" "$1"
@@ -37,13 +37,13 @@ make_dir() {
   fi
 }
 
-remove_dir() {
-  if [ -d "$1" ]; then
-    rm -r "$1"
-  fi
+remove_dir()
+{
+  if [ -d "$1" ]; then rm -r "$1"; fi
 }
 
-download() {
+download()
+{
   # download url [filename[dirname]]
 
   DOWNLOAD_PATH="$PACKAGES"
@@ -106,7 +106,8 @@ download() {
   )
 }
 
-execute() {
+execute()
+{
   echo "$ $*"
 
   OUTPUT=$("$@" 2>&1)
@@ -120,7 +121,8 @@ execute() {
   fi
 }
 
-build() {
+build()
+{
   echo ""
   echo "building $1 - version $2"
   echo "======================="
@@ -141,30 +143,28 @@ build() {
   return 0
 }
 
-command_exists() {
-  if ! [[ -x $(command -v "$1") ]]; then
-    return 1
-  fi
+command_exists()
+{
+  if ! [[ -x $(command -v "$1") ]]; then return 1; fi
 
   return 0
 }
 
-library_exists() {
-  if ! [[ -x $(pkg-config --exists --print-errors "$1" 2>&1 >/dev/null) ]]; then
-    return 1
-  fi
+library_exists()
+{
+  if ! [[ -x $(pkg-config --exists --print-errors "$1" 2>&1 >/dev/null) ]]; then return 1; fi
 
   return 0
 }
 
-build_done() {
+build_done()
+{
   echo "$2" > "$PACKAGES/$1.done"
 }
 
-verify_binary_type() {
-  if ! command_exists "file"; then
-    return
-  fi
+verify_binary_type()
+{
+  if ! command_exists "file"; then return; fi
 
   BINARY_TYPE=$(file "$WORKSPACE/bin/ffmpeg" | sed -n 's/^.*\:\ \(.*$\)/\1/p')
   echo ""
@@ -178,14 +178,16 @@ verify_binary_type() {
   esac
 }
 
-cleanup() {
+cleanup()
+{
   remove_dir "$PACKAGES"
   remove_dir "$WORKSPACE"
   echo "Cleanup done."
   echo ""
 }
 
-usage() {
+usage()
+{
   echo "Usage: $PROGNAME [OPTIONS]"
   echo "Options:"
   echo "  -h, --help                     Display usage information"
@@ -203,7 +205,8 @@ echo "ffmpeg-build-script v$SCRIPT_VERSION"
 echo "========================="
 echo ""
 
-while (($# > 0)); do
+while (($# > 0))
+do
   case $1 in
   -h | --help)
     usage
@@ -214,9 +217,7 @@ while (($# > 0)); do
     exit 0
     ;;
   -*)
-    if [[ "$1" == "--build" || "$1" =~ '-b' ]]; then
-      bflag='-b'
-    fi
+    if [[ "$1" == "--build" || "$1" =~ '-b' ]]; then bflag='-b'; fi
     if [[ "$1" == "--enable-gpl-and-non-free" ]]; then
       CONFIGURE_OPTIONS+=("--enable-nonfree")
       CONFIGURE_OPTIONS+=("--enable-gpl")
@@ -278,13 +279,9 @@ if ! command_exists "curl"; then
   exit 1
 fi
 
-if ! command_exists "cargo"; then
-  echo "cargo not installed. rav1e encoder will not be available."
-fi
+if ! command_exists "cargo"; then echo "cargo not installed. rav1e encoder will not be available."; fi
 
-if ! command_exists "python3"; then
-  echo "python3 command not found. Lv2 filter and dav1d decoder will not be available."
-fi
+if ! command_exists "python3"; then echo "python3 command not found. Lv2 filter and dav1d decoder will not be available."; fi
 
 ##
 ## build tools
@@ -875,7 +872,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     download "https://github.com/GPUOpen-LibrariesAndSDKs/AMF/archive/refs/tags/v.1.4.21.tar.gz" "AMF-1.4.21.tar.gz" "AMF-1.4.21"
     execute rm -rf "${WORKSPACE}/include/AMF"
     execute mkdir -p "${WORKSPACE}/include/AMF"
-    execute cp -r "${PACKAGES}/AMF-1.4.21/AMF-v.1.4.21/amf/public/include/*" "${WORKSPACE}/include/AMF/"
+    execute cp -r "${PACKAGES}"/AMF-1.4.21/AMF-v.1.4.21/amf/public/include/* "${WORKSPACE}/include/AMF/"
     build_done "amf" "1.4.21.0"
   fi
   CONFIGURE_OPTIONS+=("--enable-amf")
