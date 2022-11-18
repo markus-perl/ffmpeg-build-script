@@ -28,12 +28,17 @@ other than Debian and macOS, because I don't have the resources or time to maint
 
 Open your command line and run (curl needs to be installed):
 
-```bash
+## Without GPL and non-free: https://ffmpeg.org/legal.html 
+```
+curl -s 'https://raw.githubusercontent.com/slyfox1186/ffmpeg-build-script/master/web-install.sh' | bash
 
-# Without GPL and non-free codes, see https://ffmpeg.org/legal.html 
-bash <(curl -s "https://raw.githubusercontent.com/slyfox1186/ffmpeg-build-script/master/web-install.sh?v1")
-# With GPL and non-free codes, see https://ffmpeg.org/legal.html 
-bash <(curl -s "https://raw.githubusercontent.com/slyfox1186/ffmpeg-build-script/master/web-install-gpl-and-non-free.sh?v1")
+```
+
+## With GPL and non-free: https://ffmpeg.org/legal.html
+
+```
+curl -s 'https://raw.githubusercontent.com/slyfox1186/ffmpeg-build-script/master/web-install-gpl-and-non-free.sh' | bash
+
 ```
 
 This command downloads the build script and automatically starts the build process.
