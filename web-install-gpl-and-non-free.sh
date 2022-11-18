@@ -1,9 +1,10 @@
 #!/bin/bash
 # Helper script to download and run the build-ffmpeg script.
 
-make_dir () {
+make_dir ()
+{
     if [ ! -d $1 ]; then
-        if ! mkdir $1; then            
+        if ! mkdir $1; then
             printf "\n Failed to create dir %s" "$1";
             exit 1
         fi
@@ -36,5 +37,4 @@ cd $TARGET
 echo "Now we download and execute the build script"
 echo ""
 
-bash <(curl -s https://raw.githubusercontent.com/markus-perl/ffmpeg-build-script/master/build-ffmpeg) --build --enable-gpl-and-non-free
-
+bash <(curl -s https://raw.githubusercontent.com/slyfox1186/ffmpeg-build-script/master/web-install-gpl-and-non-free.sh) --build --enable-gpl-and-non-free
