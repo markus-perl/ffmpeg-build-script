@@ -885,7 +885,8 @@ shopt -s nocasematch
 
 # prompt the user to install the binary files to: /usr/local/bin
 echo
-read -p "Install these binaries to your /usr/local/bin folder? Existing binaries will be replaced. [Y/n] " i
+read -pr "Install these binaries to your /usr/local/bin folder? Existing binaries will be replaced. [Y/n] " i
+clear
 if [[ "$i" == "Y" ]]; then
     if command_exists "sudo"; then
         sudo cp -f "$WORKSPACE/bin/ffmpeg" "$USER_LBIN/ffmpeg"
