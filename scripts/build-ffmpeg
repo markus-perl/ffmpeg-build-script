@@ -286,7 +286,7 @@ fi
 if build "pkg-config" "0.29.2"; then
     download "https://pkgconfig.freedesktop.org/releases/pkg-config-0.29.2.tar.gz"
     execute ./configure --silent --prefix="${WORKSPACE}" --with-pc-path="${WORKSPACE}"/lib/pkgconfig --with-internal-glib
-    execute make -j $MJOBS
+    execute make -j "$MJOBS"
     execute make install
     build_done "pkg-config" "0.29.2"
 fi
@@ -294,7 +294,7 @@ fi
 if build "yasm" "1.3.0"; then
     download "https://github.com/yasm/yasm/releases/download/v1.3.0/yasm-1.3.0.tar.gz"
     execute ./configure --prefix="${WORKSPACE}"
-    execute make -j $MJOBS
+    execute make -j "$MJOBS"
     execute make install
     build_done "yasm" "1.3.0"
 fi
@@ -302,7 +302,7 @@ fi
 if build "nasm" "2.15.05"; then
     download "https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/nasm-2.15.05.tar.xz"
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
-    execute make -j $MJOBS
+    execute make -j "$MJOBS"
     execute make install
     build_done "nasm" "2.15.05"
 fi
@@ -310,7 +310,7 @@ fi
 if build "zlib" "1.2.13"; then
     download "https://zlib.net/fossils/zlib-1.2.13.tar.gz"
     execute ./configure --static --prefix="${WORKSPACE}"
-    execute make -j $MJOBS
+    execute make -j "$MJOBS"
     execute make install
     build_done "zlib" "1.2.13"
 fi
@@ -318,7 +318,7 @@ fi
 if build "m4" "1.4.19"; then
     download "https://ftp.gnu.org/gnu/m4/m4-1.4.19.tar.gz"
     execute ./configure --prefix="${WORKSPACE}"
-    execute make -j $MJOBS
+    execute make -j "$MJOBS"
     execute make install
     build_done "m4" "1.4.19"
 fi
@@ -326,7 +326,7 @@ fi
 if build "autoconf" "2.71"; then
     download "https://ftp.gnu.org/gnu/autoconf/autoconf-2.71.tar.gz"
     execute ./configure --prefix="${WORKSPACE}"
-    execute make -j $MJOBS
+    execute make -j "$MJOBS"
     execute make install
     build_done "autoconf" "2.71"
 fi
@@ -334,7 +334,7 @@ fi
 if build "automake" "1.16.5"; then
     download "https://ftp.gnu.org/gnu/automake/automake-1.16.5.tar.gz"
     execute ./configure --prefix="${WORKSPACE}"
-    execute make -j $MJOBS
+    execute make -j "$MJOBS"
     execute make install
     build_done "automake" "1.16.5"
 fi
@@ -342,7 +342,7 @@ fi
 if build "libtool" "2.4.6"; then
     download "https://ftpmirror.gnu.org/libtool/libtool-2.4.6.tar.gz"
     execute ./configure --prefix="${WORKSPACE}" --enable-static --disable-shared
-    execute make -j $MJOBS
+    execute make -j "$MJOBS"
     execute make install
     build_done "libtool" "2.4.6"
 fi
@@ -356,7 +356,7 @@ if $NONFREE_AND_GPL; then
         else
             execute ./config --prefix="${WORKSPACE}" --openssldir="${WORKSPACE}" --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib no-shared zlib
         fi
-        execute make -j $MJOBS
+        execute make -j "$MJOBS"
         execute make install_sw
         build_done "openssl" "1.1.1p"
     fi
@@ -365,7 +365,7 @@ else
     if build "gmp" "6.2.1"; then
         download "https://ftp.gnu.org/gnu/gmp/gmp-6.2.1.tar.xz"
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
-        execute make -j $MJOBS
+        execute make -j "$MJOBS"
         execute make install
         build_done "gmp" "6.2.1"
     fi
@@ -373,7 +373,7 @@ else
     if build "nettle" "3.8"; then
         download "https://ftp.gnu.org/gnu/nettle/nettle-3.8.tar.gz"
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-openssl --disable-documentation --libdir="${WORKSPACE}"/lib CPPFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}"
-        execute make -j $MJOBS
+        execute make -j "$MJOBS"
         execute make install
         build_done "nettle" "3.8"
     fi
@@ -381,7 +381,7 @@ else
     if build "gnutls" "3.6.16"; then
         download "https://www.gnupg.org/ftp/gcrypt/gnutls/v3.6/gnutls-3.6.16.tar.xz"
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-doc --disable-tools --disable-cxx --disable-tests --disable-gtk-doc-html --disable-libdane --disable-nls --enable-local-libopts --disable-guile --with-included-libtasn1 --with-included-unistring --without-p11-kit CPPFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}"
-        execute make -j $MJOBS
+        execute make -j "$MJOBS"
         execute make install
         build_done "gnutls" "3.6.16"
     fi
@@ -391,7 +391,7 @@ fi
 if build "cmake" "3.23.1"; then
     download "https://github.com/Kitware/CMake/releases/download/v3.23.1/cmake-3.23.1.tar.gz"
     execute ./configure --prefix="${WORKSPACE}" --parallel="${MJOBS}" -- -DCMAKE_USE_OPENSSL=OFF
-    execute make -j $MJOBS
+    execute make -j "$MJOBS"
     execute make install
     build_done "cmake" "3.23.1"
 fi
@@ -435,7 +435,7 @@ if ! $MACOS_M1; then
         download "https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/v0.9.0/SVT-AV1-v0.9.0.tar.gz" "svtav1-0.9.0.tar.gz"
         cd "${PACKAGES}"/svtav1-0.9.0//Build/linux || exit
         execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF ../.. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
-        execute make -j $MJOBS
+        execute make -j "$MJOBS"
         execute make install
         execute cp SvtAv1Enc.pc "${WORKSPACE}/lib/pkgconfig/"
         execute cp SvtAv1Dec.pc "${WORKSPACE}/lib/pkgconfig/"
@@ -466,7 +466,7 @@ if $NONFREE_AND_GPL; then
             execute ./configure --prefix="${WORKSPACE}" --enable-static --enable-pic
         fi
 
-        execute make -j $MJOBS
+        execute make -j "$MJOBS"
         execute make install
         execute make install-lib-static
 
@@ -483,15 +483,15 @@ if $NONFREE_AND_GPL; then
         mkdir -p 8bit 10bit 12bit
         cd 12bit || exit
         execute cmake ../../../source -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DHIGH_BIT_DEPTH=ON -DENABLE_HDR10_PLUS=ON -DEXPORT_C_API=OFF -DENABLE_CLI=OFF -DMAIN12=ON
-        execute make -j $MJOBS
+        execute make -j "$MJOBS"
         cd ../10bit || exit
         execute cmake ../../../source -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DHIGH_BIT_DEPTH=ON -DENABLE_HDR10_PLUS=ON -DEXPORT_C_API=OFF -DENABLE_CLI=OFF
-        execute make -j $MJOBS
+        execute make -j "$MJOBS"
         cd ../8bit || exit
         ln -sf ../10bit/libx265.a libx265_main10.a
         ln -sf ../12bit/libx265.a libx265_main12.a
         execute cmake ../../../source -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DEXTRA_LIB="x265_main10.a;x265_main12.a;-ldl" -DEXTRA_LINK_FLAGS=-L. -DLINKED_10BIT=ON -DLINKED_12BIT=ON
-        execute make -j $MJOBS
+        execute make -j "$MJOBS"
 
         mv libx265.a libx265_main.a
 
@@ -521,7 +521,7 @@ fi
 if build "libvpx" "1.10.0"; then
     download "https://github.com/webmproject/libvpx/archive/refs/tags/v1.10.0.tar.gz" "libvpx-1.10.0.tar.gz"
     execute ./configure --prefix="${WORKSPACE}" --disable-unit-tests --disable-shared --disable-examples --as=yasm --enable-vp9-highbitdepth
-    execute make -j $MJOBS
+    execute make -j "$MJOBS"
     execute make install
 
     build_done "libvpx" "1.10.0"
@@ -533,7 +533,7 @@ if $NONFREE_AND_GPL; then
         download "https://downloads.xvid.com/downloads/xvidcore-1.3.7.tar.gz"
         cd build/generic || exit
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
-        execute make -j $MJOBS
+        execute make -j "$MJOBS"
         execute make install
 
         if [[ -f ${WORKSPACE}/lib/libxvidcore.4.dylib ]]; then execute rm "${WORKSPACE}/lib/libxvidcore.4.dylib"; fi
@@ -573,7 +573,7 @@ if build "av1" "ae2be80"; then
     else
         execute cmake -DENABLE_TESTS=0 -DENABLE_EXAMPLES=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib "$PACKAGES"/av1
     fi
-    execute make -j $MJOBS
+    execute make -j "$MJOBS"
     execute make install
 
     build_done "av1" "ae2be80"
@@ -586,7 +586,7 @@ if build "zimg" "3.0.3"; then
     execute "${WORKSPACE}/bin/libtoolize" -i -f -q
     execute ./autogen.sh --prefix="${WORKSPACE}"
     execute ./configure --prefix="${WORKSPACE}" --enable-static --disable-shared
-    execute make -j $MJOBS
+    execute make -j "$MJOBS"
     execute make install
     build_done "zimg" "3.0.3"
 fi
@@ -621,7 +621,7 @@ if command_exists "python3"; then
     if build "pcre" "8.45"; then
         download "https://altushost-swe.dl.sourceforge.net/project/pcre/pcre/8.45/pcre-8.45.tar.gz" "pcre-8.45.tar.gz"
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
-        execute make -j $MJOBS
+        execute make -j "$MJOBS"
         execute make install
 
         build_done "pcre" "8.45"
@@ -661,7 +661,7 @@ fi
 if build "opencore" "0.1.5"; then
     download "https://sourceforge.net/projects/opencore-amr/files/opencore-amr/opencore-amr-0.1.5.tar.gz/download?use_mirror=gigenet" "opencore-amr-0.1.5.tar.gz"
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
-    execute make -j $MJOBS
+    execute make -j "$MJOBS"
     execute make install
 
     build_done "opencore" "0.1.5"
@@ -671,7 +671,7 @@ CONFIGURE_OPTIONS+=("--enable-libopencore_amrnb" "--enable-libopencore_amrwb")
 if build "lame" "3.100"; then
     download "https://sourceforge.net/projects/lame/files/lame/3.100/lame-3.100.tar.gz/download?use_mirror=gigenet" "lame-3.100.tar.gz"
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
-    execute make -j $MJOBS
+    execute make -j "$MJOBS"
     execute make install
 
     build_done "lame" "3.100"
@@ -681,7 +681,7 @@ CONFIGURE_OPTIONS+=("--enable-libmp3lame")
 if build "opus" "1.3.1"; then
     download "https://archive.mozilla.org/pub/opus/opus-1.3.1.tar.gz"
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
-    execute make -j $MJOBS
+    execute make -j "$MJOBS"
     execute make install
 
     build_done "opus" "1.3.1"
@@ -691,7 +691,7 @@ CONFIGURE_OPTIONS+=("--enable-libopus")
 if build "libogg" "1.3.3"; then
     download "https://ftp.osuosl.org/pub/xiph/releases/ogg/libogg-1.3.3.tar.gz"
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
-    execute make -j $MJOBS
+    execute make -j "$MJOBS"
     execute make install
     build_done "libogg" "1.3.3"
 fi
@@ -699,7 +699,7 @@ fi
 if build "libvorbis" "1.3.6"; then
     download "https://ftp.osuosl.org/pub/xiph/releases/vorbis/libvorbis-1.3.6.tar.gz"
     execute ./configure --prefix="${WORKSPACE}" --with-ogg-libraries="${WORKSPACE}"/lib --with-ogg-includes="${WORKSPACE}"/include/ --enable-static --disable-shared --disable-oggtest
-    execute make -j $MJOBS
+    execute make -j "$MJOBS"
     execute make install
 
     build_done "libvorbis" "1.3.6"
@@ -721,7 +721,7 @@ if build "libtheora" "1.1.1"; then
     fi
     
     execute ./configure --prefix="${WORKSPACE}" --with-ogg-libraries="${WORKSPACE}"/lib --with-ogg-includes="${WORKSPACE}"/include/ --with-vorbis-libraries="${WORKSPACE}"/lib --with-vorbis-includes="${WORKSPACE}"/include/ --enable-static --disable-shared --disable-oggtest --disable-vorbistest --disable-examples --disable-asm --disable-spec
-    execute make -j $MJOBS
+    execute make -j "$MJOBS"
     execute make install
 
     build_done "libtheora" "1.1.1"
@@ -732,7 +732,7 @@ if $NONFREE_AND_GPL; then
     if build "fdk_aac" "2.0.2"; then
         download "https://sourceforge.net/projects/opencore-amr/files/fdk-aac/fdk-aac-2.0.2.tar.gz/download?use_mirror=gigenet" "fdk-aac-2.0.2.tar.gz"
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --enable-pic
-        execute make -j $MJOBS
+        execute make -j "$MJOBS"
         execute make install
 
         build_done "fdk_aac" "2.0.2"
@@ -747,7 +747,7 @@ fi
 if build "libtiff" "4.2.0"; then
     download "https://download.osgeo.org/libtiff/tiff-4.2.0.tar.gz"
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-dependency-tracking --disable-lzma --disable-webp --disable-zstd --without-x
-    execute make -j $MJOBS
+    execute make -j "$MJOBS"
     execute make install
     build_done "libtiff" "4.2.0"
 fi
@@ -756,7 +756,7 @@ if build "libpng" "1.6.37"; then
     export LDFLAGS="${LDFLAGS}"
     export CPPFLAGS="${CFLAGS}"
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
-    execute make -j $MJOBS
+    execute make -j "$MJOBS"
     execute make install
     build_done "libpng" "1.6.37"
 fi
@@ -771,7 +771,7 @@ if [[ "$OSTYPE" != "darwin"* ]]; then
         make_dir build
         cd build || exit
         execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=OFF -DENABLE_STATIC=ON ../
-        execute make -j $MJOBS
+        execute make -j "$MJOBS"
         execute make install
 
         build_done "libwebp" "1.2.1"
@@ -785,7 +785,7 @@ fi
 if build "libsdl" "2.0.20"; then
     download "https://www.libsdl.org/release/SDL2-2.0.20.tar.gz"
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
-    execute make -j $MJOBS
+    execute make -j "$MJOBS"
     execute make install
 
     build_done "libsdl" "2.0.20"
@@ -876,7 +876,7 @@ download "https://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2" "FFmpeg-v$FFMPEG_
     --prefix="${WORKSPACE}" \
     --extra-version="${EXTRA_VERSION}"
 
-execute make -j $MJOBS
+execute make -j "$MJOBS"
 execute make install
 verify_binary_type
 
@@ -886,7 +886,7 @@ shopt -s nocasematch
 # prompt the user to install the binary files to: /usr/local/bin
 echo
 read -p "Install these binaries to your /usr/local/bin folder? Existing binaries will be replaced. [Y/n] " i
-if [[ "$i" -eq "Y" ]]; then
+if [[ "$i" == "Y" ]]; then
     if command_exists "sudo"; then
         sudo cp -f "$WORKSPACE/bin/ffmpeg" "$USER_LBIN/ffmpeg"
         sudo cp -f "$WORKSPACE/bin/ffprobe" "$USER_LBIN/ffprobe"
@@ -896,7 +896,7 @@ if [[ "$i" -eq "Y" ]]; then
         cp -f "$WORKSPACE/bin/ffprobe" "$USER_LBIN/ffprobe"
         cp -f "$WORKSPACE/bin/ffplay" "$USER_LBIN/ffplay"
     fi
-elif [[ "$i" -eq "N" ]]; then
+elif [[ "$i" == "N" ]]; then
     echo -e "\\nBuilding complete. The following binaries can be found here:"
     echo -e "- ffmpeg: $WORKSPACE/ffmpeg"
     echo -e "- ffprobe: $WORKSPACE/ffprobe"
