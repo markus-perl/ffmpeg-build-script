@@ -1,13 +1,7 @@
-[![build test](https://github.com/markus-perl/ffmpeg-build-script/workflows/build%20test/badge.svg?branch=master)](https://github.com/markus-perl/ffmpeg-build-script/actions)
-
-![FFmpeg build script](https://i.imgur.com/idsdNhe.png)
-
-### If you like the script, please "★" this project!
-
 build-ffmpeg
 ==========
 
-The FFmpeg build script provides an easy way to build a **static** FFmpeg on **macOS** and **Linux** with optional **non-free and GPL codecs** (--enable-gpl-and-non-free, see https://ffmpeg.org/legal.html) included.
+The FFmpeg build script provides an easy way to build a **static** FFmpeg on **Linux** with optional **non-free and GPL codecs** (--enable-gpl-and-non-free, see https://ffmpeg.org/legal.html) included.
 
 
 ## Installation (Linux)
