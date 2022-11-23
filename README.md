@@ -9,28 +9,26 @@ build-ffmpeg
 
 The FFmpeg build script provides an easy way to build a **static** FFmpeg on **macOS** and **Linux** with optional **non-free and GPL codecs** (--enable-gpl-and-non-free, see https://ffmpeg.org/legal.html) included.
 
-## Installation
 
-### Quick install and run (macOS, Linux)
+## Installation (Linux)
 
-Open your command line and run (curl needs to be installed):
+### From terminal run one of the below commands
 
-## Without GPL and non-free: https://ffmpeg.org/legal.html 
-```
-curl -s 'https://raw.githubusercontent.com/slyfox1186/ffmpeg-build-script/master/scripts/web-install.sh' | bash
-
-```
-
-## With GPL and non-free: https://ffmpeg.org/legal.html
+#### With GPL and non-free: https://ffmpeg.org/legal.html
 
 ```
 curl -s 'https://raw.githubusercontent.com/slyfox1186/ffmpeg-build-script/master/scripts/web-install-gpl-and-non-free.sh' | bash
 
 ```
+#### Without GPL and non-free: https://ffmpeg.org/legal.html 
+```
+curl -s 'https://raw.githubusercontent.com/slyfox1186/ffmpeg-build-script/master/scripts/web-install.sh' | bash
+
+```
 
 This command downloads the build script and automatically starts the build process.
 
-### Common installation (macOS, Linux)
+#### Common installation (macOS, Linux)
 
 ```bash
 git clone 'https://github.com/slyfox1186/ffmpeg-build-script.git'
