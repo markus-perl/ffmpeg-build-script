@@ -4,8 +4,8 @@
 
 make_dir()
 {
-    if [ ! -d $1 ]; then
-        if ! mkdir $1; then
+    if [ ! -d "$1" ]; then
+        if ! mkdir "$1"; then
             printf "\n Failed to create dir %s" "$1";
             exit 1
         fi
@@ -30,7 +30,7 @@ echo -e "=========================================\\n"
 
 echo "First we create the ffmpeg build directory $TARGET"
 make_dir $TARGET
-cd $TARGET
+cd $TARGET || return
 
 echo -e "Now we download and execute the build script\\n"
 
