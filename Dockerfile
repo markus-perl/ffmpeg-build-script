@@ -1,4 +1,4 @@
-FROM ubuntu:20.04 AS build
+FROM ubuntu:22.10 AS build
 
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -13,7 +13,7 @@ COPY ./build-ffmpeg /app/build-ffmpeg
 
 RUN SKIPINSTALL=yes /app/build-ffmpeg --build
 
-FROM ubuntu:20.04
+FROM ubuntu:22.10
 
 ENV DEBIAN_FRONTEND noninteractive
 
