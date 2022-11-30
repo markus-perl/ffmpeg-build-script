@@ -1,4 +1,4 @@
-FROM ubuntu:22.10 AS build
+FROM ubuntu:22.04 AS build
 
 ENV DEBIAN_FRONTEND noninteractive
 ENV NVIDIA_VISIBLE_DEVICES all
