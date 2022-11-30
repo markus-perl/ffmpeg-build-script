@@ -1,6 +1,6 @@
-ARG VER=20.04
+ARG VER=22.04
 
-FROM nvidia/cuda:11.4.2-devel-ubuntu${VER} AS build
+FROM nvidia/cuda:11.8.0-devel-ubuntu${VER} AS build
 
 ENV DEBIAN_FRONTEND noninteractive
 ENV NVIDIA_VISIBLE_DEVICES all
@@ -29,11 +29,11 @@ RUN apt-get update \
     && apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
 
 # Copy libnpp
-COPY --from=build /usr/local/cuda-11.4/targets/x86_64-linux/lib/libnppc.so.11 /lib/x86_64-linux-gnu/libnppc.so.11
-COPY --from=build /usr/local/cuda-11.4/targets/x86_64-linux/lib/libnppig.so.11 /lib/x86_64-linux-gnu/libnppig.so.11
-COPY --from=build /usr/local/cuda-11.4/targets/x86_64-linux/lib/libnppicc.so.11 /lib/x86_64-linux-gnu/libnppicc.so.11
-COPY --from=build /usr/local/cuda-11.4/targets/x86_64-linux/lib/libnppidei.so.11 /lib/x86_64-linux-gnu/libnppidei.so.11
-COPY --from=build /usr/local/cuda-11.4/targets/x86_64-linux/lib/libnppif.so.11 /lib/x86_64-linux-gnu/libnppif.so.11
+COPY --from=build /usr/local/cuda-11.8/targets/x86_64-linux/lib/libnppc.so.11 /lib/x86_64-linux-gnu/libnppc.so.11
+COPY --from=build /usr/local/cuda-11.8/targets/x86_64-linux/lib/libnppig.so.11 /lib/x86_64-linux-gnu/libnppig.so.11
+COPY --from=build /usr/local/cuda-11.8/targets/x86_64-linux/lib/libnppicc.so.11 /lib/x86_64-linux-gnu/libnppicc.so.11
+COPY --from=build /usr/local/cuda-11.8/targets/x86_64-linux/lib/libnppidei.so.11 /lib/x86_64-linux-gnu/libnppidei.so.11
+COPY --from=build /usr/local/cuda-11.8/targets/x86_64-linux/lib/libnppif.so.11 /lib/x86_64-linux-gnu/libnppif.so.11
 
 # Copy ffmpeg
 COPY --from=build /app/workspace/bin/ffmpeg /usr/bin/ffmpeg

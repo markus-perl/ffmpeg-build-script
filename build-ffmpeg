@@ -417,6 +417,7 @@ else
     build_done "nettle" "3.8"
   fi
 
+if [[ ! $ARCH == 'arm64' ]]; then
   if build "gnutls" "3.6.16"; then
     download "https://www.gnupg.org/ftp/gcrypt/gnutls/v3.6/gnutls-3.6.16.tar.xz"
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-doc --disable-tools --disable-cxx --disable-tests --disable-gtk-doc-html --disable-libdane --disable-nls --enable-local-libopts --disable-guile --with-included-libtasn1 --with-included-unistring --without-p11-kit CPPFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}"
@@ -424,7 +425,8 @@ else
     execute make install
     build_done "gnutls" "3.6.16"
   fi
-  CONFIGURE_OPTIONS+=("--enable-gmp" "--enable-gnutls")
+ # CONFIGURE_OPTIONS+=("--enable-gmp" "--enable-gnutls")
+fi
 fi
 
 if build "cmake" "3.23.1"; then
@@ -448,6 +450,7 @@ if command_exists "python3"; then
       if ! command_exists ${r}; then
         execute pip3 install ${r} --quiet --upgrade --no-cache-dir --disable-pip-version-check
       fi
+    export PATH=$PATH:~/Library/Python/3.9/bin
     done
   fi
   if command_exists "meson"; then
@@ -655,64 +658,59 @@ CONFIGURE_OPTIONS+=("--enable-libzimg")
 
 if command_exists "python3"; then
 
-  if build "lv2" "1.18.2"; then
-    download "https://lv2plug.in/spec/lv2-1.18.2.tar.bz2" "lv2-1.18.2.tar.bz2"
-    execute python3 ./waf configure --prefix="${WORKSPACE}" --lv2-user
-    execute python3 ./waf
-    execute python3 ./waf install
+	if command_exists "meson"; then
 
-    build_done "lv2" "1.18.2"
+  if build "lv2" "1.18.10"; then
+    download "https://lv2plug.in/spec/lv2-1.18.10.tar.xz" "lv2-1.18.10.tar.xz"
+	execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
+    execute ninja -C build
+    execute ninja -C build install
+    build_done "lv2" "1.18.10"
   fi
   if build "waflib" "b600c92"; then
     download "https://gitlab.com/drobilla/autowaf/-/archive/b600c928b221a001faeab7bd92786d0b25714bc8/autowaf-b600c928b221a001faeab7bd92786d0b25714bc8.tar.gz" "autowaf.tar.gz"
     build_done "waflib" "b600c92"
   fi
-  if build "serd" "0.30.10"; then
-    download "https://gitlab.com/drobilla/serd/-/archive/v0.30.10/serd-v0.30.10.tar.gz" "serd-v0.30.10.tar.gz"
-    execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/serd-v0.30.10/waflib/"
-    execute python3 ./waf configure --prefix="${WORKSPACE}" --static --no-shared --no-posix
-    execute python3 ./waf
-    execute python3 ./waf install
-    build_done "serd" "0.30.10"
+  if build "serd" "0.30.16"; then
+    download "https://gitlab.com/drobilla/serd/-/archive/v0.30.16/serd-v0.30.16.tar.gz" "serd-v0.30.16.tar.gz"
+	execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
+    execute ninja -C build
+    execute ninja -C build install
+    build_done "serd" "0.30.16"
   fi
   if build "pcre" "8.45"; then
     download "https://altushost-swe.dl.sourceforge.net/project/pcre/pcre/8.45/pcre-8.45.tar.gz" "pcre-8.45.tar.gz"
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
     execute make -j $MJOBS
     execute make install
-
     build_done "pcre" "8.45"
   fi
-  if build "sord" "0.16.8"; then
-    download "https://gitlab.com/drobilla/sord/-/archive/v0.16.8/sord-v0.16.8.tar.gz" "sord-v0.16.8.tar.gz"
-    execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/sord-v0.16.8/waflib/"
-    execute python3 ./waf configure --prefix="${WORKSPACE}" CFLAGS="${CFLAGS}" --static --no-shared --no-utils
-    execute python3 ./waf CFLAGS="${CFLAGS}"
-    execute python3 ./waf install
-
-    build_done "sord" "0.16.8"
+  if build "sord" "0.16.14"; then
+    download "https://gitlab.com/drobilla/sord/-/archive/v0.16.14/sord-v0.16.14.tar.gz" "sord-v0.16.14.tar.gz"
+	execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
+    execute ninja -C build
+    execute ninja -C build install
+    build_done "sord" "0.16.14"
   fi
-  if build "sratom" "0.6.8"; then
-    download "https://gitlab.com/lv2/sratom/-/archive/v0.6.8/sratom-v0.6.8.tar.gz" "sratom-v0.6.8.tar.gz"
-    execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/sratom-v0.6.8/waflib/"
-    execute python3 ./waf configure --prefix="${WORKSPACE}" --static --no-shared
-    execute python3 ./waf
-    execute python3 ./waf install
-
-    build_done "sratom" "0.6.8"
+  if build "sratom" "0.6.14"; then
+    download "https://gitlab.com/lv2/sratom/-/archive/v0.6.14/sratom-v0.6.14.tar.gz" "sratom-v0.6.14.tar.gz"
+	execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
+    execute ninja -C build
+    execute ninja -C build install
+    build_done "sratom" "0.6.14"
   fi
-  if build "lilv" "0.24.12"; then
-    download "https://gitlab.com/lv2/lilv/-/archive/v0.24.12/lilv-v0.24.12.tar.gz" "lilv-v0.24.12.tar.gz"
-    execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/lilv-v0.24.12/waflib/"
-    execute python3 ./waf configure --prefix="${WORKSPACE}" --static --no-shared --no-utils
-    execute python3 ./waf
-    execute python3 ./waf install
-    build_done "lilv" "0.24.12"
+  if build "lilv" "0.24.20"; then
+    download "https://gitlab.com/lv2/lilv/-/archive/v0.24.20/lilv-v0.24.20.tar.gz" "lilv-v0.24.20.tar.gz"
+  	execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
+    execute ninja -C build
+    execute ninja -C build install
+    build_done "lilv" "0.24.20"
   fi
   CFLAGS+=" -I$WORKSPACE/include/lilv-0"
 
   CONFIGURE_OPTIONS+=("--enable-lv2")
 
+fi
 fi
 
 if build "opencore" "0.1.5"; then
