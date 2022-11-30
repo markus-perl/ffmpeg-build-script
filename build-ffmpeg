@@ -417,7 +417,7 @@ else
     build_done "nettle" "3.8"
   fi
 
-if ! $ARCH == 'arm64'; then
+if [[ ! $ARCH == 'arm64' ]]; then
   if build "gnutls" "3.6.16"; then
     download "https://www.gnupg.org/ftp/gcrypt/gnutls/v3.6/gnutls-3.6.16.tar.xz"
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-doc --disable-tools --disable-cxx --disable-tests --disable-gtk-doc-html --disable-libdane --disable-nls --enable-local-libopts --disable-guile --with-included-libtasn1 --with-included-unistring --without-p11-kit CPPFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}"
