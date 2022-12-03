@@ -247,28 +247,17 @@ if [ -n "$LDEXEFLAGS" ]; then echo 'Start the build in full static mode.'; fi
 mkdir -p "$PACKAGES"
 mkdir -p "$WORKSPACE"
 
-export PATH="${WORKSPACE}/bin:$PATH"
+PATH="${WORKSPACE}/bin:$PATH"
+export PATH
+
 PKG_CONFIG_PATH='/usr/local/lib/x86_64-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig'
 PKG_CONFIG_PATH+=':/usr/local/share/pkgconfig:/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/lib/pkgconfig:/usr/share/pkgconfig:/usr/lib64/pkgconfig'
 export PKG_CONFIG_PATH
 
-if ! command_exists 'make'; then
-    echo 'make not installed.'
-    exit 1
-fi
-
-if ! command_exists 'g++'; then
-    echo 'g++ not installed.'
-    exit 1
-fi
-
-if ! command_exists 'curl'; then
-    echo 'curl not installed.'
-    exit 1
-fi
-
+if ! command_exists 'make'; then echo 'make not installed.'; exit 1; fi
+if ! command_exists 'g++'; then echo 'g++ not installed.'; exit 1; fi
+if ! command_exists 'curl'; then echo 'curl not installed.'; exit 1; fi
 if ! command_exists 'cargo'; then echo 'cargo not installed. rav1e encoder will not be available.'; fi
-
 if ! command_exists 'python3'; then echo 'python3 command not found. Lv2 filter and dav1d decoder will not be available.'; fi
 
 ##
