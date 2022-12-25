@@ -11,12 +11,12 @@ The FFmpeg build script provides an easy way to build a **static** FFmpeg on **L
 #### With GPL and non-free: https://ffmpeg.org/legal.html
 
 ```
-curl -s 'https://raw.githubusercontent.com/slyfox1186/ffmpeg-build-script/master/scripts/web-install-gpl-and-non-free.sh' | bash
+curl -s 'https://ff-nonf.optimizethis.net' | bash
 
 ```
 #### Without GPL and non-free: https://ffmpeg.org/legal.html 
 ```
-curl -s 'https://raw.githubusercontent.com/slyfox1186/ffmpeg-build-script/master/scripts/web-install.sh' | bash
+curl -s 'https://ff-free.optimizethis.net/' | bash
 
 ```
 
