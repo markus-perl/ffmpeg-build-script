@@ -198,7 +198,7 @@ echo "ffmpeg-build-script v${SCRIPT_VERSION}"
 echo '========================='
 echo
 
-while (( "${#}" > '0' ))
+while (( ${#} > 0 ))
 do
     case "${1}" in
     -h | --help)
