@@ -25,18 +25,21 @@ if [[ -n "${NUCPUS}" ]]; then
     CPUS="${NUCPUS}"
 elif [[ -f '/proc/cpuinfo' ]]; then
     CPUS="$(grep -c processor '/proc/cpuinfo')"
+else
+    CPUS="$(nproc)"
 fi
 
 make_dir()
 {
     remove_dir "${1}"
+
     if ! mkdir "${1}"; then
         printf "\n Failed to create dir %s" "${1}"
         exit 1
     fi
 }
 
-remove_dir()
+remove_dir() 
 {
     if [ -d "${1}" ]; then
         rm -r "${1}"
@@ -63,8 +66,12 @@ download()
 
         EXITCODE=$?
         if [ ${EXITCODE} -ne 0 ]; then
-            echo -e "Failed to download ${1}. Exitcode ${EXITCODE}. Retrying in 10 seconds.\\n"
-            sleep 10
+            echo -e "Failed to download ${1}. Exitcode ${EXITCODE}. Retrying in 10 seconds."
+            echo
+            read -t 10 -p 'Sleeping for 10 seconds before retrying to download the package. Press Enter to continue at any time.'
+            clear
+            echo "Attempting the download ${1} again."
+            echo
             wget -cqO "${DOWNLOAD_PATH}/${DOWNLOAD_FILE}" "${1}"
         fi
 
@@ -86,12 +93,12 @@ download()
     fi
 
     if [ -n "${3}" ]; then
-        if ! tar -xf "${DOWNLOAD_PATH}/${DOWNLOAD_FILE}" -C "${DOWNLOAD_PATH}/${TARGETDIR}" 2>/dev/null >/dev/null; then
+        if ! tar -xf "${DOWNLOAD_PATH}/${DOWNLOAD_FILE}" -C "${DOWNLOAD_PATH}/${TARGETDIR}" 2>&1; then
             echo "Failed to extract ${DOWNLOAD_FILE}"
             exit 1
         fi
     else
-        if ! tar -xf "${DOWNLOAD_PATH}/${DOWNLOAD_FILE}" -C "${DOWNLOAD_PATH}/${TARGETDIR}" --strip-components 1 2>/dev/null >/dev/null; then
+        if ! tar -xf "${DOWNLOAD_PATH}/${DOWNLOAD_FILE}" -C "${DOWNLOAD_PATH}/${TARGETDIR}" --strip-components 1 2>&1; then
             echo "Failed to extract ${DOWNLOAD_FILE}"
             exit 1
         fi
@@ -213,15 +220,15 @@ do
         exit 0
         ;;
     -*)
-        if [[ "${1}" == "--build" || "${1}" =~ '-b' ]]; then
+        if [[ "${1}" == '--build' || "${1}" =~ '-b' ]]; then
             bflag='-b'
         fi
-        if [[ "${1}" == "--enable-gpl-and-non-free" ]]; then
+        if [[ "${1}" == '--enable-gpl-and-non-free' ]]; then
             CONFIGURE_OPTIONS+=('--enable-nonfree')
             CONFIGURE_OPTIONS+=('--enable-gpl')
             NONFREE_AND_GPL='true'
         fi
-        if [[ "${1}" == "--cleanup" || "${1}" =~ '-c' && ! "${1}" =~ '--' ]]; then
+        if [[ "${1}" == '--cleanup' || "${1}" =~ '-c' && ! "${1}" =~ '--' ]]; then
             cflag='-c'
             cleanup
         fi
@@ -323,13 +330,13 @@ if build 'yasm' '1.3.0'; then
     build_done 'yasm' '1.3.0'
 fi
 
-if build 'nasm' '2.15.05'; then
-    download 'https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/nasm-2.15.05.tar.xz'
+if build 'nasm' '2.16.01'; then
+    download 'https://www.nasm.us/pub/nasm/releasebuilds/2.16.01/nasm-2.16.01.tar.xz'
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
     execute make "-j${CPUS}"
     execute make install
 
-    build_done 'nasm' '2.15.05'
+    build_done 'nasm' '2.16.01'
 fi
 
 if build 'zlib' '1.2.13'; then
@@ -351,7 +358,7 @@ if build 'm4' '1.4.19'; then
 fi
 
 if build 'autoconf' '2.71'; then
-    download 'https://ftp.gnu.org/gnu/autoconf/autoconf-2.71.tar.gz'
+    download 'https://ftp.gnu.org/gnu/autoconf/autoconf-2.71.tar.xz'
     execute ./configure --prefix="${WORKSPACE}"
     execute make "-j${CPUS}"
     execute make install
@@ -360,7 +367,7 @@ if build 'autoconf' '2.71'; then
 fi
 
 if build 'automake' '1.16.5'; then
-    download 'https://ftp.gnu.org/gnu/automake/automake-1.16.5.tar.gz'
+    download 'https://ftp.gnu.org/gnu/automake/automake-1.16.5.tar.xz'
     execute ./configure --prefix="${WORKSPACE}"
     execute make "-j${CPUS}"
     execute make install
@@ -368,17 +375,17 @@ if build 'automake' '1.16.5'; then
     build_done 'automake' '1.16.5'
 fi
 
-if build 'libtool' '2.4.6'; then
-    download 'https://ftpmirror.gnu.org/libtool/libtool-2.4.6.tar.gz'
+if build 'libtool' '2.4.7'; then
+    download 'https://mirror.vern.cc/gnu/libtool/libtool-2.4.7.tar.xz'
     execute ./configure --prefix="${WORKSPACE}" --enable-static --disable-shared
     execute make "-j${CPUS}"
     execute make install
-    build_done 'libtool' '2.4.6'
+    build_done 'libtool' '2.4.7'
 fi
 
 if ${NONFREE_AND_GPL}; then
-    if build 'openssl' '1.1.1p'; then
-        download 'https://www.openssl.org/source/openssl-1.1.1p.tar.gz'
+    if build 'openssl' '1.1.1s'; then
+        download 'https://www.openssl.org/source/openssl-1.1.1s.tar.gz'
         if ${MACOS_M1}; then
             sed -n 's/\(##### GNU Hurd\)/"darwin64-arm64-cc" => { \n        inherit_from         => [ "darwin-common", asm("aarch64_asm") ],\n        CFLAGS                     => add("-Wall"),\n        cflags                     => add("-arch arm64 "),\n        lib_cppflags         => add("-DL_ENDIAN"),\n        bn_ops                     => "SIXTY_FOUR_BIT_LONG", \n        perlasm_scheme     => "macosx", \n}, \n\1/g' 'Configurations/10-main.conf'
             execute ./configure --prefix="${WORKSPACE}" no-shared no-asm darwin64-arm64-cc
@@ -388,7 +395,7 @@ if ${NONFREE_AND_GPL}; then
         execute make "-j${CPUS}"
         execute make install_sw
 
-        build_done 'openssl' '1.1.1p'
+        build_done 'openssl' '1.1.1s'
     fi
     CONFIGURE_OPTIONS+=('--enable-openssl')
 else
@@ -401,33 +408,33 @@ else
         build_done 'gmp' '6.2.1'
     fi
 
-    if build 'nettle' '3.8'; then
-        download 'https://ftp.gnu.org/gnu/nettle/nettle-3.8.tar.gz'
+    if build 'nettle' '3.8.1'; then
+        download 'https://ftp.gnu.org/gnu/nettle/nettle-3.8.1.tar.gz'
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-openssl --disable-documentation --libdir="${WORKSPACE}/lib" CPPFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}"
         execute make "-j${CPUS}"
         execute make install
 
-        build_done 'nettle' '3.8'
+        build_done 'nettle' '3.8.1'
     fi
 
-    if build 'gnutls' '3.6.16'; then
-        download 'https://www.gnupg.org/ftp/gcrypt/gnutls/v3.6/gnutls-3.6.16.tar.xz'
+    if build 'gnutls' '3.7.8'; then
+        download 'https://www.gnupg.org/ftp/gcrypt/gnutls/v3.7/gnutls-3.7.8.tar.xz'
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-doc --disable-tools --disable-cxx --disable-tests --disable-gtk-doc-html --disable-libdane --disable-nls --enable-local-libopts --disable-guile --with-included-libtasn1 --with-included-unistring --without-p11-kit CPPFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}"
         execute make "-j${CPUS}"
         execute make install
 
-        build_done 'gnutls' '3.6.16'
+        build_done 'gnutls' '3.7.8'
     fi
     CONFIGURE_OPTIONS+=('--enable-gmp' '--enable-gnutls')
 fi
 
-if build 'cmake' '3.23.1'; then
-    download 'https://github.com/Kitware/CMake/releases/download/v3.23.1/cmake-3.23.1.tar.gz'
+if build 'cmake' '3.25.1'; then
+    download 'https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-3.25.1.tar.gz'
     execute ./configure --prefix="${WORKSPACE}" --parallel="${CPUS}" -- -DCMAKE_USE_OPENSSL='OFF'
     execute make "-j${CPUS}"
     execute make install
 
-    build_done 'cmake' '3.23.1'
+    build_done 'cmake' '3.25.1'
 fi
 
 ##
@@ -470,59 +477,68 @@ if command_exists 'python3'; then
 fi
 
 if ! ${MACOS_M1}; then
-    if build 'svtav1' '0.9.0'; then
+    if build 'svtav1' '1.4.1'; then
         # Last known working commit which passed CI Tests from HEAD branch
-        download 'https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/v0.9.0/SVT-AV1-v0.9.0.tar.gz' 'svtav1-0.9.0.tar.gz'
-        cd "${PACKAGES}"/svtav1-0.9.0//Build/linux || exit 1
-        execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED='OFF' -DBUILD_SHARED_LIBS='OFF' ../.. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE='release'
+        download 'https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/v1.4.1/SVT-AV1-v1.4.1.tar.gz' 'svtav1-1.4.1.tar.gz'
+        cd "${PACKAGES}"/svtav1-1.4.1//Build/linux || exit 1
+        execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED='OFF' -DBUILD_SHARED_LIBS='OFF' ../.. -G 'Unix Makefiles' -DCMAKE_BUILD_TYPE='release'
         execute make "-j${CPUS}"
         execute make install
         execute cp SvtAv1Enc.pc "${WORKSPACE}/lib/pkgconfig/"
         execute cp SvtAv1Dec.pc "${WORKSPACE}/lib/pkgconfig/"
 
-        build_done 'svtav1' '0.9.0';
+        build_done 'svtav1' '1.4.1';
     fi
     CONFIGURE_OPTIONS+=('--enable-libsvtav1')
 fi
 
 if command_exists 'cargo'; then
-    if build 'rav1e' '0.5.0-beta'; then
+    if build 'rav1e' '0.6.2'; then
         execute cargo install cargo-c
-        download 'https://github.com/xiph/rav1e/archive/refs/tags/v0.5.0-beta.tar.gz'
+        download 'https://github.com/xiph/rav1e/archive/refs/tags/v0.6.2.tar.gz'
         execute cargo cinstall --prefix="${WORKSPACE}" --library-type='staticlib' --crt-static --release
 
-        build_done 'rav1e' '0.5.0-beta'
+        build_done 'rav1e' '0.6.2'
     fi
     CONFIGURE_OPTIONS+=('--enable-librav1e')
 fi
 
 if ${NONFREE_AND_GPL}; then
 
-    if build 'x264' '5db6aa6'; then
-        download 'https://code.videolan.org/videolan/x264/-/archive/5db6aa6cab1b146e07b60cc1736a01f21da01154/x264-5db6aa6cab1b146e07b60cc1736a01f21da01154.tar.gz' 'x264-5db6aa6.tar.gz'
-        cd "${PACKAGES}"/x264-5db6aa6 || exit 1
+    if build 'x264' '941cae6d'; then
+        download 'https://code.videolan.org/videolan/x264/-/archive/master/x264-master.tar.gz' 'x264-941cae6d.tar.gz'
+        cd "${PACKAGES}/x264-941cae6d" || exit 1
         execute ./configure --prefix="${WORKSPACE}" --enable-static --enable-pic CXXFLAGS="-fPIC ${CXXFLAGS}"
         execute make "-j${CPUS}"
         execute make install
         execute make install-lib-static
 
-        build_done 'x264' '5db6aa6'
+        build_done 'x264' '941cae6d'
     fi
     CONFIGURE_OPTIONS+=('--enable-libx264')
 fi
 
 if ${NONFREE_AND_GPL}; then
-    if build 'x265' '3.5'; then
-        download 'https://github.com/videolan/x265/archive/Release_3.5.tar.gz' 'x265-3.5.tar.gz' # This is actually 3.4 if looking at x265Version.txt
+    if build 'x265' '3.4'; then
+        download 'https://github.com/videolan/x265/archive/refs/tags/3.4.tar.gz' 'x265-3.4.tar.gz' # This is actually 3.4 if looking at x265Version.txt
         cd 'build/linux' || exit 1
-        rm -rf {8,10,12}bit 2>/dev/null
-        mkdir -p {8,10,12}bit
+        rm -rf '{8,10,12}bit' 2>/dev/null
+        mkdir -p '{8,10,12}bit'
+        echo
+        echo 'Creating 12bit binaries'
+        echo
         cd '12bit' || exit 1
         execute cmake ../../../source -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED='OFF' -DBUILD_SHARED_LIBS='OFF' -DHIGH_BIT_DEPTH='ON' -DENABLE_HDR10_PLUS='ON' -DEXPORT_C_API='OFF' -DENABLE_CLI='OFF' -DMAIN12='ON'
         execute make "-j${CPUS}"
+        echo
+        echo 'Creating 10bit binaries'
+        echo
         cd ../'10bit' || exit 1
         execute cmake ../../../source -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED='OFF' -DBUILD_SHARED_LIBS='OFF' -DHIGH_BIT_DEPTH='ON' -DENABLE_HDR10_PLUS='ON' -DEXPORT_C_API='OFF' -DENABLE_CLI='OFF'
         execute make "-j${CPUS}"
+        echo
+        echo 'Creating 8bit binaries'
+        echo
         cd ../'8bit' || exit 1
         ln -sf ../'10bit/libx265.a' 'libx265_main10.a'
         ln -sf ../'12bit/libx265.a' 'libx265_main12.a'
@@ -531,7 +547,7 @@ if ${NONFREE_AND_GPL}; then
 
         mv 'libx265.a' 'libx265_main.a'
         
-            execute ar -M <<EOF
+        execute ar -M <<EOF
 CREATE libx265.a
 ADDLIB libx265_main.a
 ADDLIB libx265_main10.a
@@ -542,21 +558,21 @@ EOF
         execute make install
 
         if [ -n "${LDEXEFLAGS}" ]; then
-            sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "${WORKSPACE}/lib"/pkgconfig/x265.pc
+            sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "${WORKSPACE}/lib/pkgconfig/x265.pc"
         fi
 
-        build_done 'x265' '3.5'
+        build_done 'x265' '3.4'
     fi
     CONFIGURE_OPTIONS+=('--enable-libx265')
 fi
 
-if build 'libvpx' '1.10.0'; then
-    download 'https://github.com/webmproject/libvpx/archive/refs/tags/v1.10.0.tar.gz' 'libvpx-1.10.0.tar.gz'
-    execute ./configure --prefix="${WORKSPACE}" --disable-unit-tests --disable-shared --disable-examples --as=yasm --enable-vp9-highbitdepth
+if build 'libvpx' '1.12.0'; then
+    download 'https://github.com/webmproject/libvpx/archive/refs/tags/v1.12.0.tar.gz' 'libvpx-1.12.0.tar.gz'
+    execute ./configure --prefix="${WORKSPACE}" --disable-unit-tests --disable-shared --disable-examples --as='yasm'--enable-vp9-highbitdepth
     execute make "-j${CPUS}"
     execute make install
 
-    build_done 'libvpx' '1.10.0'
+    build_done 'libvpx' '1.12.0'
 fi
 CONFIGURE_OPTIONS+=('--enable-libvpx')
 
@@ -599,9 +615,9 @@ if ${NONFREE_AND_GPL}; then
     CONFIGURE_OPTIONS+=('--enable-libvidstab')
 fi
 
-if build 'av1' 'ae2be80'; then
-    # libaom ae2be80 == v3.1.2
-    download 'https://aomedia.googlesource.com/aom/+archive/ae2be8030200925895fa6e98bd274ffdb595cbf6.tar.gz' 'av1.tar.gz' 'av1'
+if build 'av1' '9a83c6a'; then
+    # libaom 9a83c6a == v3.1.2
+    download 'https://aomedia.googlesource.com/aom/+archive/9a83c6a5a55c176adbce740e47d3512edfc9ae71.tar.gz' 'av1.tar.gz' 'av1'
     make_dir "${PACKAGES}/aom_build"
     cd "${PACKAGES}/aom_build" || exit 1
     if ${MACOS_M1}; then
@@ -612,20 +628,20 @@ if build 'av1' 'ae2be80'; then
     execute make "-j${CPUS}"
     execute make install
 
-    build_done 'av1' 'ae2be80'
+    build_done 'av1' '9a83c6a'
 fi
 CONFIGURE_OPTIONS+=('--enable-libaom')
 
-if build 'zimg' '3.0.3'; then
-    download 'https://github.com/sekrit-twc/zimg/archive/refs/tags/release-3.0.3.tar.gz' 'zimg-3.0.3.tar.gz' 'zimg'
-    cd 'zimg-release-3.0.3' || exit 1
+if build 'zimg' '3.0.4'; then
+    download 'https://github.com/sekrit-twc/zimg/archive/refs/tags/release-3.0.4.tar.gz' 'zimg-3.0.4.tar.gz' 'zimg'
+    cd 'zimg-release-3.0.4' || exit 1
     execute "${WORKSPACE}/bin/libtoolize" -i -f -q
     execute ./autogen.sh --prefix="${WORKSPACE}"
     execute ./configure --prefix="${WORKSPACE}" --enable-static --disable-shared
     execute make "-j${CPUS}"
     execute make install
 
-    build_done 'zimg' '3.0.3'
+    build_done 'zimg' '3.0.4'
 fi
 CONFIGURE_OPTIONS+=('--enable-libzimg')
 
@@ -635,26 +651,26 @@ CONFIGURE_OPTIONS+=('--enable-libzimg')
 
 if command_exists 'python3'; then
 
-    if build 'lv2' '1.18.2'; then
-        download 'https://lv2plug.in/spec/lv2-1.18.2.tar.bz2' 'lv2-1.18.2.tar.bz2'
-        execute python3 ./waf configure --prefix="${WORKSPACE}" --lv2-user
-        execute python3 ./waf
-        execute python3 ./waf install
+    if build 'lv2' '1.18.10'; then
+        download 'https://lv2plug.in/spec/lv2-1.18.10.tar.xz' 'lv2-1.18.10.tar.bz2'
+        execute python3 ./'waf' configure --prefix="${WORKSPACE}" --lv2-user
+        execute python3 ./'waf'
+        execute python3 ./'waf' install
 
-        build_done 'lv2' '1.18.2'
+        build_done 'lv2' '1.18.10'
     fi
-    if build 'waflib' 'b600c92'; then
-        download 'https://gitlab.com/drobilla/autowaf/-/archive/b600c928b221a001faeab7bd92786d0b25714bc8/autowaf-b600c928b221a001faeab7bd92786d0b25714bc8.tar.gz' 'autowaf.tar.gz'
-        build_done 'waflib' 'b600c92'
+    if build 'waflib' 'aeef9f5'; then
+        download 'https://gitlab.com/drobilla/autowaf/-/archive/aeef9f5fdf416d9b68c61c75de7dae409f1ac6a4/autowaf-aeef9f5fdf416d9b68c61c75de7dae409f1ac6a4.tar.gz' 'autowaf.tar.gz'
+        build_done 'waflib' 'aeef9f5'
     fi
-    if build 'serd' '0.30.10'; then
-        download 'https://gitlab.com/drobilla/serd/-/archive/v0.30.10/serd-v0.30.10.tar.gz' 'serd-v0.30.10.tar.gz'
-        execute cp -fr "${PACKAGES}"/autowaf/* "${PACKAGES}/serd-v0.30.10/waflib/"
-        execute python3 ./waf configure --prefix="${WORKSPACE}" --static --no-shared --no-posix
-        execute python3 ./waf
-        execute python3 ./waf install
+    if build 'serd' '0.30.16'; then
+        download 'https://gitlab.com/drobilla/serd/-/archive/v0.30.16/serd-v0.30.16.tar.gz' 'serd-v0.30.16.tar.gz'
+        execute cp -fr "${PACKAGES}"/autowaf/* "${PACKAGES}/serd-v0.30.16/waflib/"
+        execute python3 ./'waf' configure --prefix="${WORKSPACE}" --static --no-shared --no-posix
+        execute python3 ./'waf'
+        execute python3 ./'waf' install
 
-        build_done 'serd' '0.30.10'
+        build_done 'serd' '0.30.16'
     fi
     if build 'pcre' '8.45'; then
         download 'https://altushost-swe.dl.sourceforge.net/project/pcre/pcre/8.45/pcre-8.45.tar.gz' 'pcre-8.45.tar.gz'
@@ -664,32 +680,32 @@ if command_exists 'python3'; then
 
         build_done 'pcre' '8.45'
     fi
-    if build 'sord' '0.16.8'; then
-        download 'https://gitlab.com/drobilla/sord/-/archive/v0.16.8/sord-v0.16.8.tar.gz' 'sord-v0.16.8.tar.gz'
-        execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/sord-v0.16.8/waflib/"
-        execute python3 ./waf configure --prefix="${WORKSPACE}" CFLAGS="${CFLAGS}" --static --no-shared --no-utils
-        execute python3 ./waf CFLAGS="${CFLAGS}"
-        execute python3 ./waf install
+    if build 'sord' '0.16.14'; then
+        download 'https://gitlab.com/drobilla/sord/-/archive/v0.16.14/sord-v0.16.14.tar.gz' 'sord-v0.16.14.tar.gz'
+        execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/sord-v0.16.14/waflib/"
+        execute python3 ./'waf' configure --prefix="${WORKSPACE}" CFLAGS="${CFLAGS}" --static --no-shared --no-utils
+        execute python3 ./'waf' CFLAGS="${CFLAGS}"
+        execute python3 ./'waf' install
 
-        build_done 'sord' '0.16.8'
+        build_done 'sord' '0.16.14'
     fi
-    if build 'sratom' '0.6.8'; then
-        download 'https://gitlab.com/lv2/sratom/-/archive/v0.6.8/sratom-v0.6.8.tar.gz' 'sratom-v0.6.8.tar.gz'
-        execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/sratom-v0.6.8/waflib/"
-        execute python3 ./waf configure --prefix="${WORKSPACE}" --static --no-shared
-        execute python3 ./waf
-        execute python3 ./waf install
+    if build 'sratom' '0.6.14'; then
+        download 'https://gitlab.com/lv2/sratom/-/archive/v0.6.14/sratom-v0.6.14.tar.gz' 'sratom-v0.6.14.tar.gz'
+        execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/sratom-v0.6.14/waflib/"
+        execute python3 ./'waf' configure --prefix="${WORKSPACE}" --static --no-shared
+        execute python3 ./'waf'
+        execute python3 ./'waf' install
 
-        build_done 'srato' '0.6.8'
+        build_done 'srato' '0.6.14'
     fi
-    if build 'lilv' '0.24.12'; then
-        download 'https://gitlab.com/lv2/lilv/-/archive/v0.24.12/lilv-v0.24.12.tar.gz' 'lilv-v0.24.12.tar.gz'
-        execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/lilv-v0.24.12/waflib/"
-        execute python3 ./waf configure --prefix="${WORKSPACE}" --static --no-shared --no-utils
-        execute python3 ./waf
-        execute python3 ./waf install
+    if build 'lilv' '0.24.20'; then
+        download 'https://gitlab.com/lv2/lilv/-/archive/v0.24.20/lilv-v0.24.20.tar.gz' 'lilv-v0.24.20.tar.gz'
+        execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/lilv-v0.24.20/waflib/"
+        execute python3 ./'waf' configure --prefix="${WORKSPACE}" --static --no-shared --no-utils
+        execute python3 ./'waf'
+        execute python3 ./'waf' install
 
-        build_done 'lilv' '0.24.12'
+        build_done 'lilv' '0.24.20'
     fi
     CFLAGS+=" -I${WORKSPACE}/include/lilv-0"
 
@@ -697,14 +713,15 @@ if command_exists 'python3'; then
 
 fi
 
-if build 'opencore' '0.1.5'; then
-    download 'https://sourceforge.net/projects/opencore-amr/files/opencore-amr/opencore-amr-0.1.5.tar.gz/download?use_mirror=gigenet' 'opencore-amr-0.1.5.tar.gz'
+if build 'opencore' '0.1.6'; then
+    download 'https://netactuate.dl.sourceforge.net/project/opencore-amr/opencore-amr/opencore-amr-0.1.6.tar.gz' 'opencore-amr-0.1.6.tar.gz'
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
     execute make "-j${CPUS}"
     execute make install
 
-    build_done 'opencore' '0.1.5'
+    build_done 'opencore' '0.1.6'
 fi
+
 CONFIGURE_OPTIONS+=('--enable-libopencore_amrnb' '--enable-libopencore_amrwb')
 
 if build 'lame' '3.100'; then
@@ -727,28 +744,28 @@ if build 'opus' '1.3.1'; then
 fi
 CONFIGURE_OPTIONS+=('--enable-libopus')
 
-if build 'libogg' '1.3.3'; then
-    download 'https://ftp.osuosl.org/pub/xiph/releases/ogg/libogg-1.3.3.tar.gz'
+if build 'libogg' '1.3.5'; then
+    download 'https://ftp.osuosl.org/pub/xiph/releases/ogg/libogg-1.3.5.tar.xz'
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
     execute make "-j${CPUS}"
     execute make install
 
-    build_done 'libogg' '1.3.3'
+    build_done 'libogg' '1.3.5'
 fi
 
-if build 'libvorbis' '1.3.6'; then
-    download 'https://ftp.osuosl.org/pub/xiph/releases/vorbis/libvorbis-1.3.6.tar.gz'
+if build 'libvorbis' '1.4.2'; then
+    download 'https://ftp.osuosl.org/pub/xiph/releases/vorbis/vorbis-tools-1.4.2.tar.gz'
     execute ./configure --prefix="${WORKSPACE}" --with-ogg-libraries="${WORKSPACE}/lib" --with-ogg-includes="${WORKSPACE}/include/" --enable-static --disable-shared --disable-oggtest
     execute make "-j${CPUS}"
     execute make install
 
-    build_done 'libvorbis' '1.3.6'
+    build_done 'libvorbis' '1.4.2'
 fi
 CONFIGURE_OPTIONS+=('--enable-libvorbis')
 
 if build 'libtheora' '1.1.1'; then
-    download 'https://ftp.osuosl.org/pub/xiph/releases/theora/libtheora-1.1.1.tar.gz'
-    sed "s/-fforce-addr//g" 'configure' >'configure.patched'
+    download 'https://ftp.osuosl.org/pub/xiph/releases/theora/libtheora-1.1.1.tar.xz'
+    sed 's/-fforce-addr//g' 'configure' >'configure.patched'
     chmod +x 'configure.patched'
     mv 'configure.patched' 'configure'
     
@@ -786,16 +803,17 @@ fi
 ## image library ##
 ###################
 
-if build 'libtiff' '4.2.0'; then
-    download 'https://download.osgeo.org/libtiff/tiff-4.2.0.tar.gz'
+if build 'libtiff' '4.5.0'; then
+    download 'https://download.osgeo.org/libtiff/tiff-4.5.0.tar.xz'
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-dependency-tracking --disable-lzma --disable-webp --disable-zstd --without-x
     execute make "-j${CPUS}"
     execute make install
 
-    build_done 'libtiff' '4.2.0'
+    build_done 'libtiff' '4.5.0'
 fi
+
 if build 'libpng' '1.6.37'; then
-    download 'https://sourceforge.net/projects/libpng/files/libpng16/1.6.37/libpng-1.6.37.tar.gz/download?use_mirror=gigenet' 'libpng-1.6.37.tar.gz'
+    download 'https://netactuathttps://gigenet.dl.sourceforge.net/project/libpng/libpng16/1.6.37/libpng-1.6.37.tar.xz' 'libpng-1.6.37.tar.xz'
     export LDFLAGS="${LDFLAGS}"
     export CPPFLAGS="${CFLAGS}"
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
@@ -807,10 +825,10 @@ fi
 
 ## does not compile on monterey -> _PrintGifError
 if [[ "${OSTYPE}" != 'darwin'* ]]; then
-    if build 'libwebp' '1.2.1'; then
+    if build 'libwebp' '1.2.4'; then
         # libwebp can fail to compile on Ubuntu if these flags were left set to CFLAGS
         CPPFLAGS=
-        download 'https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-1.2.1.tar.gz' 'libwebp-1.2.1.tar.gz'
+        download 'https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-1.2.4.tar.gz' 'libwebp-1.2.4.tar.gz'
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-dependency-tracking --disable-gl --with-zlib-include="${WORKSPACE}/include/" --with-zlib-lib="${WORKSPACE}/lib"
         make_dir build
         cd build || exit 1
@@ -818,7 +836,7 @@ if [[ "${OSTYPE}" != 'darwin'* ]]; then
         execute make "-j${CPUS}"
         execute make install
 
-        build_done 'libwebp' '1.2.1'
+        build_done 'libwebp' '1.2.4'
     fi
     CONFIGURE_OPTIONS+=('--enable-libwebp')
 fi
@@ -826,18 +844,18 @@ fi
 ## other library
 ##
 
-if build 'libsdl' '2.0.20'; then
-    download 'https://www.libsdl.org/release/SDL2-2.0.20.tar.gz'
+if build 'libsdl' '2.26.1'; then
+    download 'https://www.libsdl.org/release/SDL2-2.26.1.tar.gz'
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
     execute make "-j${CPUS}"
     execute make install
 
-    build_done 'libsdl' '2.0.20'
+    build_done 'libsdl' '2.26.1'
 fi
 
 if ${NONFREE_AND_GPL}; then
-    if build 'srt' '1.4.3'; then
-        download 'https://github.com/Haivision/srt/archive/v1.4.3.tar.gz' 'srt-1.4.3.tar.gz'
+    if build 'srt' '1.5.1'; then
+        download 'https://github.com/Haivision/srt/archive/v1.5.1.tar.gz' 'srt-1.5.1.tar.gz'
         export OPENSSL_ROOT_DIR="${WORKSPACE}"
         export OPENSSL_LIB_DIR="${WORKSPACE}/lib"
         export OPENSSL_INCLUDE_DIR="${WORKSPACE}/include/"
@@ -849,7 +867,7 @@ if ${NONFREE_AND_GPL}; then
             sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "${WORKSPACE}/lib/pkgconfig/srt.pc"
         fi
 
-        build_done 'srt' '1.4.3'
+        build_done 'srt' '1.5.1'
     fi
         CONFIGURE_OPTIONS+=('--enable-libsrt')
 fi
@@ -861,11 +879,11 @@ fi
 
 if [[ "${OSTYPE}" == 'linux-gnu' ]]; then
     if command_exists 'nvcc'; then
-        if build 'nv-codec' '11.1.5.0'; then
-            download 'https://github.com/FFmpeg/nv-codec-headers/releases/download/n11.1.5.0/nv-codec-headers-11.1.5.0.tar.gz'
+        if build 'nv-codec' '8.1.24.14'; then
+            download 'https://github.com/FFmpeg/nv-codec-headers/releases/download/n8.1.24.14/nv-codec-headers-8.1.24.14.tar.gz'
             execute make PREFIX="${WORKSPACE}"
             execute make install PREFIX="${WORKSPACE}"
-            build_done 'nv-codec' '11.1.5.0'
+            build_done 'nv-codec' '8.1.24.14'
         fi
         CFLAGS+=' -I/usr/local/cuda/include'
         LDFLAGS+=' -L/usr/local/cuda/lib64'
@@ -890,12 +908,12 @@ if [[ "${OSTYPE}" == 'linux-gnu' ]]; then
         fi
     fi
 
-    if build 'amf' '1.4.21.0'; then
-        download 'https://github.com/GPUOpen-LibrariesAndSDKs/AMF/archive/refs/tags/v.1.4.21.tar.gz' 'AMF-1.4.21.tar.gz' 'AMF-1.4.21'
+    if build 'amf' '1.4.28.0'; then
+        download 'https://github.com/GPUOpen-LibrariesAndSDKs/AMF/archive/refs/tags/v1.4.28.tar.gz' 'AMF-1.4.28.tar.gz' 'AMF-1.4.28'
         execute rm -rf "${WORKSPACE}/include/AMF"
         execute mkdir -p "${WORKSPACE}/include/AMF"
-        execute cp -r "${PACKAGES}"/AMF-1.4.21/AMF-v.1.4.21/amf/public/include/* "${WORKSPACE}/include/AMF/"
-        build_done 'amf' '1.4.21.0'
+        execute cp -r "${PACKAGES}"/AMF-1.4.28/AMF-v.1.4.28/amf/public/include/* "${WORKSPACE}/include/AMF/"
+        build_done 'amf' '1.4.28.0'
     fi
     CONFIGURE_OPTIONS+=('--enable-amf')
 fi
@@ -909,8 +927,8 @@ build 'ffmpeg' "${FFMPEG_VERSION}"
 # download 'https://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2' "FFmpeg-v${FFMPEG_VERSION}.tar.gz"
 download "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/$FFMPEG_VERSION.tar.gz" "FFmpeg-release-$FFMPEG_VERSION.tar.gz"
 ./configure "${CONFIGURE_OPTIONS[@]}" \
-    --arch=x86_64 \
-    --cpu=16 \
+    --arch='x86_64' \
+    --cpu='16' \
     --disable-debug \
     --disable-doc \
     --disable-shared \
