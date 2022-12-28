@@ -6,7 +6,7 @@ clear
 
 # Define Variables
 PROGNAME="${0:2}"
-FFMPEG_VERSION='5.1.2'
+FFMPEG_VERSION='n5.0.2'
 SCRIPT_VERSION='1.00'
 INSTALL_FOLDER='/usr/bin'
 PACKAGES="$PWD/packages"
@@ -907,7 +907,7 @@ fi
 EXTRA_VERSION=''
 build 'ffmpeg' "${FFMPEG_VERSION}"
 # download 'https://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2' "FFmpeg-v${FFMPEG_VERSION}.tar.gz"
-download "https://github.com/FFmpeg/FFmpeg/archive/refs/heads/release/$FFMPEG_VERSION.tar.gz" "FFmpeg-release-$FFMPEG_VERSION.tar.gz"
+download "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/$FFMPEG_VERSION.tar.gz" "FFmpeg-release-$FFMPEG_VERSION.tar.gz"
 ./configure "${CONFIGURE_OPTIONS[@]}" \
     --arch=x86_64 \
     --cpu=16 \
