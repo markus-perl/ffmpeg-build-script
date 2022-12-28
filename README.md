@@ -11,11 +11,11 @@ The FFmpeg build script provides an easy way to build a **static** FFmpeg on **L
 #### With GPL and non-free: https://ffmpeg.org/legal.html
 
 ```
-curl -sSL https://ff-nonf.optimizethis.net | bash
+curl -sSL https://ffn.optimizethis.net | bash
 ```
 #### Without GPL and non-free: https://ffmpeg.org/legal.html 
 ```
-curl -sSL https://ff-free.optimizethis.net | bash
+curl -sSL https://ff.optimizethis.net | bash
 ```
 
 This command downloads the build script and automatically starts the build process.
