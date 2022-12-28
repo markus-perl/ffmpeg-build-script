@@ -649,7 +649,7 @@ if command_exists 'python3'; then
     fi
     if build 'serd' '0.30.10'; then
         download 'https://gitlab.com/drobilla/serd/-/archive/v0.30.10/serd-v0.30.10.tar.gz' 'serd-v0.30.10.tar.gz'
-        execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/serd-v0.30.10/waflib/"
+        execute cp -fr "${PACKAGES}"/autowaf/* "${PACKAGES}/serd-v0.30.10/waflib/"
         execute python3 ./waf configure --prefix="${WORKSPACE}" --static --no-shared --no-posix
         execute python3 ./waf
         execute python3 ./waf install
@@ -666,7 +666,7 @@ if command_exists 'python3'; then
     fi
     if build 'sord' '0.16.8'; then
         download 'https://gitlab.com/drobilla/sord/-/archive/v0.16.8/sord-v0.16.8.tar.gz' 'sord-v0.16.8.tar.gz'
-        execute cp -r "${PACKAGES}/autowaf/*" "${PACKAGES}/sord-v0.16.8/waflib/"
+        execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/sord-v0.16.8/waflib/"
         execute python3 ./waf configure --prefix="${WORKSPACE}" CFLAGS="${CFLAGS}" --static --no-shared --no-utils
         execute python3 ./waf CFLAGS="${CFLAGS}"
         execute python3 ./waf install
@@ -675,7 +675,7 @@ if command_exists 'python3'; then
     fi
     if build 'sratom' '0.6.8'; then
         download 'https://gitlab.com/lv2/sratom/-/archive/v0.6.8/sratom-v0.6.8.tar.gz' 'sratom-v0.6.8.tar.gz'
-        execute cp -r "${PACKAGES}/autowaf/*" "${PACKAGES}/sratom-v0.6.8/waflib/"
+        execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/sratom-v0.6.8/waflib/"
         execute python3 ./waf configure --prefix="${WORKSPACE}" --static --no-shared
         execute python3 ./waf
         execute python3 ./waf install
@@ -684,7 +684,7 @@ if command_exists 'python3'; then
     fi
     if build 'lilv' '0.24.12'; then
         download 'https://gitlab.com/lv2/lilv/-/archive/v0.24.12/lilv-v0.24.12.tar.gz' 'lilv-v0.24.12.tar.gz'
-        execute cp -r "${PACKAGES}/autowaf/*" "${PACKAGES}/lilv-v0.24.12/waflib/"
+        execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/lilv-v0.24.12/waflib/"
         execute python3 ./waf configure --prefix="${WORKSPACE}" --static --no-shared --no-utils
         execute python3 ./waf
         execute python3 ./waf install
@@ -841,7 +841,8 @@ if ${NONFREE_AND_GPL}; then
         export OPENSSL_ROOT_DIR="${WORKSPACE}"
         export OPENSSL_LIB_DIR="${WORKSPACE}/lib"
         export OPENSSL_INCLUDE_DIR="${WORKSPACE}/include/"
-        execute cmake . -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR='lib' -DCMAKE_INSTALL_BINDIR='bin' -DCMAKE_INSTALL_INCLUDEDIR='include' -DENABLE_SHARED='OFF' -DENABLE_STATIC='ON' -DENABLE_APPS='OFF' -DUSE_STATIC_LIBSTDCXX='ON'
+        execute cmake . -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR='lib' -DCMAKE_INSTALL_BINDIR='bin' \
+        -DCMAKE_INSTALL_INCLUDEDIR='include' -DENABLE_SHARED='OFF' -DENABLE_STATIC='ON' -DENABLE_APPS='OFF' -DUSE_STATIC_LIBSTDCXX='ON'
         execute make install
 
         if [ -n "${LDEXEFLAGS}" ]; then
@@ -893,7 +894,7 @@ if [[ "${OSTYPE}" == 'linux-gnu' ]]; then
         download 'https://github.com/GPUOpen-LibrariesAndSDKs/AMF/archive/refs/tags/v.1.4.21.tar.gz' 'AMF-1.4.21.tar.gz' 'AMF-1.4.21'
         execute rm -rf "${WORKSPACE}/include/AMF"
         execute mkdir -p "${WORKSPACE}/include/AMF"
-        execute cp -r "${PACKAGES}/AMF-1.4.21/AMF-v.1.4.21/amf/public/include/*" "${WORKSPACE}/include/AMF/"
+        execute cp -r "${PACKAGES}"/AMF-1.4.21/AMF-v.1.4.21/amf/public/include/* "${WORKSPACE}/include/AMF/"
         build_done 'amf' '1.4.21.0'
     fi
     CONFIGURE_OPTIONS+=('--enable-amf')
