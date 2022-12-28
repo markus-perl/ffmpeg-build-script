@@ -115,7 +115,8 @@ download()
 execute() {
   echo "$ $*"
 
-  OUTPUT=$("$@" 2>&1)
+  OUTPUT=$("$@")
+  # OUTPUT=$("$@" 2>&1)
 
   if [ $? -ne 0 ]; then
     echo "$OUTPUT"
@@ -519,35 +520,29 @@ if ${NONFREE_AND_GPL}; then
 fi
 
 if ${NONFREE_AND_GPL}; then
-    if build 'x265' '3.4'; then
-        download 'https://github.com/videolan/x265/archive/refs/tags/3.4.tar.gz' 'x265-3.4.tar.gz' # This is actually 3.4 if looking at x265Version.txt
-        cd 'build/linux' || exit 1
-        rm -rf '{8,10,12}bit' 2>/dev/null
-        mkdir -p '{8,10,12}bit'
-        echo
-        echo 'Creating 12bit binaries'
-        echo
-        cd '12bit' || exit 1
-        execute cmake ../../../source -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED='OFF' -DBUILD_SHARED_LIBS='OFF' -DHIGH_BIT_DEPTH='ON' -DENABLE_HDR10_PLUS='ON' -DEXPORT_C_API='OFF' -DENABLE_CLI='OFF' -DMAIN12='ON'
-        execute make "-j${CPUS}"
-        echo
-        echo 'Creating 10bit binaries'
-        echo
-        cd ../'10bit' || exit 1
-        execute cmake ../../../source -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED='OFF' -DBUILD_SHARED_LIBS='OFF' -DHIGH_BIT_DEPTH='ON' -DENABLE_HDR10_PLUS='ON' -DEXPORT_C_API='OFF' -DENABLE_CLI='OFF'
-        execute make "-j${CPUS}"
-        echo
-        echo 'Creating 8bit binaries'
-        echo
-        cd ../'8bit' || exit 1
-        ln -sf ../'10bit/libx265.a' 'libx265_main10.a'
-        ln -sf ../'12bit/libx265.a' 'libx265_main12.a'
-        execute cmake ../../../'source' -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED='OFF' -DBUILD_SHARED_LIBS='OFF' -DEXTRA_LIB="x265_main10.a;x265_main12.a;-ldl" -DEXTRA_LINK_FLAGS='-L.' -DLINKED_10BIT='ON' -DLINKED_12BIT='ON'
-        execute make "-j${CPUS}"
+    if build "x265" "3.5"; then
+        download "https://github.com/videolan/x265/archive/Release_3.5.tar.gz" "x265-3.5.tar.gz" # This is actually 3.4 if looking at x265Version.txt
+        cd build/linux || exit 1
+        rm -rf 8bit 10bit 12bit 2>/dev/null
+        mkdir -p 8bit 10bit 12bit
+        cd 12bit || exit
+        execute cmake ../../../source -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DHIGH_BIT_DEPTH=ON -DENABLE_HDR10_PLUS=ON -DEXPORT_C_API=OFF -DENABLE_CLI=OFF -DMAIN12=ON
+        execute make -j $MJOBS
+        cd ../10bit || exit
+        execute cmake ../../../source -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DHIGH_BIT_DEPTH=ON -DENABLE_HDR10_PLUS=ON -DEXPORT_C_API=OFF -DENABLE_CLI=OFF
+        execute make -j $MJOBS
+        cd ../8bit || exit
+        ln -sf ../10bit/libx265.a libx265_main10.a
+        ln -sf ../12bit/libx265.a libx265_main12.a
+        execute cmake ../../../source -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DEXTRA_LIB="x265_main10.a;x265_main12.a;-ldl" -DEXTRA_LINK_FLAGS=-L. -DLINKED_10BIT=ON -DLINKED_12BIT=ON
+        execute make -j $MJOBS
 
-        mv 'libx265.a' 'libx265_main.a'
-        
-        execute ar -M <<EOF
+        mv libx265.a libx265_main.a
+
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+          execute "${MACOS_LIBTOOL}" -static -o libx265.a libx265_main.a libx265_main10.a libx265_main12.a 2>/dev/null
+        else
+      execute ar -M <<EOF
 CREATE libx265.a
 ADDLIB libx265_main.a
 ADDLIB libx265_main10.a
@@ -555,13 +550,15 @@ ADDLIB libx265_main12.a
 SAVE
 END
 EOF
-        execute make install
-
-        if [ -n "${LDEXEFLAGS}" ]; then
-            sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "${WORKSPACE}/lib/pkgconfig/x265.pc"
         fi
 
-        build_done 'x265' '3.4'
+        execute make install
+
+        if [ -n "$LDEXEFLAGS" ]; then
+          sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "${WORKSPACE}/lib/pkgconfig/x265.pc" # The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
+        fi
+
+        build_done "x265" "3.5"
     fi
     CONFIGURE_OPTIONS+=('--enable-libx265')
 fi
