@@ -35,4 +35,4 @@ cd "${TARGET}" || return 1
 
 echo 'Now we download and execute the build script'
 echo
-sudo bash <(curl -s 'https://raw.githubusercontent.com/slyfox1186/ffmpeg-build-script/master/scripts/build-ffmpeg') --build
+bash <(curl -s 'https://raw.githubusercontent.com/slyfox1186/ffmpeg-build-script/master/scripts/build-ffmpeg') --build
