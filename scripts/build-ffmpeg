@@ -105,18 +105,17 @@ download()
     )
 }
 
-execute()
-{
-    echo "$ ${*}"
+execute() {
+  echo "$ $*"
 
-    OUTPUT=$("${@}" 2>&1)
+  OUTPUT=$("$@" 2>&1)
 
-    # shellcheck disable=SC2181
-    if [ ${?} -ne 0 ]; then
-        echo -e "${OUTPUT}\\n"
-        echo "Failed to Execute ${*}" >&2
-        exit 1
-    fi
+  if [ $? -ne 0 ]; then
+    echo "$OUTPUT"
+    echo ''
+    echo "Failed to Execute $*" >&2
+    exit 1
+  fi
 }
 
 build()
