@@ -950,7 +950,7 @@ echo "- ffplay: ${INSTALL_FOLDER}/ffplay"
 echo
 echo 'FFmpeg is now installed to your system.'
 echo
-echo 'Test using: ffmpeg -version'
+echo 'Test using: ffmpeg -version | egrep  '\''^.*version\s.*$'\'''
 echo
 
 exit 0
