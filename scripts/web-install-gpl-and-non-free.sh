@@ -36,4 +36,4 @@ cd "${TARGET}" || return
 echo 'Now we download and execute the build script'
 echo
 
-bash <(curl -s 'https://raw.githubusercontent.com/slyfox1186/ffmpeg-build-script/master/scripts/build-ffmpeg') --build --enable-gpl-and-non-free
+sudo bash <(curl -s 'https://raw.githubusercontent.com/slyfox1186/ffmpeg-build-script/master/scripts/build-ffmpeg') --build --enable-gpl-and-non-free
