@@ -404,7 +404,7 @@ else
         download 'https://ftp.gnu.org/gnu/gmp/gmp-6.2.1.tar.xz'
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
         execute make "-j${CPUS}"
-        execute make instal
+        execute make install
 
         build_done 'gmp' '6.2.1'
     fi
