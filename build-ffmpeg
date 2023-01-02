@@ -418,23 +418,23 @@ else
   fi
 
 if [[ ! $ARCH == 'arm64' ]]; then
-  if build "gnutls" "3.6.16"; then
-    download "https://www.gnupg.org/ftp/gcrypt/gnutls/v3.6/gnutls-3.6.16.tar.xz"
+  if build "gnutls" "3.7.8"; then
+    download "https://www.gnupg.org/ftp/gcrypt/gnutls/v3.6/gnutls-3.7.8.tar.xz"
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-doc --disable-tools --disable-cxx --disable-tests --disable-gtk-doc-html --disable-libdane --disable-nls --enable-local-libopts --disable-guile --with-included-libtasn1 --with-included-unistring --without-p11-kit CPPFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}"
     execute make -j $MJOBS
     execute make install
-    build_done "gnutls" "3.6.16"
+    build_done "gnutls" "3.7.8"
   fi
  # CONFIGURE_OPTIONS+=("--enable-gmp" "--enable-gnutls")
 fi
 fi
 
-if build "cmake" "3.23.1"; then
-  download "https://github.com/Kitware/CMake/releases/download/v3.23.1/cmake-3.23.1.tar.gz"
+if build "cmake" "3.25.1"; then
+  download "https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-3.25.1.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --parallel="${MJOBS}" -- -DCMAKE_USE_OPENSSL=OFF
   execute make -j $MJOBS
   execute make install
-  build_done "cmake" "3.23.1"
+  build_done "cmake" "3.25.1"
 fi
 
 ##
@@ -454,7 +454,7 @@ if command_exists "python3"; then
     done
   fi
   if command_exists "meson"; then
-    if build "dav1d" "0.9.2"; then
+    if build "dav1d" "1.0.0"; then
       download "https://code.videolan.org/videolan/dav1d/-/archive/1.0.0/dav1d-1.0.0.tar.gz"
       make_dir build
       
@@ -471,7 +471,7 @@ if command_exists "python3"; then
         export CFLAGS=$CFLAGSBACKUP
       fi
       
-      build_done "dav1d" "0.9.2"
+      build_done "dav1d" "1.0.0"
     fi
     CONFIGURE_OPTIONS+=("--enable-libdav1d")
   fi
@@ -493,11 +493,11 @@ if ! $MACOS_M1; then
 fi
 
 if command_exists "cargo"; then
-  if build "rav1e" "0.5.0-beta"; then
+  if build "rav1e" "0.6.2"; then
     execute cargo install --version "0.9.14+cargo-0.66" cargo-c
-    download "https://github.com/xiph/rav1e/archive/refs/tags/v0.5.0-beta.tar.gz"
+    download "https://github.com/xiph/rav1e/archive/refs/tags/v0.6.2.tar.gz"
     execute cargo cinstall --prefix="${WORKSPACE}" --library-type=staticlib --crt-static --release
-    build_done "rav1e" "0.5.0-beta"
+    build_done "rav1e" "0.6.2"
   fi
   CONFIGURE_OPTIONS+=("--enable-librav1e")
 fi
