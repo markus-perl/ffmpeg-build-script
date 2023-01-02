@@ -504,9 +504,9 @@ fi
 
 if $NONFREE_AND_GPL; then
 
-  if build "x264" "5db6aa6"; then
-    download "https://code.videolan.org/videolan/x264/-/archive/5db6aa6cab1b146e07b60cc1736a01f21da01154/x264-5db6aa6cab1b146e07b60cc1736a01f21da01154.tar.gz" "x264-5db6aa6.tar.gz"
-    cd "${PACKAGES}"/x264-5db6aa6 || exit
+  if build "x264" "941cae6d"; then
+    download "https://code.videolan.org/videolan/x264/-/archive/941cae6d1d6d6344c9a1d27440eaf2872b18ca9a/x264-941cae6d1d6d6344c9a1d27440eaf2872b18ca9a.tar.gz" "x264-941cae6d.tar.gz"
+    cd "${PACKAGES}"/x264-941cae6d || exit
 
     if [[ "$OSTYPE" == "linux-gnu" ]]; then
       execute ./configure --prefix="${WORKSPACE}" --enable-static --enable-pic CXXFLAGS="-fPIC ${CXXFLAGS}"
@@ -518,7 +518,7 @@ if $NONFREE_AND_GPL; then
     execute make install
     execute make install-lib-static
 
-    build_done "x264" "5db6aa6"
+    build_done "x264" "941cae6d"
   fi
   CONFIGURE_OPTIONS+=("--enable-libx264")
 fi
@@ -567,8 +567,8 @@ EOF
   CONFIGURE_OPTIONS+=("--enable-libx265")
 fi
 
-if build "libvpx" "1.10.0"; then
-  download "https://github.com/webmproject/libvpx/archive/refs/tags/v1.10.0.tar.gz" "libvpx-1.10.0.tar.gz"
+if build "libvpx" "1.12.0"; then
+  download "https://github.com/webmproject/libvpx/archive/refs/tags/v1.12.0.tar.gz" "libvpx-1.12.0.tar.gz"
 
   if [[ "$OSTYPE" == "darwin"* ]]; then
     echo "Applying Darwin patch"
@@ -580,7 +580,7 @@ if build "libvpx" "1.10.0"; then
   execute make -j $MJOBS
   execute make install
 
-  build_done "libvpx" "1.10.0"
+  build_done "libvpx" "1.12.0"
 fi
 CONFIGURE_OPTIONS+=("--enable-libvpx")
 
@@ -623,9 +623,9 @@ if $NONFREE_AND_GPL; then
   CONFIGURE_OPTIONS+=("--enable-libvidstab")
 fi
 
-if build "av1" "ae2be80"; then
-  # libaom ae2be80 == v3.1.2
-  download "https://aomedia.googlesource.com/aom/+archive/ae2be8030200925895fa6e98bd274ffdb595cbf6.tar.gz" "av1.tar.gz" "av1"
+if build "av1" "bcfe6fb"; then
+  # libaom bcfe6fb == v3.5.0
+  download "https://aomedia.googlesource.com/aom/+archive/bcfe6fbfed315f83ee8a95465c654ee8078dbff9.tar.gz" "av1.tar.gz" "av1"
   make_dir "$PACKAGES"/aom_build
   cd "$PACKAGES"/aom_build || exit
   if $MACOS_M1; then
@@ -636,7 +636,7 @@ if build "av1" "ae2be80"; then
   execute make -j $MJOBS
   execute make install
 
-  build_done "av1" "ae2be80"
+  build_done "av1" "bcfe6fb"
 fi
 CONFIGURE_OPTIONS+=("--enable-libaom")
 
