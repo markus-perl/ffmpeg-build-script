@@ -494,7 +494,7 @@ fi
 
 if command_exists "cargo"; then
   if build "rav1e" "0.5.0-beta"; then
-    execute cargo install cargo-c
+    execute cargo install --version "0.9.14+cargo-0.66" cargo-c
     download "https://github.com/xiph/rav1e/archive/refs/tags/v0.5.0-beta.tar.gz"
     execute cargo cinstall --prefix="${WORKSPACE}" --library-type=staticlib --crt-static --release
     build_done "rav1e" "0.5.0-beta"
