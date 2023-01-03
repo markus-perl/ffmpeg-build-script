@@ -640,15 +640,15 @@ if build "av1" "bcfe6fb"; then
 fi
 CONFIGURE_OPTIONS+=("--enable-libaom")
 
-if build "zimg" "3.0.3"; then
-  download "https://github.com/sekrit-twc/zimg/archive/refs/tags/release-3.0.3.tar.gz" "zimg-3.0.3.tar.gz" "zimg"
-  cd zimg-release-3.0.3 || exit
+if build "zimg" "3.0.4"; then
+  download "https://github.com/sekrit-twc/zimg/archive/refs/tags/release-3.0.4.tar.gz" "zimg-3.0.4.tar.gz" "zimg"
+  cd zimg-release-3.0.4 || exit
   execute "${WORKSPACE}/bin/libtoolize" -i -f -q
   execute ./autogen.sh --prefix="${WORKSPACE}"
   execute ./configure --prefix="${WORKSPACE}" --enable-static --disable-shared
   execute make -j $MJOBS
   execute make install
-  build_done "zimg" "3.0.3"
+  build_done "zimg" "3.0.4"
 fi
 CONFIGURE_OPTIONS+=("--enable-libzimg")
 
@@ -713,13 +713,13 @@ if command_exists "python3"; then
 fi
 fi
 
-if build "opencore" "0.1.5"; then
-  download "https://sourceforge.net/projects/opencore-amr/files/opencore-amr/opencore-amr-0.1.5.tar.gz/download?use_mirror=gigenet" "opencore-amr-0.1.5.tar.gz"
+if build "opencore" "0.1.6"; then
+  download "https://netactuate.dl.sourceforge.net/project/opencore-amr/opencore-amr/opencore-amr-0.1.6.tar.gz" "opencore-amr-0.1.6.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j $MJOBS
   execute make install
 
-  build_done "opencore" "0.1.5"
+  build_done "opencore" "0.1.6"
 fi
 CONFIGURE_OPTIONS+=("--enable-libopencore_amrnb" "--enable-libopencore_amrwb")
 
@@ -743,21 +743,21 @@ if build "opus" "1.3.1"; then
 fi
 CONFIGURE_OPTIONS+=("--enable-libopus")
 
-if build "libogg" "1.3.3"; then
-  download "https://ftp.osuosl.org/pub/xiph/releases/ogg/libogg-1.3.3.tar.gz"
+if build "libogg" "1.3.5"; then
+  download "https://ftp.osuosl.org/pub/xiph/releases/ogg/libogg-1.3.5.tar.xz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j $MJOBS
   execute make install
-  build_done "libogg" "1.3.3"
+  build_done "libogg" "1.3.5"
 fi
 
-if build "libvorbis" "1.3.6"; then
-  download "https://ftp.osuosl.org/pub/xiph/releases/vorbis/libvorbis-1.3.6.tar.gz"
+if build "libvorbis" "1.3.7"; then
+  download "https://ftp.osuosl.org/pub/xiph/releases/vorbis/libvorbis-1.3.7.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --with-ogg-libraries="${WORKSPACE}"/lib --with-ogg-includes="${WORKSPACE}"/include/ --enable-static --disable-shared --disable-oggtest
   execute make -j $MJOBS
   execute make install
 
-  build_done "libvorbis" "1.3.6"
+  build_done "libvorbis" "1.3.7"
 fi
 CONFIGURE_OPTIONS+=("--enable-libvorbis")
 
@@ -799,12 +799,12 @@ fi
 ## image library
 ##
 
-if build "libtiff" "4.2.0"; then
-  download "https://download.osgeo.org/libtiff/tiff-4.2.0.tar.gz"
+if build "libtiff" "4.5.0"; then
+  download "https://download.osgeo.org/libtiff/tiff-4.5.0.tar.xz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-dependency-tracking --disable-lzma --disable-webp --disable-zstd --without-x
   execute make -j $MJOBS
   execute make install
-  build_done "libtiff" "4.2.0"
+  build_done "libtiff" "4.5.0"
 fi
 if build "libpng" "1.6.37"; then
   download "https://sourceforge.net/projects/libpng/files/libpng16/1.6.37/libpng-1.6.37.tar.gz/download?use_mirror=gigenet" "libpng-1.6.37.tar.gz"
