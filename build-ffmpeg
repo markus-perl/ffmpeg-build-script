@@ -903,7 +903,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     download 'https://github.com/GPUOpen-LibrariesAndSDKs/AMF/archive/refs/tags/v1.4.28.tar.gz' 'AMF-1.4.28.tar.gz' 'AMF-1.4.28'
     execute rm -rf "${WORKSPACE}/include/AMF"
     execute mkdir -p "${WORKSPACE}/include/AMF"
-    execute cp -r "${PACKAGES}"/AMF-1.4.21/AMF-v.1.4.21/amf/public/include/* "${WORKSPACE}/include/AMF/"
+    execute cp -r "${PACKAGES}"/AMF-1.4.28/AMF-v.1.4.28/amf/public/include/* "${WORKSPACE}/include/AMF/"
     build_done "amf" "1.4.28"
   fi
   CONFIGURE_OPTIONS+=("--enable-amf")
