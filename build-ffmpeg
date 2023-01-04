@@ -806,22 +806,22 @@ if build "libtiff" "4.5.0"; then
   execute make install
   build_done "libtiff" "4.5.0"
 fi
-if build "libpng" "1.6.37"; then
-  download "https://sourceforge.net/projects/libpng/files/libpng16/1.6.37/libpng-1.6.37.tar.gz/download?use_mirror=gigenet" "libpng-1.6.37.tar.gz"
+if build "libpng" "1.6.39"; then
+  download "https://gigenet.dl.sourceforge.net/project/libpng/libpng16/1.6.39/libpng-1.6.39.tar.gz" "libpng-1.6.39.tar.gz"
   export LDFLAGS="${LDFLAGS}"
   export CPPFLAGS="${CFLAGS}"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j $MJOBS
   execute make install
-  build_done "libpng" "1.6.37"
+  build_done "libpng" "1.6.39"
 fi
 
 ## does not compile on monterey -> _PrintGifError
 if [[ "$OSTYPE" != "darwin"* ]]; then
-  if build "libwebp" "1.2.1"; then
+  if build "libwebp" "1.2.2"; then
     # libwebp can fail to compile on Ubuntu if these flags were left set to CFLAGS
     CPPFLAGS=
-    download "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-1.2.1.tar.gz" "libwebp-1.2.1.tar.gz"
+    download "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-1.2.2.tar.gz" "libwebp-1.2.2.tar.gz"
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-dependency-tracking --disable-gl --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib
     make_dir build
     cd build || exit
@@ -829,7 +829,7 @@ if [[ "$OSTYPE" != "darwin"* ]]; then
     execute make -j $MJOBS
     execute make install
 
-    build_done "libwebp" "1.2.1"
+    build_done "libwebp" "1.2.2"
   fi
   CONFIGURE_OPTIONS+=("--enable-libwebp")
 fi
@@ -837,18 +837,18 @@ fi
 ## other library
 ##
 
-if build "libsdl" "2.0.20"; then
-  download "https://www.libsdl.org/release/SDL2-2.0.20.tar.gz"
+if build "libsdl" "2.26.1"; then
+  download "https://www.libsdl.org/release/SDL2-2.26.1.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j $MJOBS
   execute make install
 
-  build_done "libsdl" "2.0.20"
+  build_done "libsdl" "2.26.1"
 fi
 
 if $NONFREE_AND_GPL; then
-  if build "srt" "1.4.3"; then
-    download "https://github.com/Haivision/srt/archive/v1.4.3.tar.gz" "srt-1.4.3.tar.gz"
+  if build "srt" "1.5.1"; then
+    download "https://github.com/Haivision/srt/archive/v1.5.1.tar.gz" "srt-1.5.1.tar.gz"
     export OPENSSL_ROOT_DIR="${WORKSPACE}"
     export OPENSSL_LIB_DIR="${WORKSPACE}"/lib
     export OPENSSL_INCLUDE_DIR="${WORKSPACE}"/include/
@@ -859,7 +859,7 @@ if $NONFREE_AND_GPL; then
       sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "${WORKSPACE}"/lib/pkgconfig/srt.pc # The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
     fi
 
-    build_done "srt" "1.4.3"
+    build_done "srt" "1.5.1"
   fi
   CONFIGURE_OPTIONS+=("--enable-libsrt")
 fi
@@ -899,12 +899,12 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     fi
   fi
 
-  if build "amf" "1.4.21.0"; then
-    download "https://github.com/GPUOpen-LibrariesAndSDKs/AMF/archive/refs/tags/v.1.4.21.tar.gz" "AMF-1.4.21.tar.gz" "AMF-1.4.21"
+  if build "amf" "1.4.28"; then
+    download 'https://github.com/GPUOpen-LibrariesAndSDKs/AMF/archive/refs/tags/v1.4.28.tar.gz' 'AMF-1.4.28.tar.gz' 'AMF-1.4.28'
     execute rm -rf "${WORKSPACE}/include/AMF"
     execute mkdir -p "${WORKSPACE}/include/AMF"
     execute cp -r "${PACKAGES}"/AMF-1.4.21/AMF-v.1.4.21/amf/public/include/* "${WORKSPACE}/include/AMF/"
-    build_done "amf" "1.4.21.0"
+    build_done "amf" "1.4.28"
   fi
   CONFIGURE_OPTIONS+=("--enable-amf")
 fi
