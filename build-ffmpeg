@@ -524,8 +524,10 @@ if $NONFREE_AND_GPL; then
 fi
 
 if $NONFREE_AND_GPL; then
-  if build "x265" "3.5"; then
-    download "https://github.com/videolan/x265/archive/Release_3.5.tar.gz" "x265-3.5.tar.gz" # This is actually 3.4 if looking at x265Version.txt
+  X265_CHECKOUT_HASH="6da609e41ca5ae1d661a1b5c4805ed7a3f4117cc"
+  X265_FOLDER="multicoreware-x265_git-6da609e41ca5"
+  if build "x265" $X265_CHECKOUT_HASH; then
+    download "https://bitbucket.org/multicoreware/x265_git/get/$X265_CHECKOUT_HASH.tar.bz2" "x265-master.tar.gz"
     cd build/linux || exit
     rm -rf 8bit 10bit 12bit 2>/dev/null
     mkdir -p 8bit 10bit 12bit
