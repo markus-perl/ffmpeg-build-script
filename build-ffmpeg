@@ -559,7 +559,6 @@ EOF
     fi
 
     execute make install
-
     build_done "x265" $X265_CHECKOUT_HASH
   fi
   CONFIGURE_OPTIONS+=("--enable-libx265")
