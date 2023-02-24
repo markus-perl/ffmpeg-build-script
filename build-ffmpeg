@@ -403,7 +403,7 @@ if $NONFREE_AND_GPL; then
 else
   if build "gmp" "6.2.1"; then
     download "https://ftp.gnu.org/gnu/gmp/gmp-6.2.1.tar.xz"
-    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+    execute ./configure --prefix="${WORKSPACE}" --libdir="${WORKSPACE}"/lib --disable-shared --enable-static
     execute make -j $MJOBS
     execute make install
     build_done "gmp" "6.2.1"
@@ -455,7 +455,7 @@ if command_exists "python3"; then
   fi
   if command_exists "meson"; then
     if build "dav1d" "1.0.0"; then
-      download "https://code.videolan.org/videolan/dav1d/-/archive/1.0.0/dav1d-1.0.0.tar.gz"
+      download "https://ftp.fau.de/xbmc/build-deps/sources/dav1d-1.0.0.tar.bz2"
       make_dir build
       
       CFLAGSBACKUP=$CFLAGS

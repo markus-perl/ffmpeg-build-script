@@ -1,0 +1,16 @@
+# ./docker-compose.yml
+
+version: '3.7'
+
+services:
+  build:
+   image: ubuntu:22.10
+   command: "sleep 36000"
+   volumes:
+     - ./:/ffmpeg-build-script
+     - workspace:/ffmpeg-build-script/workspace
+     - packages:/ffmpeg-build-script/packages
+volumes:
+  workspace:
+  packages:
+
