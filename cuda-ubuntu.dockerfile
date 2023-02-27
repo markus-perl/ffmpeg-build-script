@@ -1,4 +1,4 @@
-ARG VER=22.04
+ARG VER=22.10
 
 FROM nvidia/cuda:11.8.0-devel-ubuntu${VER} AS build
 
