@@ -1,6 +1,6 @@
-ARG VER=22.10
+ARG VER=22.04
 
-FROM nvidia/cuda:11.8.0-devel-ubuntu${VER} AS build
+FROM nvidia/cuda:12.0.1-devel-ubuntu${VER} AS build
 
 ENV DEBIAN_FRONTEND noninteractive
 ENV NVIDIA_VISIBLE_DEVICES all
