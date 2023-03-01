@@ -150,14 +150,9 @@ $ docker build --tag=ffmpeg:default --output type=local,dest=build -f Dockerfile
 ##### CUDA
 These builds are always built with the --enable-gpl-and-non-free switch, as CUDA is non-free. See https://ffmpeg.org/legal.html
 ```bash
-export DOCKER_BUILDKIT=1
-
-## Set the DIST (`ubuntu` or `rocky`) and VER (ubuntu: `16.04` , `18.04`, `20.04` or rocky: `8`) environment variables to select the preferred Docker base image.
-$ export DIST=centos
-$ export VER=8
 
 ## Start the build
-$ docker build --tag=ffmpeg:cuda-$DIST -f cuda-$DIST.dockerfile --build-arg VER=$VER .
+$ docker build --tag=ffmpeg:cuda-$DIST -f cuda-ubunu.dockerfile --build-arg .
 ```
 
 Build an `export.dockerfile` that copies only what you need from the image you just built as follows. When running,
