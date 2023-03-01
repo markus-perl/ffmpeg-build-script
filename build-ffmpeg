@@ -818,10 +818,10 @@ fi
 
 ## does not compile on monterey -> _PrintGifError
 if [[ "$OSTYPE" != "darwin"* ]]; then
-  if build "libwebp" "1.2.4"; then
+  if build "libwebp" "1.2.2"; then
     # libwebp can fail to compile on Ubuntu if these flags were left set to CFLAGS
     CPPFLAGS=
-    download "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-1.2.4.tar.gz" "libwebp-1.2.4.tar.gz"
+    download "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-1.2.2.tar.gz" "libwebp-1.2.2.tar.gz"
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-dependency-tracking --disable-gl --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib
     make_dir build
     cd build || exit
@@ -829,7 +829,7 @@ if [[ "$OSTYPE" != "darwin"* ]]; then
     execute make -j $MJOBS
     execute make install
 
-    build_done "libwebp" "1.2.4"
+    build_done "libwebp" "1.2.2"
   fi
   CONFIGURE_OPTIONS+=("--enable-libwebp")
 fi
