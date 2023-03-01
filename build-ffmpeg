@@ -4,7 +4,7 @@
 # LICENSE: https://github.com/markus-perl/ffmpeg-build-script/blob/master/LICENSE
 
 PROGNAME=$(basename "$0")
-FFMPEG_VERSION=5.1
+FFMPEG_VERSION=6.0
 SCRIPT_VERSION=1.43
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
@@ -454,8 +454,8 @@ if command_exists "python3"; then
     done
   fi
   if command_exists "meson"; then
-    if build "dav1d" "1.0.0"; then
-      download "https://code.videolan.org/videolan/dav1d/-/archive/1.0.0/dav1d-1.0.0.tar.gz"
+    if build "dav1d" "1.1.0"; then
+      download "https://code.videolan.org/videolan/dav1d/-/archive/1.0.0/dav1d-1.1.0.tar.gz"
       make_dir build
       
       CFLAGSBACKUP=$CFLAGS
@@ -471,7 +471,7 @@ if command_exists "python3"; then
         export CFLAGS=$CFLAGSBACKUP
       fi
       
-      build_done "dav1d" "1.0.0"
+      build_done "dav1d" "1.1.0"
     fi
     CONFIGURE_OPTIONS+=("--enable-libdav1d")
   fi
@@ -567,8 +567,8 @@ EOF
   CONFIGURE_OPTIONS+=("--enable-libx265")
 fi
 
-if build "libvpx" "1.12.0"; then
-  download "https://github.com/webmproject/libvpx/archive/refs/tags/v1.12.0.tar.gz" "libvpx-1.12.0.tar.gz"
+if build "libvpx" "1.13.0"; then
+  download "https://github.com/webmproject/libvpx/archive/refs/tags/v1.13.0.tar.gz" "libvpx-1.13.0.tar.gz"
 
   if [[ "$OSTYPE" == "darwin"* ]]; then
     echo "Applying Darwin patch"
@@ -580,7 +580,7 @@ if build "libvpx" "1.12.0"; then
   execute make -j $MJOBS
   execute make install
 
-  build_done "libvpx" "1.12.0"
+  build_done "libvpx" "1.13.0"
 fi
 CONFIGURE_OPTIONS+=("--enable-libvpx")
 
