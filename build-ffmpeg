@@ -4,8 +4,8 @@
 # LICENSE: https://github.com/markus-perl/ffmpeg-build-script/blob/master/LICENSE
 
 PROGNAME=$(basename "$0")
-FFMPEG_VERSION=5.1
-SCRIPT_VERSION=1.43
+FFMPEG_VERSION=6.0
+SCRIPT_VERSION=1.44
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
 WORKSPACE="$CWD/workspace"
@@ -387,8 +387,8 @@ if build "libtool" "2.4.7"; then
 fi
 
 if $NONFREE_AND_GPL; then
-  if build "openssl" "1.1.1s"; then
-    download "https://www.openssl.org/source/openssl-1.1.1s.tar.gz"
+  if build "openssl" "1.1.1t"; then
+    download "https://www.openssl.org/source/openssl-1.1.1t.tar.gz"
     if $MACOS_M1; then
       sed -n 's/\(##### GNU Hurd\)/"darwin64-arm64-cc" => { \n    inherit_from     => [ "darwin-common", asm("aarch64_asm") ],\n    CFLAGS           => add("-Wall"),\n    cflags           => add("-arch arm64 "),\n    lib_cppflags     => add("-DL_ENDIAN"),\n    bn_ops           => "SIXTY_FOUR_BIT_LONG", \n    perlasm_scheme   => "macosx", \n}, \n\1/g' Configurations/10-main.conf
       execute ./Configure --prefix="${WORKSPACE}" no-shared no-asm darwin64-arm64-cc
@@ -397,7 +397,7 @@ if $NONFREE_AND_GPL; then
     fi
     execute make -j $MJOBS
     execute make install_sw
-    build_done "openssl" "1.1.1s"
+    build_done "openssl" "1.1.1t"
   fi
   CONFIGURE_OPTIONS+=("--enable-openssl")
 else
@@ -418,12 +418,12 @@ else
   fi
 
 if [[ ! $ARCH == 'arm64' ]]; then
-  if build "gnutls" "3.7.8"; then
-    download "https://www.gnupg.org/ftp/gcrypt/gnutls/v3.7/gnutls-3.7.8.tar.xz"
+  if build "gnutls" "3.7.9"; then
+    download "https://www.gnupg.org/ftp/gcrypt/gnutls/v3.7/gnutls-3.7.9.tar.xz"
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-doc --disable-tools --disable-cxx --disable-tests --disable-gtk-doc-html --disable-libdane --disable-nls --enable-local-libopts --disable-guile --with-included-libtasn1 --with-included-unistring --without-p11-kit CPPFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}"
     execute make -j $MJOBS
     execute make install
-    build_done "gnutls" "3.7.8"
+    build_done "gnutls" "3.7.9"
   fi
  # CONFIGURE_OPTIONS+=("--enable-gmp" "--enable-gnutls")
 fi
@@ -454,8 +454,8 @@ if command_exists "python3"; then
     done
   fi
   if command_exists "meson"; then
-    if build "dav1d" "1.0.0"; then
-      download "https://code.videolan.org/videolan/dav1d/-/archive/1.0.0/dav1d-1.0.0.tar.gz"
+    if build "dav1d" "1.1.0"; then
+      download "https://code.videolan.org/videolan/dav1d/-/archive/1.0.0/dav1d-1.1.0.tar.gz"
       make_dir build
       
       CFLAGSBACKUP=$CFLAGS
@@ -471,7 +471,7 @@ if command_exists "python3"; then
         export CFLAGS=$CFLAGSBACKUP
       fi
       
-      build_done "dav1d" "1.0.0"
+      build_done "dav1d" "1.1.0"
     fi
     CONFIGURE_OPTIONS+=("--enable-libdav1d")
   fi
@@ -493,11 +493,11 @@ if ! $MACOS_M1; then
 fi
 
 if command_exists "cargo"; then
-  if build "rav1e" "0.6.2"; then
+  if build "rav1e" "0.6.3"; then
     execute cargo install --version "0.9.14+cargo-0.66" cargo-c
-    download "https://github.com/xiph/rav1e/archive/refs/tags/v0.6.2.tar.gz"
+    download "https://github.com/xiph/rav1e/archive/refs/tags/v0.6.3.tar.gz"
     execute cargo cinstall --prefix="${WORKSPACE}" --library-type=staticlib --crt-static --release
-    build_done "rav1e" "0.6.2"
+    build_done "rav1e" "0.6.3"
   fi
   CONFIGURE_OPTIONS+=("--enable-librav1e")
 fi
@@ -567,8 +567,8 @@ EOF
   CONFIGURE_OPTIONS+=("--enable-libx265")
 fi
 
-if build "libvpx" "1.12.0"; then
-  download "https://github.com/webmproject/libvpx/archive/refs/tags/v1.12.0.tar.gz" "libvpx-1.12.0.tar.gz"
+if build "libvpx" "1.13.0"; then
+  download "https://github.com/webmproject/libvpx/archive/refs/tags/v1.13.0.tar.gz" "libvpx-1.13.0.tar.gz"
 
   if [[ "$OSTYPE" == "darwin"* ]]; then
     echo "Applying Darwin patch"
@@ -580,7 +580,7 @@ if build "libvpx" "1.12.0"; then
   execute make -j $MJOBS
   execute make install
 
-  build_done "libvpx" "1.12.0"
+  build_done "libvpx" "1.13.0"
 fi
 CONFIGURE_OPTIONS+=("--enable-libvpx")
 
@@ -837,13 +837,13 @@ fi
 ## other library
 ##
 
-if build "libsdl" "2.26.1"; then
-  download "https://www.libsdl.org/release/SDL2-2.26.1.tar.gz"
+if build "libsdl" "2.26.3"; then
+  download "https://www.libsdl.org/release/SDL2-2.26.3.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j $MJOBS
   execute make install
 
-  build_done "libsdl" "2.26.1"
+  build_done "libsdl" "2.26.3"
 fi
 
 if $NONFREE_AND_GPL; then
@@ -870,11 +870,11 @@ fi
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
   if command_exists "nvcc"; then
-    if build "nv-codec" "11.1.5.0"; then
-      download "https://github.com/FFmpeg/nv-codec-headers/releases/download/n11.1.5.0/nv-codec-headers-11.1.5.0.tar.gz"
+    if build "nv-codec" "11.1.5.2"; then
+      download "https://github.com/FFmpeg/nv-codec-headers/releases/download/n11.1.5.2/nv-codec-headers-11.1.5.2.tar.gz"
       execute make PREFIX="${WORKSPACE}"
-      execute make install PREFIX="${WORKSPACE}"
-      build_done "nv-codec" "11.1.5.0"
+      execute make PREFIX="${WORKSPACE}/usr" install
+      build_done "nv-codec" "11.1.5.2"
     fi
     CFLAGS+=" -I/usr/local/cuda/include"
     LDFLAGS+=" -L/usr/local/cuda/lib64"
@@ -899,12 +899,12 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     fi
   fi
 
-  if build "amf" "1.4.28"; then
-    download 'https://github.com/GPUOpen-LibrariesAndSDKs/AMF/archive/refs/tags/v1.4.28.tar.gz' 'AMF-1.4.28.tar.gz' 'AMF-1.4.28'
+  if build "amf" "1.4.29"; then
+    download 'https://github.com/GPUOpen-LibrariesAndSDKs/AMF/archive/refs/tags/v1.4.29.tar.gz' 'AMF-1.4.29.tar.gz' 'AMF-1.4.29'
     execute rm -rf "${WORKSPACE}/include/AMF"
     execute mkdir -p "${WORKSPACE}/include/AMF"
-    execute cp -r "${PACKAGES}"/AMF-1.4.28/AMF-1.4.28/amf/public/include/* "${WORKSPACE}/include/AMF/"
-    build_done "amf" "1.4.28"
+    execute cp -r "${PACKAGES}"/AMF-1.4.29/AMF-1.4.29/amf/public/include/* "${WORKSPACE}/include/AMF/"
+    build_done "amf" "1.4.29"
   fi
   CONFIGURE_OPTIONS+=("--enable-amf")
 fi
@@ -929,6 +929,7 @@ download "https://github.com/FFmpeg/FFmpeg/archive/refs/heads/release/$FFMPEG_VE
   --enable-static \
   --enable-small \
   --enable-version3 \
+  --disable-ffnvcodec \
   --extra-cflags="${CFLAGS}" \
   --extra-ldexeflags="${LDEXEFLAGS}" \
   --extra-ldflags="${LDFLAGS}" \
