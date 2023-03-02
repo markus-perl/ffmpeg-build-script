@@ -10,7 +10,7 @@ on:
 jobs:
   build-linux:
     name: build in native linux
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-22.10
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
