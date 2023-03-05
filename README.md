@@ -152,7 +152,7 @@ These builds are always built with the --enable-gpl-and-non-free switch, as CUDA
 ```bash
 
 ## Start the build
-$ docker build --tag=ffmpeg:cuda-$DIST -f cuda-ubunu.dockerfile --build-arg .
+$ docker build --tag=ffmpeg:cuda --output type=local,dest=build -f cuda-ubuntu.dockerfile .
 ```
 
 Build an `export.dockerfile` that copies only what you need from the image you just built as follows. When running,
@@ -161,7 +161,7 @@ matched the operating system and version, it should work well with dynamic links
 the `export.dockerfile` and copy the necessary libraries and try again.
 
 ```bash
-$ docker build --output type=local,dest=build -f export.dockerfile --build-arg DIST=$DIST .
+$ docker build --output type=local,dest=build -f export.dockerfile .
 $ ls build
 bin lib
 $ ls build/bin
