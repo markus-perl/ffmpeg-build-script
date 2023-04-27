@@ -169,7 +169,7 @@ library_exists() {
 }
 
 build_done() {
-  echo "$2" > "$PACKAGES/$1.done"
+  echo "$2" >"$PACKAGES/$1.done"
 }
 
 verify_binary_type() {
@@ -311,10 +311,10 @@ fi
 
 if build "giflib" "5.2.1"; then
   download "https://netcologne.dl.sourceforge.net/project/giflib/giflib-5.2.1.tar.gz"
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-      download "https://sourceforge.net/p/giflib/bugs/_discuss/thread/4e811ad29b/c323/attachment/Makefile.patch"
-      execute patch -p0 --forward "${PACKAGES}/giflib-5.2.1/Makefile" "${PACKAGES}/Makefile.patch" || true
-    fi
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    download "https://sourceforge.net/p/giflib/bugs/_discuss/thread/4e811ad29b/c323/attachment/Makefile.patch"
+    execute patch -p0 --forward "${PACKAGES}/giflib-5.2.1/Makefile" "${PACKAGES}/Makefile.patch" || true
+  fi
   cd "${PACKAGES}"/giflib-5.2.1 || exit
   #multicore build disabled for this library
   execute make
@@ -417,16 +417,16 @@ else
     build_done "nettle" "3.8.1"
   fi
 
-if [[ ! $ARCH == 'arm64' ]]; then
-  if build "gnutls" "3.7.9"; then
-    download "https://www.gnupg.org/ftp/gcrypt/gnutls/v3.7/gnutls-3.7.9.tar.xz"
-    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-doc --disable-tools --disable-cxx --disable-tests --disable-gtk-doc-html --disable-libdane --disable-nls --enable-local-libopts --disable-guile --with-included-libtasn1 --with-included-unistring --without-p11-kit CPPFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}"
-    execute make -j $MJOBS
-    execute make install
-    build_done "gnutls" "3.7.9"
+  if [[ ! $ARCH == 'arm64' ]]; then
+    if build "gnutls" "3.7.9"; then
+      download "https://www.gnupg.org/ftp/gcrypt/gnutls/v3.7/gnutls-3.7.9.tar.xz"
+      execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-doc --disable-tools --disable-cxx --disable-tests --disable-gtk-doc-html --disable-libdane --disable-nls --enable-local-libopts --disable-guile --with-included-libtasn1 --with-included-unistring --without-p11-kit CPPFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}"
+      execute make -j $MJOBS
+      execute make install
+      build_done "gnutls" "3.7.9"
+    fi
+    # CONFIGURE_OPTIONS+=("--enable-gmp" "--enable-gnutls")
   fi
- # CONFIGURE_OPTIONS+=("--enable-gmp" "--enable-gnutls")
-fi
 fi
 
 if build "cmake" "3.25.1"; then
@@ -450,27 +450,27 @@ if command_exists "python3"; then
       if ! command_exists ${r}; then
         execute pip3 install ${r} --quiet --upgrade --no-cache-dir --disable-pip-version-check
       fi
-    export PATH=$PATH:~/Library/Python/3.9/bin
+      export PATH=$PATH:~/Library/Python/3.9/bin
     done
   fi
   if command_exists "meson"; then
     if build "dav1d" "1.1.0"; then
       download "https://code.videolan.org/videolan/dav1d/-/archive/1.1.0/dav1d-1.1.0.tar.gz"
       make_dir build
-      
+
       CFLAGSBACKUP=$CFLAGS
       if $MACOS_M1; then
         export CFLAGS="-arch arm64"
       fi
-      
+
       execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
       execute ninja -C build
       execute ninja -C build install
-      
+
       if $MACOS_M1; then
         export CFLAGS=$CFLAGSBACKUP
       fi
-      
+
       build_done "dav1d" "1.1.0"
     fi
     CONFIGURE_OPTIONS+=("--enable-libdav1d")
@@ -487,7 +487,7 @@ if ! $MACOS_M1; then
     execute make install
     execute cp SvtAv1Enc.pc "${WORKSPACE}/lib/pkgconfig/"
     execute cp SvtAv1Dec.pc "${WORKSPACE}/lib/pkgconfig/"
-    build_done "svtav1" "1.4.1";
+    build_done "svtav1" "1.4.1"
   fi
   CONFIGURE_OPTIONS+=("--enable-libsvtav1")
 fi
@@ -658,59 +658,59 @@ CONFIGURE_OPTIONS+=("--enable-libzimg")
 
 if command_exists "python3"; then
 
-	if command_exists "meson"; then
+  if command_exists "meson"; then
 
-  if build "lv2" "1.18.10"; then
-    download "https://lv2plug.in/spec/lv2-1.18.10.tar.xz" "lv2-1.18.10.tar.xz"
-	execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
-    execute ninja -C build
-    execute ninja -C build install
-    build_done "lv2" "1.18.10"
-  fi
-  if build "waflib" "b600c92"; then
-    download "https://gitlab.com/drobilla/autowaf/-/archive/b600c928b221a001faeab7bd92786d0b25714bc8/autowaf-b600c928b221a001faeab7bd92786d0b25714bc8.tar.gz" "autowaf.tar.gz"
-    build_done "waflib" "b600c92"
-  fi
-  if build "serd" "0.30.16"; then
-    download "https://gitlab.com/drobilla/serd/-/archive/v0.30.16/serd-v0.30.16.tar.gz" "serd-v0.30.16.tar.gz"
-	execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
-    execute ninja -C build
-    execute ninja -C build install
-    build_done "serd" "0.30.16"
-  fi
-  if build "pcre" "8.45"; then
-    download "https://altushost-swe.dl.sourceforge.net/project/pcre/pcre/8.45/pcre-8.45.tar.gz" "pcre-8.45.tar.gz"
-    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
-    execute make -j $MJOBS
-    execute make install
-    build_done "pcre" "8.45"
-  fi
-  if build "sord" "0.16.14"; then
-    download "https://gitlab.com/drobilla/sord/-/archive/v0.16.14/sord-v0.16.14.tar.gz" "sord-v0.16.14.tar.gz"
-	execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
-    execute ninja -C build
-    execute ninja -C build install
-    build_done "sord" "0.16.14"
-  fi
-  if build "sratom" "0.6.14"; then
-    download "https://gitlab.com/lv2/sratom/-/archive/v0.6.14/sratom-v0.6.14.tar.gz" "sratom-v0.6.14.tar.gz"
-	execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
-    execute ninja -C build
-    execute ninja -C build install
-    build_done "sratom" "0.6.14"
-  fi
-  if build "lilv" "0.24.20"; then
-    download "https://gitlab.com/lv2/lilv/-/archive/v0.24.20/lilv-v0.24.20.tar.gz" "lilv-v0.24.20.tar.gz"
-  	execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
-    execute ninja -C build
-    execute ninja -C build install
-    build_done "lilv" "0.24.20"
-  fi
-  CFLAGS+=" -I$WORKSPACE/include/lilv-0"
+    if build "lv2" "1.18.10"; then
+      download "https://lv2plug.in/spec/lv2-1.18.10.tar.xz" "lv2-1.18.10.tar.xz"
+      execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
+      execute ninja -C build
+      execute ninja -C build install
+      build_done "lv2" "1.18.10"
+    fi
+    if build "waflib" "b600c92"; then
+      download "https://gitlab.com/drobilla/autowaf/-/archive/b600c928b221a001faeab7bd92786d0b25714bc8/autowaf-b600c928b221a001faeab7bd92786d0b25714bc8.tar.gz" "autowaf.tar.gz"
+      build_done "waflib" "b600c92"
+    fi
+    if build "serd" "0.30.16"; then
+      download "https://gitlab.com/drobilla/serd/-/archive/v0.30.16/serd-v0.30.16.tar.gz" "serd-v0.30.16.tar.gz"
+      execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
+      execute ninja -C build
+      execute ninja -C build install
+      build_done "serd" "0.30.16"
+    fi
+    if build "pcre" "8.45"; then
+      download "https://altushost-swe.dl.sourceforge.net/project/pcre/pcre/8.45/pcre-8.45.tar.gz" "pcre-8.45.tar.gz"
+      execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+      execute make -j $MJOBS
+      execute make install
+      build_done "pcre" "8.45"
+    fi
+    if build "sord" "0.16.14"; then
+      download "https://gitlab.com/drobilla/sord/-/archive/v0.16.14/sord-v0.16.14.tar.gz" "sord-v0.16.14.tar.gz"
+      execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
+      execute ninja -C build
+      execute ninja -C build install
+      build_done "sord" "0.16.14"
+    fi
+    if build "sratom" "0.6.14"; then
+      download "https://gitlab.com/lv2/sratom/-/archive/v0.6.14/sratom-v0.6.14.tar.gz" "sratom-v0.6.14.tar.gz"
+      execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
+      execute ninja -C build
+      execute ninja -C build install
+      build_done "sratom" "0.6.14"
+    fi
+    if build "lilv" "0.24.20"; then
+      download "https://gitlab.com/lv2/lilv/-/archive/v0.24.20/lilv-v0.24.20.tar.gz" "lilv-v0.24.20.tar.gz"
+      execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
+      execute ninja -C build
+      execute ninja -C build install
+      build_done "lilv" "0.24.20"
+    fi
+    CFLAGS+=" -I$WORKSPACE/include/lilv-0"
 
-  CONFIGURE_OPTIONS+=("--enable-lv2")
+    CONFIGURE_OPTIONS+=("--enable-lv2")
 
-fi
+  fi
 fi
 
 if build "opencore" "0.1.6"; then
@@ -766,7 +766,7 @@ if build "libtheora" "1.1.1"; then
   sed "s/-fforce-addr//g" configure >configure.patched
   chmod +x configure.patched
   mv configure.patched configure
-  
+
   if ! $MACOS_M1; then
     ##BEGIN CONFIG.GUESS PATCH -- Updating config.guess file. Which allowed me to compile on aarch64 (ARMv8) [linux kernel 4.9 Ubuntu 20.04]
     rm config.guess
@@ -774,7 +774,7 @@ if build "libtheora" "1.1.1"; then
     chmod +x config.guess
     ##END OF CONFIG.GUESS PATCH
   fi
-  
+
   execute ./configure --prefix="${WORKSPACE}" --with-ogg-libraries="${WORKSPACE}"/lib --with-ogg-includes="${WORKSPACE}"/include/ --with-vorbis-libraries="${WORKSPACE}"/lib --with-vorbis-includes="${WORKSPACE}"/include/ --enable-static --disable-shared --disable-oggtest --disable-vorbistest --disable-examples --disable-asm --disable-spec
   execute make -j $MJOBS
   execute make install
