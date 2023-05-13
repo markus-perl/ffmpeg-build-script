@@ -100,9 +100,8 @@ jobs:
       - name: test run ffmepg
         run: |
           docker run --rm ffmpeg:cuda-static -buildconf
-        
       - name: copy build
         uses: actions/upload-artifact@v3
         with:
           name: ffmpeg
-          path: artifacts/*
+          path: build/*
