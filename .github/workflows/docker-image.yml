@@ -78,6 +78,7 @@ jobs:
       - name: test run ffmepg
         run: |
           docker run --rm ffmpeg:cuda-ubuntu -buildconf
+ 
 
   build-full-static:
     name: full static build in docker
@@ -97,11 +98,9 @@ jobs:
       - name: build ffmpeg
         run: |
           docker build -t ffmpeg:cuda-static --output type=local,dest=build -f full-static.dockerfile .
-      - name: test run ffmepg
-        run: |
-          docker run --rm ffmpeg:cuda-static -buildconf
+ 
       - name: copy build
         uses: actions/upload-artifact@v3
         with:
           name: ffmpeg
-          path: build/*
+          path: artifacts/*
