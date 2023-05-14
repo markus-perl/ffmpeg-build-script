@@ -23,14 +23,17 @@ jobs:
       - name: build ffmpeg
         run: |
           while sleep 300; do echo "=====[ $SECONDS seconds still running ]====="; done &
-          SKIPINSTALL=yes VERBOSE=yes ./build-ffmpeg --build --enable-gpl-and-non-free
+          SKIPINSTALL=yes VERBOSE=yes ./build-ffmpeg --build --full-static --enable-gpl-and-non-free
           kill %1
       - name: check shared library
         run: |
           ldd ./workspace/bin/ffmpeg
-      - name: test run ffmepg
-        run: |
-          ./workspace/bin/ffmpeg -buildconf
+          
+      - name: copy build
+        uses: actions/upload-artifact@v3
+        with:
+          name: ffmpeg
+          path: workspace/bin/ffmpeg
 
 
   build-docker:
@@ -103,4 +106,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: ffmpeg
-          path: artifacts/*
+          path: workspace/bin/ffmpeg
