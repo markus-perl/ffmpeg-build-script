@@ -78,9 +78,7 @@ jobs:
       - name: build ffmpeg
         run: |
           docker build -t ffmpeg:cuda-ubuntu -f cuda-ubuntu.dockerfile .
-      - name: test run ffmepg
-        run: |
-          docker run --rm ffmpeg:cuda-ubuntu -buildconf
+
  
 
   build-full-static:
@@ -106,4 +104,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: ffmpeg
-          path: /ffmpeg
+          path: build/ffmpeg
