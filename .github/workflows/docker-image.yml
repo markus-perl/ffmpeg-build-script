@@ -106,4 +106,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: ffmpeg
-          path: build/ffmpeg
+          path: /ffmpeg
