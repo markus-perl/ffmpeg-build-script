@@ -17,6 +17,7 @@ MACOS_M1=false
 CONFIGURE_OPTIONS=()
 NONFREE_AND_GPL=false
 LATEST=false
+MANPAGES=1
 
 # Check for Apple Silicon
 if [[ ("$(uname -m)" == "arm64") && ("$OSTYPE" == "darwin"*) ]]; then
@@ -206,6 +207,7 @@ usage() {
   echo "  -c, --cleanup                  Remove all working dirs"
   echo "      --latest                   Build latest version of dependencies if newer available"
   echo "      --full-static              Build a full static FFmpeg binary (eg. glibc, pthreads etc...) **only Linux**"
+  echo "      --small                    Prioritize small size over speed and usability; don't build manpages"
   echo "                                 Note: Because of the NSS (Name Service Switch), glibc does not recommend static links."
   echo ""
 }
@@ -246,6 +248,10 @@ while (($# > 0)); do
     fi
     if [[ "$1" == "--latest" ]]; then
       LATEST=true
+    fi
+    if [[ "$1" == "--small" ]]; then
+      CONFIGURE_OPTIONS+=("--enable-small" "--disable-doc")
+      MANPAGES=0
     fi
     shift
     ;;
@@ -925,7 +931,6 @@ download "https://github.com/FFmpeg/FFmpeg/archive/refs/heads/release/$FFMPEG_VE
 # shellcheck disable=SC2086
 ./configure "${CONFIGURE_OPTIONS[@]}" \
   --disable-debug \
-  --disable-doc \
   --disable-shared \
   --enable-pthreads \
   --enable-static \
