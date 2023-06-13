@@ -997,6 +997,9 @@ if [ "$INSTALL_NOW" = 1 ]; then
     if [ $MANPAGES = 1 ]; then
       sudo mkdir -p "$INSTALL_FOLDER/share/man/man1"
       sudo cp "$WORKSPACE/share/man/man1"/ff* "$INSTALL_FOLDER/share/man/man1"
+      if command_exists "mandb"; then
+        sudo mandb -q
+      fi
     fi
   else
     cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/bin/ffmpeg"
@@ -1005,6 +1008,9 @@ if [ "$INSTALL_NOW" = 1 ]; then
     if [ $MANPAGES = 1 ]; then
       mkdir -p "$INSTALL_FOLDER/share/man/man1"
       cp "$WORKSPACE/share/man/man1"/ff* "$INSTALL_FOLDER/share/man/man1"
+      if command_exists "mandb"; then
+        mandb -q
+      fi
     fi
   fi
   echo "Done. FFmpeg is now installed to your system."
