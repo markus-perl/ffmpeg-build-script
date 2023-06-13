@@ -260,6 +260,7 @@ Options:
       --latest                   Build latest version of dependencies if newer available
   -c, --cleanup                  Remove all working dirs
       --full-static              Complete static build of ffmpeg (eg. glibc, pthreads etc...) **only Linux**
+      --small                    Prioritize small size over speed and usability; don't build manpages.
                                  Note: Because of the NSS (Name Service Switch), glibc does not recommend static links.
 ```
 

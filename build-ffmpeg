@@ -926,6 +926,12 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
   EXTRA_VERSION="${FFMPEG_VERSION}"
 fi
 
+if [ -d "$CWD/.git" ]; then
+  echo -e "\nTemporarily moving .git dir to .git.bak to workaround ffmpeg build bug" #causing ffmpeg version number to be wrong
+  mv "$CWD/.git" "$CWD/.git.bak"
+  # if build fails below, .git will remain in the wrong place...
+fi
+
 build "ffmpeg" "$FFMPEG_VERSION"
 download "https://github.com/FFmpeg/FFmpeg/archive/refs/heads/release/$FFMPEG_VERSION.tar.gz" "FFmpeg-release-$FFMPEG_VERSION.tar.gz"
 # shellcheck disable=SC2086
@@ -947,9 +953,19 @@ download "https://github.com/FFmpeg/FFmpeg/archive/refs/heads/release/$FFMPEG_VE
 execute make -j $MJOBS
 execute make install
 
-INSTALL_FOLDER="/usr/bin"
+if [ -d "$CWD/.git.bak" ]; then
+  mv "$CWD/.git.bak" "$CWD/.git"
+fi
+
+INSTALL_FOLDER="/usr"  # not recommended, overwrites system ffmpeg package
 if [[ "$OSTYPE" == "darwin"* ]]; then
-  INSTALL_FOLDER="/usr/local/bin"
+  INSTALL_FOLDER="/usr/local"
+else
+  if [ -d "$HOME/.local" ]; then  # systemd-standard user path
+    INSTALL_FOLDER="$HOME/.local"
+  elif [ -d "/usr/local" ]; then
+    INSTALL_FOLDER="/usr/local"
+  fi
 fi
 
 verify_binary_type
@@ -961,34 +977,37 @@ echo "- ffprobe: $WORKSPACE/bin/ffprobe"
 echo "- ffplay: $WORKSPACE/bin/ffplay"
 echo ""
 
+INSTALL_NOW=0
 if [[ "$AUTOINSTALL" == "yes" ]]; then
-  if command_exists "sudo"; then
-    sudo cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
-    sudo cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
-    sudo cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/ffplay"
-    echo "Done. FFmpeg is now installed to your system."
-  else
-    cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
-    cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
-    cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/ffplay"
-    echo "Done. FFmpeg is now installed to your system."
-  fi
+  INSTALL_NOW=1
 elif [[ ! "$SKIPINSTALL" == "yes" ]]; then
   read -r -p "Install these binaries to your $INSTALL_FOLDER folder? Existing binaries will be replaced. [Y/n] " response
   case $response in
-  [yY][eE][sS] | [yY])
-    if command_exists "sudo"; then
-      sudo cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
-      sudo cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
-      sudo cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/ffplay"
-    else
-      cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
-      cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
-      cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/ffplay"
-    fi
-    echo "Done. FFmpeg is now installed to your system."
+    ("" | [yY][eE][sS] | [yY])
+      INSTALL_NOW=1
     ;;
   esac
+fi
+
+if [ "$INSTALL_NOW" = 1 ]; then
+  if command_exists "sudo" && [[ $INSTALL_FOLDER == /usr* ]]; then
+    sudo cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/bin/ffmpeg"
+    sudo cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/bin/ffprobe"
+    sudo cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/bin/ffplay"
+    if [ $MANPAGES = 1 ]; then
+      sudo mkdir -p "$INSTALL_FOLDER/share/man/man1"
+      sudo cp "$WORKSPACE/share/man/man1"/ff* "$INSTALL_FOLDER/share/man/man1"
+    fi
+  else
+    cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/bin/ffmpeg"
+    cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/bin/ffprobe"
+    cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/bin/ffplay"
+    if [ $MANPAGES = 1 ]; then
+      mkdir -p "$INSTALL_FOLDER/share/man/man1"
+      cp "$WORKSPACE/share/man/man1"/ff* "$INSTALL_FOLDER/share/man/man1"
+    fi
+  fi
+  echo "Done. FFmpeg is now installed to your system."
 fi
 
 exit 0
