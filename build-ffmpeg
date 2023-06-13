@@ -873,12 +873,12 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     if build "nv-codec" "11.1.5.2"; then
       download "https://github.com/FFmpeg/nv-codec-headers/releases/download/n11.1.5.2/nv-codec-headers-11.1.5.2.tar.gz"
       execute make PREFIX="${WORKSPACE}"
-      execute make PREFIX="${WORKSPACE}/usr" install
+      execute make PREFIX="${WORKSPACE}" install
       build_done "nv-codec" "11.1.5.2"
     fi
     CFLAGS+=" -I/usr/local/cuda/include"
     LDFLAGS+=" -L/usr/local/cuda/lib64"
-    CONFIGURE_OPTIONS+=("--enable-cuda-nvcc" "--enable-cuvid" "--enable-nvenc" "--enable-cuda-llvm")
+    CONFIGURE_OPTIONS+=("--enable-cuda-nvcc" "--enable-cuvid" "--enable-nvdec" "--enable-nvenc" "--enable-cuda-llvm" "--enable-ffnvcodec")
 
     if [ -z "$LDEXEFLAGS" ]; then
       CONFIGURE_OPTIONS+=("--enable-libnpp") # Only libnpp cannot be statically linked.
@@ -886,6 +886,8 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
 
     # https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
     CONFIGURE_OPTIONS+=("--nvccflags=-gencode arch=compute_52,code=sm_52")
+  else
+    CONFIGURE_OPTIONS+=("--disable-ffnvcodec")
   fi
 
   # Vaapi doesn't work well with static links FFmpeg.
@@ -927,9 +929,7 @@ download "https://github.com/FFmpeg/FFmpeg/archive/refs/heads/release/$FFMPEG_VE
   --disable-shared \
   --enable-pthreads \
   --enable-static \
-  --enable-small \
   --enable-version3 \
-  --disable-ffnvcodec \
   --extra-cflags="${CFLAGS}" \
   --extra-ldexeflags="${LDEXEFLAGS}" \
   --extra-ldflags="${LDFLAGS}" \

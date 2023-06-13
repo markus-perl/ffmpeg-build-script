@@ -217,9 +217,11 @@ $ ./build-ffmpeg --build
 ## Cuda installation
 
 CUDA is a parallel computing platform developed by NVIDIA. To be able to compile ffmpeg with CUDA support, you first
-need a compatible NVIDIA GPU.
+need a compatible NVIDIA GPU and the NVIDIA compiler nvcc from the CUDA toolkit.
 
-- Ubuntu: To install the CUDA toolkit on Ubuntu, run "sudo apt install nvidia-cuda-toolkit"
+- Ubuntu: To install the CUDA toolkit on Ubuntu, run `sudo apt install nvidia-cuda-toolkit`. 
+  After compilation, you can `sudo apt install nvidia-cuda-dev && sudo apt remove nvidia-cuda-toolkit`. 
+  This removes the compilers but leaves the needed shared library `libnpp`.
 - Other Linux distributions: Once you have the GPU and display driver installed, you can follow the
   [official instructions](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html)
   or [this blog](https://www.pugetsystems.com/labs/hpc/How-To-Install-CUDA-10-1-on-Ubuntu-19-04-1405/)
