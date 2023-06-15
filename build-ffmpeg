@@ -991,26 +991,16 @@ fi
 
 if [ "$INSTALL_NOW" = 1 ]; then
   if command_exists "sudo" && [[ $INSTALL_FOLDER == /usr* ]]; then
-    sudo cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/bin/ffmpeg"
-    sudo cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/bin/ffprobe"
-    sudo cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/bin/ffplay"
-    if [ $MANPAGES = 1 ]; then
-      sudo mkdir -p "$INSTALL_FOLDER/share/man/man1"
-      sudo cp "$WORKSPACE/share/man/man1"/ff* "$INSTALL_FOLDER/share/man/man1"
-      if command_exists "mandb"; then
-        sudo mandb -q
-      fi
-    fi
-  else
-    cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/bin/ffmpeg"
-    cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/bin/ffprobe"
-    cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/bin/ffplay"
-    if [ $MANPAGES = 1 ]; then
-      mkdir -p "$INSTALL_FOLDER/share/man/man1"
-      cp "$WORKSPACE/share/man/man1"/ff* "$INSTALL_FOLDER/share/man/man1"
-      if command_exists "mandb"; then
-        mandb -q
-      fi
+    SUDO=sudo
+  fi
+  $SUDO cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/bin/ffmpeg"
+  $SUDO cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/bin/ffprobe"
+  $SUDO cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/bin/ffplay"
+  if [ $MANPAGES = 1 ]; then
+    $SUDO mkdir -p "$INSTALL_FOLDER/share/man/man1"
+    $SUDO cp "$WORKSPACE/share/man/man1"/ff* "$INSTALL_FOLDER/share/man/man1"
+    if command_exists "mandb"; then
+      $SUDO mandb -q
     fi
   fi
   echo "Done. FFmpeg is now installed to your system."
