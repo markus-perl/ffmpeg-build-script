@@ -206,8 +206,8 @@ usage() {
   echo "      --enable-gpl-and-non-free  Enable GPL and non-free codecs  - https://ffmpeg.org/legal.html"
   echo "  -c, --cleanup                  Remove all working dirs"
   echo "      --latest                   Build latest version of dependencies if newer available"
-  echo "      --full-static              Build a full static FFmpeg binary (eg. glibc, pthreads etc...) **only Linux**"
   echo "      --small                    Prioritize small size over speed and usability; don't build manpages"
+  echo "      --full-static              Build a full static FFmpeg binary (eg. glibc, pthreads etc...) **only Linux**"
   echo "                                 Note: Because of the NSS (Name Service Switch), glibc does not recommend static links."
   echo ""
 }
@@ -983,7 +983,7 @@ if [[ "$AUTOINSTALL" == "yes" ]]; then
 elif [[ ! "$SKIPINSTALL" == "yes" ]]; then
   read -r -p "Install these binaries to your $INSTALL_FOLDER folder? Existing binaries will be replaced. [Y/n] " response
   case $response in
-    ("" | [yY][eE][sS] | [yY])
+    "" | [yY][eE][sS] | [yY])
       INSTALL_NOW=1
     ;;
   esac
