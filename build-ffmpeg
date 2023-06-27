@@ -17,6 +17,7 @@ MACOS_M1=false
 CONFIGURE_OPTIONS=()
 NONFREE_AND_GPL=false
 LATEST=false
+MANPAGES=1
 
 # Check for Apple Silicon
 if [[ ("$(uname -m)" == "arm64") && ("$OSTYPE" == "darwin"*) ]]; then
@@ -205,6 +206,7 @@ usage() {
   echo "      --enable-gpl-and-non-free  Enable GPL and non-free codecs  - https://ffmpeg.org/legal.html"
   echo "  -c, --cleanup                  Remove all working dirs"
   echo "      --latest                   Build latest version of dependencies if newer available"
+  echo "      --small                    Prioritize small size over speed and usability; don't build manpages"
   echo "      --full-static              Build a full static FFmpeg binary (eg. glibc, pthreads etc...) **only Linux**"
   echo "                                 Note: Because of the NSS (Name Service Switch), glibc does not recommend static links."
   echo ""
@@ -246,6 +248,10 @@ while (($# > 0)); do
     fi
     if [[ "$1" == "--latest" ]]; then
       LATEST=true
+    fi
+    if [[ "$1" == "--small" ]]; then
+      CONFIGURE_OPTIONS+=("--enable-small" "--disable-doc")
+      MANPAGES=0
     fi
     shift
     ;;
@@ -873,12 +879,12 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     if build "nv-codec" "11.1.5.2"; then
       download "https://github.com/FFmpeg/nv-codec-headers/releases/download/n11.1.5.2/nv-codec-headers-11.1.5.2.tar.gz"
       execute make PREFIX="${WORKSPACE}"
-      execute make PREFIX="${WORKSPACE}/usr" install
+      execute make PREFIX="${WORKSPACE}" install
       build_done "nv-codec" "11.1.5.2"
     fi
     CFLAGS+=" -I/usr/local/cuda/include"
     LDFLAGS+=" -L/usr/local/cuda/lib64"
-    CONFIGURE_OPTIONS+=("--enable-cuda-nvcc" "--enable-cuvid" "--enable-nvenc" "--enable-cuda-llvm")
+    CONFIGURE_OPTIONS+=("--enable-cuda-nvcc" "--enable-cuvid" "--enable-nvdec" "--enable-nvenc" "--enable-cuda-llvm" "--enable-ffnvcodec")
 
     if [ -z "$LDEXEFLAGS" ]; then
       CONFIGURE_OPTIONS+=("--enable-libnpp") # Only libnpp cannot be statically linked.
@@ -886,6 +892,8 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
 
     # https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
     CONFIGURE_OPTIONS+=("--nvccflags=-gencode arch=compute_52,code=sm_52")
+  else
+    CONFIGURE_OPTIONS+=("--disable-ffnvcodec")
   fi
 
   # Vaapi doesn't work well with static links FFmpeg.
@@ -918,18 +926,21 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
   EXTRA_VERSION="${FFMPEG_VERSION}"
 fi
 
+if [ -d "$CWD/.git" ]; then
+  echo -e "\nTemporarily moving .git dir to .git.bak to workaround ffmpeg build bug" #causing ffmpeg version number to be wrong
+  mv "$CWD/.git" "$CWD/.git.bak"
+  # if build fails below, .git will remain in the wrong place...
+fi
+
 build "ffmpeg" "$FFMPEG_VERSION"
 download "https://github.com/FFmpeg/FFmpeg/archive/refs/heads/release/$FFMPEG_VERSION.tar.gz" "FFmpeg-release-$FFMPEG_VERSION.tar.gz"
 # shellcheck disable=SC2086
 ./configure "${CONFIGURE_OPTIONS[@]}" \
   --disable-debug \
-  --disable-doc \
   --disable-shared \
   --enable-pthreads \
   --enable-static \
-  --enable-small \
   --enable-version3 \
-  --disable-ffnvcodec \
   --extra-cflags="${CFLAGS}" \
   --extra-ldexeflags="${LDEXEFLAGS}" \
   --extra-ldflags="${LDFLAGS}" \
@@ -942,9 +953,19 @@ download "https://github.com/FFmpeg/FFmpeg/archive/refs/heads/release/$FFMPEG_VE
 execute make -j $MJOBS
 execute make install
 
-INSTALL_FOLDER="/usr/bin"
+if [ -d "$CWD/.git.bak" ]; then
+  mv "$CWD/.git.bak" "$CWD/.git"
+fi
+
+INSTALL_FOLDER="/usr"  # not recommended, overwrites system ffmpeg package
 if [[ "$OSTYPE" == "darwin"* ]]; then
-  INSTALL_FOLDER="/usr/local/bin"
+  INSTALL_FOLDER="/usr/local"
+else
+  if [ -d "$HOME/.local" ]; then  # systemd-standard user path
+    INSTALL_FOLDER="$HOME/.local"
+  elif [ -d "/usr/local" ]; then
+    INSTALL_FOLDER="/usr/local"
+  fi
 fi
 
 verify_binary_type
@@ -956,34 +977,33 @@ echo "- ffprobe: $WORKSPACE/bin/ffprobe"
 echo "- ffplay: $WORKSPACE/bin/ffplay"
 echo ""
 
+INSTALL_NOW=0
 if [[ "$AUTOINSTALL" == "yes" ]]; then
-  if command_exists "sudo"; then
-    sudo cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
-    sudo cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
-    sudo cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/ffplay"
-    echo "Done. FFmpeg is now installed to your system."
-  else
-    cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
-    cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
-    cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/ffplay"
-    echo "Done. FFmpeg is now installed to your system."
-  fi
+  INSTALL_NOW=1
 elif [[ ! "$SKIPINSTALL" == "yes" ]]; then
   read -r -p "Install these binaries to your $INSTALL_FOLDER folder? Existing binaries will be replaced. [Y/n] " response
   case $response in
-  [yY][eE][sS] | [yY])
-    if command_exists "sudo"; then
-      sudo cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
-      sudo cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
-      sudo cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/ffplay"
-    else
-      cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
-      cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
-      cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/ffplay"
-    fi
-    echo "Done. FFmpeg is now installed to your system."
+    "" | [yY][eE][sS] | [yY])
+      INSTALL_NOW=1
     ;;
   esac
+fi
+
+if [ "$INSTALL_NOW" = 1 ]; then
+  if command_exists "sudo" && [[ $INSTALL_FOLDER == /usr* ]]; then
+    SUDO=sudo
+  fi
+  $SUDO cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/bin/ffmpeg"
+  $SUDO cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/bin/ffprobe"
+  $SUDO cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/bin/ffplay"
+  if [ $MANPAGES = 1 ]; then
+    $SUDO mkdir -p "$INSTALL_FOLDER/share/man/man1"
+    $SUDO cp "$WORKSPACE/share/man/man1"/ff* "$INSTALL_FOLDER/share/man/man1"
+    if command_exists "mandb"; then
+      $SUDO mandb -q
+    fi
+  fi
+  echo "Done. FFmpeg is now installed to your system."
 fi
 
 exit 0

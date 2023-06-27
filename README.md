@@ -22,14 +22,33 @@ By downloading and using this script, you are fully aware of this.
 Use this script at your own risk. I maintain this script in my spare time. Please do not file bug reports for systems
 other than Debian and macOS, because I don't have the resources or time to maintain different systems.
 
-## Installation
+## Requirements to build
 
-### Quick install and run (macOS, Linux)
+### macOS
+
+* XCode 10.x or greater
+
+### Linux
+
+* Debian >= Buster, Ubuntu => Focal Fossa; other distributions might work too
+* Rocky Linux 8
+
+```bash
+# Debian and Ubuntu
+$ sudo apt install build-essential curl
+
+# Fedora
+$ sudo dnf install @development-tools curl
+```
+
+## Quick Script Installation 
+
+Note: to enable hardware acceleration, see details below.
+### Quick install and build (macOS, Linux)
 
 Open your command line and run (curl needs to be installed):
 
 ```bash
-
 # Without GPL and non-free codes, see https://ffmpeg.org/legal.html 
 $ bash <(curl -s "https://raw.githubusercontent.com/markus-perl/ffmpeg-build-script/master/web-install.sh?v1")
 
@@ -39,12 +58,15 @@ $ bash <(curl -s "https://raw.githubusercontent.com/markus-perl/ffmpeg-build-scr
 
 This command downloads the build script and automatically starts the build process.
 
-### Common installation (macOS, Linux)
+### Common install and build (macOS, Linux)
 
 ```bash
 $ git clone https://github.com/markus-perl/ffmpeg-build-script.git
 $ cd ffmpeg-build-script
+# Without GPL and non-free codecs
 $ ./build-ffmpeg --build
+# With GPL and non-free codecs
+$ ./build-ffmpeg --enable-gpl-and-non-free --build
 ```
 
 ## Supported Codecs
@@ -54,7 +76,7 @@ $ ./build-ffmpeg --build
 * `libsvtav1`: SVT-AV1 Encoder and Decoder
 * `aom`: AV1 Video Codec (Experimental and very slow!)
 * `librav1e`: rust based AV1 encoder (only available if [`cargo` is installed](https://doc.rust-lang.org/cargo/getting-started/installation.html)) 
-* `libdav1d`: Fastest AV1 decoder developed by the VideoLAN and FFmpeg communities and sponsored by the AOMedia (only available if `meson` and `ninja` are installed)
+* `libdav1d`: Fastest AV1 decoder developed by the VideoLAN and FFmpeg communities and sponsored by the AOMedia (only available if `meson` and `ninja` are available)
 * `fdk_aac`: Fraunhofer FDK AAC Codec
 * `xvidcore`: MPEG-4 video coding standard
 * `VP8/VP9/webm`: VP8 / VP9 Video Codec for the WebM video file format
@@ -100,45 +122,113 @@ $ ./build-ffmpeg --build
         * H264 `h264_amf` 
 
 
+## Build Script Usage
+
+```bash
+Usage: build-ffmpeg [OPTIONS]
+Options:
+  -h, --help                     Display usage information
+      --version                  Display version information
+  -b, --build                    Starts the build process
+      --enable-gpl-and-non-free  Enable non-free codecs  - https://ffmpeg.org/legal.html
+      --latest                   Build latest version of dependencies if newer available
+  -c, --cleanup                  Remove all working dirs
+      --small                    Prioritize small size over speed and usability; don't build manpages.
+      --full-static              Complete static build of ffmpeg (eg. glibc, pthreads etc...) **only Linux**
+                                 Note: Because of the NSS (Name Service Switch), glibc does not recommend static links.
+```
+
+### Notes on static linking
+
+- Because of the NSS (Name Service Switch), glibc does **not recommend** static links. See [more details here](https://sourceware.org/glibc/wiki/FAQ#Even_statically_linked_programs_need_some_shared_libraries_which_is_not_acceptable_for_me.__What_can_I_do.3F).
+
+- The libnpp in the CUDA SDK cannot be statically linked.
+- Vaapi cannot be statically linked.
+
+
+## Common full build (macOS, Linux)
+
+1) Install the [prerequisites](#requirements-to-build), above.
+1) Install optional dependencies, as desired.
+   - If you have an NVIDIA GPU and want to enable CUDA acceleration, please refer to [these instructions](#Cuda-installation) to install the SDK.
+
+   - If you have an AMD GPU and want to enable AMF acceleration, please refer to [these instructions](#amf-installation) to install the drivers.
+
+   - If you want to enable Vaapi acceleration (for most GPUs), please refer to [these instructions](#Vaapi-installation) to install the driver.
+
+   - If you want the `librav1e` AV1 encoder, please install [rust](https://doc.rust-lang.org/cargo/getting-started/installation.html) to get `cargo` for the build process. Be sure to start a new shell before building, so that `cargo` is in the new path. If desired, it can be removed with `rustup self uninstall` after the build is complete.
+
+   - If you want the `dav1d` AV1 decoder, please ensure that `python3` is installed. If using the system python installation, also ensure that `meson` and `ninja` are installed before running (otherwise the script will try to install them using `pip3`).
+
+   - If you want the `Lv2` filter plugin, please ensure that `python3` is installed.
+
+1) Run the downoaded build script from the current directory, with your desired [options](#build-script-usage).
+   ```bash
+   $ ./build-ffmpeg [your parameters here] --build
+   ```
+   - Packages will be under the `packages/` subdirectory.
+   - Build results will be under the `workspace/` subdirectory.
+   
+   Upon completion, build-ffmpeg will prompt you for whether to install.
+
+1) Once installed, if you are satisfied with your ffmpeg build, the ffmpeg-build-script directory can be removed completely.
+
+### CUDA installation
+
+CUDA is a parallel computing platform developed by NVIDIA. To be able to compile ffmpeg with CUDA support, you first
+need a compatible NVIDIA GPU and the NVIDIA compiler nvcc from the CUDA toolkit.
+
+- Ubuntu: To install the CUDA toolkit on Ubuntu, run 
+  ```bash
+  sudo apt install nvidia-cuda-toolkit
+  ``` 
+  After compilation, you can run 
+  ```bash
+  sudo apt install nvidia-cuda-dev && sudo apt remove nvidia-cuda-toolkit
+  ``` 
+  This removes the compilers but leaves the needed shared library `libnpp`.
+
+- Other Linux distributions: Once you have the GPU and display driver installed, you can follow the
+  [official instructions](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html)
+  or [this blog](https://www.pugetsystems.com/labs/hpc/How-To-Install-CUDA-10-1-on-Ubuntu-19-04-1405/)
+  to setup the CUDA toolkit.
+
+### Vaapi installation
+
+You will need the libva driver, so please install it below.
+
+```bash
+# Debian and Ubuntu
+$ sudo apt install libva-dev vainfo
+
+# Fedora and CentOS
+$ sudo dnf install libva-devel libva-intel-driver libva-utils
+```
+
+### AMF installation
+
+To use the AMF encoder, you will need to be using the AMD GPU Pro drivers with OpenCL support.
+Download the drivers from https://www.amd.com/en/support and install the appropriate opencl versions.
+
+```bash
+./amdgpu-pro-install -y --opencl=rocr,legacy
+```
+
+### LV2 Plugin Support
+
+If python 3 is available, the script will build a ffmpeg binary with [Lv2 filter](https://github.com/lv2/lv2/wiki) plugin support.
+
 ### Apple M1 (Apple Silicon) Support
 
 The script also builds FFmpeg on a new MacBook with an Apple Silicon M1 processor.
 
-### LV2 Plugin Support
 
-If Python is available, the script will build a ffmpeg binary with lv2 plugin support.
-
-## Continuous Integration
-
-ffmpeg-build-script is very stable. Every commit runs against Linux and macOS
-with https://github.com/markus-perl/ffmpeg-build-script/actions to make sure everything works as expected.
-
-## Requirements
-
-### macOS
-
-* XCode 10.x or greater
-
-### Linux
-
-* Debian >= Buster, Ubuntu => Focal Fossa, other Distributions might work too
-* Rocky Linux 8
-* A development environment and curl is required
-
-```bash
-# Debian and Ubuntu
-$ sudo apt install build-essential curl
-
-# Fedora
-$ sudo dnf install @development-tools curl
-```
-
-### Build in Docker (Linux)
+## Build in Docker (Linux)
 
 With Docker, FFmpeg can be built reliably without altering the host system. Also, there is no need to have the CUDA SDK
 installed outside of the Docker image.
 
-##### Default
+#### Default
 
 If you're running an operating system other than the one above, a completely static build may work. To build a full
 statically linked binary inside Docker, just run the following command:
@@ -147,10 +237,10 @@ statically linked binary inside Docker, just run the following command:
 $ docker build --tag=ffmpeg:default --output type=local,dest=build -f Dockerfile .
 ```
 
-##### CUDA
+#### CUDA
 These builds are always built with the --enable-gpl-and-non-free switch, as CUDA is non-free. See https://ffmpeg.org/legal.html
-```bash
 
+```bash
 ## Start the build
 $ docker build --tag=ffmpeg:cuda --output type=local,dest=build -f cuda-ubuntu.dockerfile .
 ```
@@ -170,7 +260,7 @@ $ ls build/lib
 libnppc.so.11 libnppicc.so.11 libnppidei.so.11 libnppig.so.11
 ```
 
-##### Full static version
+#### Full static version
 
 If you're running an operating system other than the one above, a completely static build may work. To build a full
 statically linked binary inside Docker, just run the following command:
@@ -204,70 +294,6 @@ $ sudo docker build --tag=ffmpeg:cuda -f cuda-ubuntu.dockerfile .
 $ sudo docker run --gpus all ffmpeg-cuda -hwaccel cuvid -c:v h264_cuvid -i https://files.coconut.co.s3.amazonaws.com/test.mp4 -c:v hevc_nvenc -vf scale_npp=-1:1080 - > test.mp4
 ```
 
-### Common build (macOS, Linux)
-
-If you want to enable CUDA, please refer to [these](#Cuda-installation) and install the SDK.
-
-If you want to enable Vaapi, please refer to [these](#Vaapi-installation) and install the driver.
-
-```bash
-$ ./build-ffmpeg --build
-```
-
-## Cuda installation
-
-CUDA is a parallel computing platform developed by NVIDIA. To be able to compile ffmpeg with CUDA support, you first
-need a compatible NVIDIA GPU.
-
-- Ubuntu: To install the CUDA toolkit on Ubuntu, run "sudo apt install nvidia-cuda-toolkit"
-- Other Linux distributions: Once you have the GPU and display driver installed, you can follow the
-  [official instructions](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html)
-  or [this blog](https://www.pugetsystems.com/labs/hpc/How-To-Install-CUDA-10-1-on-Ubuntu-19-04-1405/)
-  to setup the CUDA toolkit.
-
-## Vaapi installation
-
-You will need the libva driver, so please install it below.
-
-```bash
-# Debian and Ubuntu
-$ sudo apt install libva-dev vainfo
-
-# Fedora and CentOS
-$ sudo dnf install libva-devel libva-intel-driver libva-utils
-```
-
-## AMF installation
-
-To use the AMF encoder, you will need to be using the AMD GPU Pro drivers with OpenCL support.
-Download the drivers from https://www.amd.com/en/support and install the appropriate opencl versions.
-
-```bash
-./amdgpu-pro-install -y --opencl=rocr,legacy
-```
-
-## Usage
-
-```bash
-Usage: build-ffmpeg [OPTIONS]
-Options:
-  -h, --help                     Display usage information
-      --version                  Display version information
-  -b, --build                    Starts the build process
-      --enable-gpl-and-non-free  Enable non-free codecs  - https://ffmpeg.org/legal.html
-      --latest                   Build latest version of dependencies if newer available
-  -c, --cleanup                  Remove all working dirs
-      --full-static              Complete static build of ffmpeg (eg. glibc, pthreads etc...) **only Linux**
-                                 Note: Because of the NSS (Name Service Switch), glibc does not recommend static links.
-```
-
-## Notes of static link
-
-- Because of the NSS (Name Service Switch), glibc does **not recommend** static links. See detail
-  below: https://sourceware.org/glibc/wiki/FAQ#Even_statically_linked_programs_need_some_shared_libraries_which_is_not_acceptable_for_me.__What_can_I_do.3F
-
-- The libnpp in the CUDA SDK cannot be statically linked.
-- Vaapi cannot be statically linked.
 
 Contact
 -------
@@ -280,6 +306,12 @@ Tested on
 * MacOS 10.15
 * Debian 10
 * Ubuntu 20.04
+
+## Continuous Integration
+
+ffmpeg-build-script is very stable. Every commit runs against Linux and macOS
+with https://github.com/markus-perl/ffmpeg-build-script/actions to make sure everything works as expected.
+
 
 Example
 -------
