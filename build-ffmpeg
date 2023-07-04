@@ -18,6 +18,7 @@ CONFIGURE_OPTIONS=()
 NONFREE_AND_GPL=false
 LATEST=false
 MANPAGES=1
+CURRENT_PACKAGE_VERSION=0
 
 # Check for Apple Silicon
 if [[ ("$(uname -m)" == "arm64") && ("$OSTYPE" == "darwin"*) ]]; then
@@ -136,6 +137,7 @@ build() {
   echo ""
   echo "building $1 - version $2"
   echo "======================="
+  CURRENT_PACKAGE_VERSION=$2
 
   if [ -f "$PACKAGES/$1.done" ]; then
     if grep -Fx "$2" "$PACKAGES/$1.done" >/dev/null; then
@@ -393,8 +395,8 @@ if build "libtool" "2.4.7"; then
 fi
 
 if $NONFREE_AND_GPL; then
-  if build "openssl" "1.1.1t"; then
-    download "https://www.openssl.org/source/openssl-1.1.1t.tar.gz"
+  if build "openssl" "1.1.1u"; then
+    download "https://www.openssl.org/source/openssl-$CURRENT_PACKAGE_VERSION.tar.gz"
     if $MACOS_M1; then
       sed -n 's/\(##### GNU Hurd\)/"darwin64-arm64-cc" => { \n    inherit_from     => [ "darwin-common", asm("aarch64_asm") ],\n    CFLAGS           => add("-Wall"),\n    cflags           => add("-arch arm64 "),\n    lib_cppflags     => add("-DL_ENDIAN"),\n    bn_ops           => "SIXTY_FOUR_BIT_LONG", \n    perlasm_scheme   => "macosx", \n}, \n\1/g' Configurations/10-main.conf
       execute ./Configure --prefix="${WORKSPACE}" no-shared no-asm darwin64-arm64-cc
@@ -403,7 +405,7 @@ if $NONFREE_AND_GPL; then
     fi
     execute make -j $MJOBS
     execute make install_sw
-    build_done "openssl" "1.1.1t"
+    build_done "openssl" $CURRENT_PACKAGE_VERSION
   fi
   CONFIGURE_OPTIONS+=("--enable-openssl")
 else
@@ -435,12 +437,12 @@ else
   fi
 fi
 
-if build "cmake" "3.25.1"; then
-  download "https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-3.25.1.tar.gz"
+if build "cmake" "3.26.4"; then
+  download "https://github.com/Kitware/CMake/releases/download/v$CURRENT_PACKAGE_VERSION/cmake-$CURRENT_PACKAGE_VERSION.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --parallel="${MJOBS}" -- -DCMAKE_USE_OPENSSL=OFF
   execute make -j $MJOBS
   execute make install
-  build_done "cmake" "3.25.1"
+  build_done "cmake" $CURRENT_PACKAGE_VERSION
 fi
 
 ##
@@ -483,20 +485,19 @@ if command_exists "python3"; then
   fi
 fi
 
-if ! $MACOS_M1; then
-  if build "svtav1" "1.4.1"; then
-    # Last known working commit which passed CI Tests from HEAD branch
-    download "https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/v1.4.1/SVT-AV1-v1.4.1.tar.gz" "svtav1-1.4.1.tar.gz"
-    cd "${PACKAGES}"/svtav1-1.4.1//Build/linux || exit
-    execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF ../.. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
-    execute make -j $MJOBS
-    execute make install
-    execute cp SvtAv1Enc.pc "${WORKSPACE}/lib/pkgconfig/"
-    execute cp SvtAv1Dec.pc "${WORKSPACE}/lib/pkgconfig/"
-    build_done "svtav1" "1.4.1"
-  fi
-  CONFIGURE_OPTIONS+=("--enable-libsvtav1")
+if build "svtav1" "1.6.0"; then
+  # Last known working commit which passed CI Tests from HEAD branch
+  download "https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/v$CURRENT_PACKAGE_VERSION/SVT-AV1-v$CURRENT_PACKAGE_VERSION.tar.gz" "svtav1-$CURRENT_PACKAGE_VERSION.tar.gz"
+  cd "${PACKAGES}"/svtav1-$CURRENT_PACKAGE_VERSION//Build/linux || exit
+  execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF ../.. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
+  execute make -j $MJOBS
+  execute make install
+  execute cp SvtAv1Enc.pc "${WORKSPACE}/lib/pkgconfig/"
+  execute cp SvtAv1Dec.pc "${WORKSPACE}/lib/pkgconfig/"
+  build_done "svtav1" $CURRENT_PACKAGE_VERSION
 fi
+CONFIGURE_OPTIONS+=("--enable-libsvtav1")
+
 
 if command_exists "cargo"; then
   if [[ ! "$SKIPRAV1E" == "yes" ]]; then
