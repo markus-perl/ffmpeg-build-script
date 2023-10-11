@@ -855,6 +855,16 @@ if build "libsdl" "2.26.3"; then
   build_done "libsdl" "2.26.3"
 fi
 
+if build "FreeType2" "2.11.1"; then
+  download "https://downloads.sourceforge.net/freetype/freetype-2.11.1.tar.xz"
+  execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+  execute make -j $MJOBS
+  execute make install
+  build_done "FreeType2" "2.11.1"
+fi
+
+CONFIGURE_OPTIONS+=("--enable-libfreetype")
+
 if $NONFREE_AND_GPL; then
   if build "srt" "1.5.1"; then
     download "https://github.com/Haivision/srt/archive/v1.5.1.tar.gz" "srt-1.5.1.tar.gz"
