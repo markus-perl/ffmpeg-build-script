@@ -19,6 +19,7 @@ RUN apt-get -y --no-install-recommends install build-essential curl libva-dev py
     cuda="${CUDAVER}" \
     && apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
 
+RUN update-alternatives --set cc /usr/bin/gcc
 
 WORKDIR /app
 COPY ./build-ffmpeg /app/build-ffmpeg
