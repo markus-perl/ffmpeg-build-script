@@ -1,0 +1,689 @@
+#!/bin/bash
+
+# HOMEPAGE: https://github.com/markus-perl/ffmpeg-build-script
+# LICENSE: https://github.com/markus-perl/ffmpeg-build-script/blob/master/LICENSE
+
+PROGNAME=$(basename "$0")
+FFMPEG_VERSION=6.0
+SCRIPT_VERSION=1.44
+CWD=$(pwd)
+PACKAGES="$CWD/packages"
+WORKSPACE="$CWD/workspace"
+CFLAGS="-I$WORKSPACE/include"
+LDFLAGS="-L$WORKSPACE/lib"
+LDEXEFLAGS=""
+EXTRALIBS="-ldl -lpthread -lm -lz"
+MACOS_M1=false
+CONFIGURE_OPTIONS=()
+NONFREE_AND_GPL=false
+LATEST=false
+
+# Check for Apple Silicon
+if [[ ("$(uname -m)" == "arm64") && ("$OSTYPE" == "darwin"*) ]]; then
+  # If arm64 AND darwin (macOS)
+  export ARCH=arm64
+  export MACOSX_DEPLOYMENT_TARGET=11.0
+  MACOS_M1=true
+fi
+
+# Speed up the process
+# Env Var NUMJOBS overrides automatic detection
+if [[ -n "$NUMJOBS" ]]; then
+  MJOBS="$NUMJOBS"
+elif [[ -f /proc/cpuinfo ]]; then
+  MJOBS=$(grep -c processor /proc/cpuinfo)
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+  MJOBS=$(sysctl -n machdep.cpu.thread_count)
+  CONFIGURE_OPTIONS=("--enable-videotoolbox")
+  MACOS_LIBTOOL="$(which libtool)" # gnu libtool is installed in this script and need to avoid name conflict
+else
+  MJOBS=4
+fi
+
+make_dir() {
+  remove_dir "$1"
+  if ! mkdir "$1"; then
+    printf "\n Failed to create dir %s" "$1"
+    exit 1
+  fi
+}
+
+remove_dir() {
+  if [ -d "$1" ]; then
+    rm -r "$1"
+  fi
+}
+
+download() {
+  # download url [filename[dirname]]
+
+  DOWNLOAD_PATH="$PACKAGES"
+  DOWNLOAD_FILE="${2:-"${1##*/}"}"
+
+  if [[ "$DOWNLOAD_FILE" =~ tar. ]]; then
+    TARGETDIR="${DOWNLOAD_FILE%.*}"
+    TARGETDIR="${3:-"${TARGETDIR%.*}"}"
+  else
+    TARGETDIR="${3:-"${DOWNLOAD_FILE%.*}"}"
+  fi
+
+  if [ ! -f "$DOWNLOAD_PATH/$DOWNLOAD_FILE" ]; then
+    echo "Downloading $1 as $DOWNLOAD_FILE"
+    curl -L --silent -o "$DOWNLOAD_PATH/$DOWNLOAD_FILE" "$1"
+
+    EXITCODE=$?
+    if [ $EXITCODE -ne 0 ]; then
+      echo ""
+      echo "Failed to download $1. Exitcode $EXITCODE. Retrying in 10 seconds"
+      sleep 10
+      curl -L --silent -o "$DOWNLOAD_PATH/$DOWNLOAD_FILE" "$1"
+    fi
+
+    EXITCODE=$?
+    if [ $EXITCODE -ne 0 ]; then
+      echo ""
+      echo "Failed to download $1. Exitcode $EXITCODE"
+      exit 1
+    fi
+
+    echo "... Done"
+  else
+    echo "$DOWNLOAD_FILE has already downloaded."
+  fi
+
+  make_dir "$DOWNLOAD_PATH/$TARGETDIR"
+
+  if [[ "$DOWNLOAD_FILE" == *"patch"* ]]; then
+    return
+  fi
+
+  if [ -n "$3" ]; then
+    if ! tar -xvf "$DOWNLOAD_PATH/$DOWNLOAD_FILE" -C "$DOWNLOAD_PATH/$TARGETDIR" 2>/dev/null >/dev/null; then
+      echo "Failed to extract $DOWNLOAD_FILE"
+      exit 1
+    fi
+  else
+    if ! tar -xvf "$DOWNLOAD_PATH/$DOWNLOAD_FILE" -C "$DOWNLOAD_PATH/$TARGETDIR" --strip-components 1 2>/dev/null >/dev/null; then
+      echo "Failed to extract $DOWNLOAD_FILE"
+      exit 1
+    fi
+  fi
+
+  echo "Extracted $DOWNLOAD_FILE"
+
+  cd "$DOWNLOAD_PATH/$TARGETDIR" || (
+    echo "Error has occurred."
+    exit 1
+  )
+}
+
+execute() {
+  echo "$ $*"
+
+  OUTPUT=$("$@" 2>&1)
+
+  # shellcheck disable=SC2181
+  if [ $? -ne 0 ]; then
+    echo "$OUTPUT"
+    echo ""
+    echo "Failed to Execute $*" >&2
+    exit 1
+  fi
+}
+
+build() {
+  echo ""
+  echo "building $1 - version $2"
+  echo "======================="
+
+  if [ -f "$PACKAGES/$1.done" ]; then
+    if grep -Fx "$2" "$PACKAGES/$1.done" >/dev/null; then
+      echo "$1 version $2 already built. Remove $PACKAGES/$1.done lockfile to rebuild it."
+      return 1
+    elif $LATEST; then
+      echo "$1 is outdated and will be rebuilt with latest version $2"
+      return 0
+    else
+      echo "$1 is outdated, but will not be rebuilt. Pass in --latest to rebuild it or remove $PACKAGES/$1.done lockfile."
+      return 1
+    fi
+  fi
+
+  return 0
+}
+
+command_exists() {
+  if ! [[ -x $(command -v "$1") ]]; then
+    return 1
+  fi
+
+  return 0
+}
+
+library_exists() {
+  if ! [[ -x $(pkg-config --exists --print-errors "$1" 2>&1 >/dev/null) ]]; then
+    return 1
+  fi
+
+  return 0
+}
+
+build_done() {
+  echo "$2" > "$PACKAGES/$1.done"
+}
+
+verify_binary_type() {
+  if ! command_exists "file"; then
+    return
+  fi
+
+  BINARY_TYPE=$(file "$WORKSPACE/bin/ffmpeg" | sed -n 's/^.*\:\ \(.*$\)/\1/p')
+  echo ""
+  case $BINARY_TYPE in
+  "Mach-O 64-bit executable arm64")
+    echo "Successfully built Apple Silicon (M1) for ${OSTYPE}: ${BINARY_TYPE}"
+    ;;
+  *)
+    echo "Successfully built binary for ${OSTYPE}: ${BINARY_TYPE}"
+    ;;
+  esac
+}
+
+cleanup() {
+  remove_dir "$PACKAGES"
+  remove_dir "$WORKSPACE"
+  echo "Cleanup done."
+  echo ""
+}
+
+usage() {
+  echo "Usage: $PROGNAME [OPTIONS]"
+  echo "Options:"
+  echo "  -h, --help                     Display usage information"
+  echo "      --version                  Display version information"
+  echo "  -b, --build                    Starts the build process"
+  echo "      --enable-gpl-and-non-free  Enable GPL and non-free codecs  - https://ffmpeg.org/legal.html"
+  echo "  -c, --cleanup                  Remove all working dirs"
+  echo "      --latest                   Build latest version of dependencies if newer available"
+  echo "      --full-static              Build a full static FFmpeg binary (eg. glibc, pthreads etc...) **only Linux**"
+  echo "                                 Note: Because of the NSS (Name Service Switch), glibc does not recommend static links."
+  echo ""
+}
+
+echo "ffmpeg-build-script v$SCRIPT_VERSION"
+echo "========================="
+echo ""
+
+while (($# > 0)); do
+  case $1 in
+  -h | --help)
+    usage
+    exit 0
+    ;;
+  --version)
+    echo "$SCRIPT_VERSION"
+    exit 0
+    ;;
+  -*)
+    if [[ "$1" == "--build" || "$1" =~ '-b' ]]; then
+      bflag='-b'
+    fi
+    if [[ "$1" == "--enable-gpl-and-non-free" ]]; then
+      CONFIGURE_OPTIONS+=("--enable-nonfree")
+      CONFIGURE_OPTIONS+=("--enable-gpl")
+      NONFREE_AND_GPL=true
+    fi
+    if [[ "$1" == "--cleanup" || "$1" =~ '-c' && ! "$1" =~ '--' ]]; then
+      cflag='-c'
+      cleanup
+    fi
+    if [[ "$1" == "--full-static" ]]; then
+      if [[ "$OSTYPE" == "darwin"* ]]; then
+        echo "Error: A full static binary can only be build on Linux."
+        exit 1
+      fi
+      LDEXEFLAGS="-static"
+    fi
+    if [[ "$1" == "--latest" ]]; then
+      LATEST=true
+    fi
+    shift
+    ;;
+  *)
+    usage
+    exit 1
+    ;;
+  esac
+done
+
+if [ -z "$bflag" ]; then
+  if [ -z "$cflag" ]; then
+    usage
+    exit 1
+  fi
+  exit 0
+fi
+
+echo "Using $MJOBS make jobs simultaneously."
+
+if $NONFREE_AND_GPL; then
+  echo "With GPL and non-free codecs"
+fi
+
+if [ -n "$LDEXEFLAGS" ]; then
+  echo "Start the build in full static mode."
+fi
+
+mkdir -p "$PACKAGES"
+mkdir -p "$WORKSPACE"
+
+export PATH="${WORKSPACE}/bin:$PATH"
+PKG_CONFIG_PATH="/usr/local/lib/x86_64-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig"
+PKG_CONFIG_PATH+=":/usr/local/share/pkgconfig:/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/lib/pkgconfig:/usr/share/pkgconfig:/usr/lib64/pkgconfig"
+export PKG_CONFIG_PATH
+
+if ! command_exists "make"; then
+  echo "make not installed."
+  exit 1
+fi
+
+if ! command_exists "g++"; then
+  echo "g++ not installed."
+  exit 1
+fi
+
+if ! command_exists "curl"; then
+  echo "curl not installed."
+  exit 1
+fi
+
+if ! command_exists "cargo"; then
+  echo "cargo not installed. rav1e encoder will not be available."
+fi
+
+if ! command_exists "python3"; then
+  echo "python3 command not found. Lv2 filter and dav1d decoder will not be available."
+fi
+
+##
+## build tools
+##
+
+if build "giflib" "5.2.1"; then
+  download "https://netcologne.dl.sourceforge.net/project/giflib/giflib-5.2.1.tar.gz"
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+      download "https://sourceforge.net/p/giflib/bugs/_discuss/thread/4e811ad29b/c323/attachment/Makefile.patch"
+      execute patch -p0 --forward "${PACKAGES}/giflib-5.2.1/Makefile" "${PACKAGES}/Makefile.patch" || true
+    fi
+  cd "${PACKAGES}"/giflib-5.2.1 || exit
+  #multicore build disabled for this library
+  execute make
+  execute make PREFIX="${WORKSPACE}" install
+  build_done "giflib" "5.2.1"
+fi
+
+if build "pkg-config" "0.29.2"; then
+  download "https://pkgconfig.freedesktop.org/releases/pkg-config-0.29.2.tar.gz"
+  execute ./configure --silent --prefix="${WORKSPACE}" --with-pc-path="${WORKSPACE}"/lib/pkgconfig --with-internal-glib
+  execute make -j $MJOBS
+  execute make install
+  build_done "pkg-config" "0.29.2"
+fi
+
+if build "yasm" "1.3.0"; then
+  download "https://github.com/yasm/yasm/releases/download/v1.3.0/yasm-1.3.0.tar.gz"
+  execute ./configure --prefix="${WORKSPACE}"
+  execute make -j $MJOBS
+  execute make install
+  build_done "yasm" "1.3.0"
+fi
+
+if build "nasm" "2.16.01"; then
+  download "https://www.nasm.us/pub/nasm/releasebuilds/2.16.01/nasm-2.16.01.tar.xz"
+  execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+  execute make -j $MJOBS
+  execute make install
+  build_done "nasm" "2.16.01"
+fi
+
+if build "zlib" "1.2.13"; then
+  download "https://zlib.net/fossils/zlib-1.2.13.tar.gz"
+  execute ./configure --static --prefix="${WORKSPACE}"
+  execute make -j $MJOBS
+  execute make install
+  build_done "zlib" "1.2.13"
+fi
+
+if build "m4" "1.4.19"; then
+  download "https://ftp.gnu.org/gnu/m4/m4-1.4.19.tar.gz"
+  execute ./configure --prefix="${WORKSPACE}"
+  execute make -j $MJOBS
+  execute make install
+  build_done "m4" "1.4.19"
+fi
+
+if build "autoconf" "2.71"; then
+  download "https://ftp.gnu.org/gnu/autoconf/autoconf-2.71.tar.gz"
+  execute ./configure --prefix="${WORKSPACE}"
+  execute make -j $MJOBS
+  execute make install
+  build_done "autoconf" "2.71"
+fi
+
+if build "automake" "1.16.5"; then
+  download "https://ftp.gnu.org/gnu/automake/automake-1.16.5.tar.gz"
+  execute ./configure --prefix="${WORKSPACE}"
+  execute make -j $MJOBS
+  execute make install
+  build_done "automake" "1.16.5"
+fi
+
+if build "libtool" "2.4.7"; then
+  download "https://ftpmirror.gnu.org/libtool/libtool-2.4.7.tar.gz"
+  execute ./configure --prefix="${WORKSPACE}" --enable-static --disable-shared
+  execute make -j $MJOBS
+  execute make install
+  build_done "libtool" "2.4.7"
+fi
+
+if $NONFREE_AND_GPL; then
+  if build "openssl" "1.1.1t"; then
+    download "https://www.openssl.org/source/openssl-1.1.1t.tar.gz"
+    if $MACOS_M1; then
+      sed -n 's/\(##### GNU Hurd\)/"darwin64-arm64-cc" => { \n    inherit_from     => [ "darwin-common", asm("aarch64_asm") ],\n    CFLAGS           => add("-Wall"),\n    cflags           => add("-arch arm64 "),\n    lib_cppflags     => add("-DL_ENDIAN"),\n    bn_ops           => "SIXTY_FOUR_BIT_LONG", \n    perlasm_scheme   => "macosx", \n}, \n\1/g' Configurations/10-main.conf
+      execute ./Configure --prefix="${WORKSPACE}" no-shared no-asm darwin64-arm64-cc
+    else
+      execute ./config --prefix="${WORKSPACE}" --openssldir="${WORKSPACE}" --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib no-shared zlib
+    fi
+    execute make -j $MJOBS
+    execute make install_sw
+    build_done "openssl" "1.1.1t"
+  fi
+  CONFIGURE_OPTIONS+=("--enable-openssl")
+else
+  if build "gmp" "6.2.1"; then
+    download "https://ftp.gnu.org/gnu/gmp/gmp-6.2.1.tar.xz"
+    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+    execute make -j $MJOBS
+    execute make install
+    build_done "gmp" "6.2.1"
+  fi
+
+  if build "nettle" "3.8.1"; then
+    download "https://ftp.gnu.org/gnu/nettle/nettle-3.8.1.tar.gz"
+    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-openssl --disable-documentation --libdir="${WORKSPACE}"/lib CPPFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}"
+    execute make -j $MJOBS
+    execute make install
+    build_done "nettle" "3.8.1"
+  fi
+
+if [[ ! $ARCH == 'arm64' ]]; then
+  if build "gnutls" "3.7.9"; then
+    download "https://www.gnupg.org/ftp/gcrypt/gnutls/v3.7/gnutls-3.7.9.tar.xz"
+    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-doc --disable-tools --disable-cxx --disable-tests --disable-gtk-doc-html --disable-libdane --disable-nls --enable-local-libopts --disable-guile --with-included-libtasn1 --with-included-unistring --without-p11-kit CPPFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}"
+    execute make -j $MJOBS
+    execute make install
+    build_done "gnutls" "3.7.9"
+  fi
+ # CONFIGURE_OPTIONS+=("--enable-gmp" "--enable-gnutls")
+fi
+fi
+
+if build "cmake" "3.25.1"; then
+  download "https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-3.25.1.tar.gz"
+  execute ./configure --prefix="${WORKSPACE}" --parallel="${MJOBS}" -- -DCMAKE_USE_OPENSSL=OFF
+  execute make -j $MJOBS
+  execute make install
+  build_done "cmake" "3.25.1"
+fi
+
+##
+## video library
+##
+
+if command_exists "python3"; then
+  # dav1d needs meson and ninja along with nasm to be built
+  if command_exists "pip3"; then
+    # meson and ninja can be installed via pip3
+    execute pip3 install pip setuptools --quiet --upgrade --no-cache-dir --disable-pip-version-check
+    for r in meson ninja; do
+      if ! command_exists ${r}; then
+        execute pip3 install ${r} --quiet --upgrade --no-cache-dir --disable-pip-version-check
+      fi
+    export PATH=$PATH:~/Library/Python/3.9/bin
+    done
+  fi
+  if command_exists "meson"; then
+    if build "dav1d" "1.1.0"; then
+      download "https://code.videolan.org/videolan/dav1d/-/archive/1.0.0/dav1d-1.1.0.tar.gz"
+      make_dir build
+      
+      CFLAGSBACKUP=$CFLAGS
+      if $MACOS_M1; then
+        export CFLAGS="-arch arm64"
+      fi
+      
+      execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
+      execute ninja -C build
+      execute ninja -C build install
+      
+      if $MACOS_M1; then
+        export CFLAGS=$CFLAGSBACKUP
+      fi
+      
+      build_done "dav1d" "1.1.0"
+    fi
+    CONFIGURE_OPTIONS+=("--enable-libdav1d")
+  fi
+fi
+
+if ! $MACOS_M1; then
+  if build "svtav1" "1.4.1"; then
+    # Last known working commit which passed CI Tests from HEAD branch
+    download "https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/v1.4.1/SVT-AV1-v1.4.1.tar.gz" "svtav1-1.4.1.tar.gz"
+    cd "${PACKAGES}"/svtav1-1.4.1//Build/linux || exit
+    execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF ../.. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
+    execute make -j $MJOBS
+    execute make install
+    execute cp SvtAv1Enc.pc "${WORKSPACE}/lib/pkgconfig/"
+    execute cp SvtAv1Dec.pc "${WORKSPACE}/lib/pkgconfig/"
+    build_done "svtav1" "1.4.1";
+  fi
+  CONFIGURE_OPTIONS+=("--enable-libsvtav1")
+fi
+
+if command_exists "cargo"; then
+  if build "rav1e" "0.6.3"; then
+    execute cargo install --version "0.9.14+cargo-0.66" cargo-c
+    download "https://github.com/xiph/rav1e/archive/refs/tags/v0.6.3.tar.gz"
+    execute cargo cinstall --prefix="${WORKSPACE}" --library-type=staticlib --crt-static --release
+    build_done "rav1e" "0.6.3"
+  fi
+  CONFIGURE_OPTIONS+=("--enable-librav1e")
+fi
+
+if $NONFREE_AND_GPL; then
+
+  if build "x264" "941cae6d"; then
+    download "https://code.videolan.org/videolan/x264/-/archive/941cae6d1d6d6344c9a1d27440eaf2872b18ca9a/x264-941cae6d1d6d6344c9a1d27440eaf2872b18ca9a.tar.gz" "x264-941cae6d.tar.gz"
+    cd "${PACKAGES}"/x264-941cae6d || exit
+
+    if [[ "$OSTYPE" == "linux-gnu" ]]; then
+      execute ./configure --prefix="${WORKSPACE}" --enable-static --enable-pic CXXFLAGS="-fPIC ${CXXFLAGS}"
+    else
+      execute ./configure --prefix="${WORKSPACE}" --enable-static --enable-pic
+    fi
+
+    execute make -j $MJOBS
+    execute make install
+    execute make install-lib-static
+
+    build_done "x264" "941cae6d"
+  fi
+  CONFIGURE_OPTIONS+=("--enable-libx264")
+fi
+
+if $NONFREE_AND_GPL; then
+  X265_CHECKOUT_HASH="6da609e41ca5ae1d661a1b5c4805ed7a3f4117cc"
+  X265_FOLDER="multicoreware-x265_git-6da609e41ca5"
+  if build "x265" $X265_CHECKOUT_HASH; then
+    download "https://bitbucket.org/multicoreware/x265_git/get/$X265_CHECKOUT_HASH.tar.bz2" "x265-master.tar.gz"
+    cd build/linux || exit
+    rm -rf 8bit 10bit 12bit 2>/dev/null
+    mkdir -p 8bit 10bit 12bit
+    cd 12bit || exit
+    execute cmake ../../../source -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DHIGH_BIT_DEPTH=ON -DENABLE_HDR10_PLUS=ON -DEXPORT_C_API=OFF -DENABLE_CLI=OFF -DMAIN12=ON
+    execute make -j $MJOBS
+    cd ../10bit || exit
+    execute cmake ../../../source -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DHIGH_BIT_DEPTH=ON -DENABLE_HDR10_PLUS=ON -DEXPORT_C_API=OFF -DENABLE_CLI=OFF
+    execute make -j $MJOBS
+    cd ../8bit || exit
+    ln -sf ../10bit/libx265.a libx265_main10.a
+    ln -sf ../12bit/libx265.a libx265_main12.a
+    execute cmake ../../../source -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DEXTRA_LIB="x265_main10.a;x265_main12.a;-ldl" -DEXTRA_LINK_FLAGS=-L. -DLINKED_10BIT=ON -DLINKED_12BIT=ON
+    execute make -j $MJOBS
+
+    mv libx265.a libx265_main.a
+
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+      execute "${MACOS_LIBTOOL}" -static -o libx265.a libx265_main.a libx265_main10.a libx265_main12.a 2>/dev/null
+    else
+      execute ar -M <<EOF
+CREATE libx265.a
+ADDLIB libx265_main.a
+ADDLIB libx265_main10.a
+ADDLIB libx265_main12.a
+SAVE
+END
+EOF
+    fi
+
+    execute make install
+    build_done "x265" $X265_CHECKOUT_HASH
+  fi
+  CONFIGURE_OPTIONS+=("--enable-libx265")
+fi
+
+##
+## HWaccel library
+##
+
+if [[ "$OSTYPE" == "linux-gnu" ]]; then
+  if command_exists "nvcc"; then
+    if build "nv-codec" "11.1.5.2"; then
+      download "https://github.com/FFmpeg/nv-codec-headers/releases/download/n11.1.5.2/nv-codec-headers-11.1.5.2.tar.gz"
+      execute make PREFIX="${WORKSPACE}"
+      execute make PREFIX="${WORKSPACE}/usr" install
+      build_done "nv-codec" "11.1.5.2"
+    fi
+    CFLAGS+=" -I/usr/local/cuda/include"
+    LDFLAGS+=" -L/usr/local/cuda/lib64"
+    CONFIGURE_OPTIONS+=("--enable-cuda-nvcc" "--enable-cuvid" "--enable-nvenc" "--enable-cuda-llvm")
+
+    if [ -z "$LDEXEFLAGS" ]; then
+      CONFIGURE_OPTIONS+=("--enable-libnpp") # Only libnpp cannot be statically linked.
+    fi
+
+    # https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
+    CONFIGURE_OPTIONS+=("--nvccflags=-gencode arch=compute_52,code=sm_52")
+  fi
+
+  # Vaapi doesn't work well with static links FFmpeg.
+  if [ -z "$LDEXEFLAGS" ]; then
+    # If the libva development SDK is installed, enable vaapi.
+    if library_exists "libva"; then
+      if build "vaapi" "1"; then
+        build_done "vaapi" "1"
+      fi
+      CONFIGURE_OPTIONS+=("--enable-vaapi")
+    fi
+  fi
+
+  if build "amf" "1.4.29"; then
+    download 'https://github.com/GPUOpen-LibrariesAndSDKs/AMF/archive/refs/tags/v1.4.29.tar.gz' 'AMF-1.4.29.tar.gz' 'AMF-1.4.29'
+    execute rm -rf "${WORKSPACE}/include/AMF"
+    execute mkdir -p "${WORKSPACE}/include/AMF"
+    execute cp -r "${PACKAGES}"/AMF-1.4.29/AMF-1.4.29/amf/public/include/* "${WORKSPACE}/include/AMF/"
+    build_done "amf" "1.4.29"
+  fi
+  CONFIGURE_OPTIONS+=("--enable-amf")
+fi
+
+##
+## FFmpeg
+##
+
+EXTRA_VERSION=""
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  EXTRA_VERSION="${FFMPEG_VERSION}"
+fi
+
+build "ffmpeg" "$FFMPEG_VERSION"
+download "https://github.com/FFmpeg/FFmpeg/archive/refs/heads/release/$FFMPEG_VERSION.tar.gz" "FFmpeg-release-$FFMPEG_VERSION.tar.gz"
+# shellcheck disable=SC2086
+./configure "${CONFIGURE_OPTIONS[@]}" \
+  --disable-debug \
+  --disable-doc \
+  --disable-shared \
+  --enable-pthreads \
+  --enable-static \
+  --enable-small \
+  --enable-version3 \
+  --disable-ffnvcodec \
+  --extra-cflags="${CFLAGS}" \
+  --extra-ldexeflags="${LDEXEFLAGS}" \
+  --extra-ldflags="${LDFLAGS}" \
+  --extra-libs="${EXTRALIBS}" \
+  --pkgconfigdir="$WORKSPACE/lib/pkgconfig" \
+  --pkg-config-flags="--static" \
+  --prefix="${WORKSPACE}" \
+  --extra-version="${EXTRA_VERSION}"
+
+execute make -j $MJOBS
+execute make install
+
+INSTALL_FOLDER="/usr/bin"
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  INSTALL_FOLDER="/usr/local/bin"
+fi
+
+verify_binary_type
+
+echo ""
+echo "Building done. The following binaries can be found here:"
+echo "- ffmpeg: $WORKSPACE/bin/ffmpeg"
+echo "- ffprobe: $WORKSPACE/bin/ffprobe"
+echo "- ffplay: $WORKSPACE/bin/ffplay"
+echo ""
+
+if [[ "$AUTOINSTALL" == "yes" ]]; then
+  if command_exists "sudo"; then
+    sudo cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
+    sudo cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
+    sudo cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/ffplay"
+    echo "Done. FFmpeg is now installed to your system."
+  else
+    cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
+    cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
+    cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/ffplay"
+    echo "Done. FFmpeg is now installed to your system."
+  fi
+elif [[ ! "$SKIPINSTALL" == "yes" ]]; then
+  read -r -p "Install these binaries to your $INSTALL_FOLDER folder? Existing binaries will be replaced. [Y/n] " response
+  case $response in
+  [yY][eE][sS] | [yY])
+    if command_exists "sudo"; then
+      sudo cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
+      sudo cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
+      sudo cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/ffplay"
+    else
+      cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/ffmpeg"
+      cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/ffprobe"
+      cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/ffplay"
+    fi
+    echo "Done. FFmpeg is now installed to your system."
+    ;;
+  esac
+fi
+
+exit 0
