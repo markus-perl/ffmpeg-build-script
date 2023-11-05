@@ -395,7 +395,7 @@ if build "libtool" "2.4.7"; then
 fi
 
 if $NONFREE_AND_GPL; then
-  if build "openssl" "1.1.1u"; then
+  if build "openssl" "1.1.1w"; then
     download "https://www.openssl.org/source/openssl-$CURRENT_PACKAGE_VERSION.tar.gz"
     if $MACOS_M1; then
       sed -n 's/\(##### GNU Hurd\)/"darwin64-arm64-cc" => { \n    inherit_from     => [ "darwin-common", asm("aarch64_asm") ],\n    CFLAGS           => add("-Wall"),\n    cflags           => add("-arch arm64 "),\n    lib_cppflags     => add("-DL_ENDIAN"),\n    bn_ops           => "SIXTY_FOUR_BIT_LONG", \n    perlasm_scheme   => "macosx", \n}, \n\1/g' Configurations/10-main.conf
@@ -417,27 +417,27 @@ else
     build_done "gmp" "6.2.1"
   fi
 
-  if build "nettle" "3.8.1"; then
-    download "https://ftp.gnu.org/gnu/nettle/nettle-3.8.1.tar.gz"
+  if build "nettle" "3.9.1"; then
+    download "https://ftp.gnu.org/gnu/nettle/nettle-$CURRENT_PACKAGE_VERSION.tar.gz"
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-openssl --disable-documentation --libdir="${WORKSPACE}"/lib CPPFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}"
     execute make -j $MJOBS
     execute make install
-    build_done "nettle" "3.8.1"
+    build_done "nettle" $CURRENT_PACKAGE_VERSION
   fi
 
   if [[ ! $ARCH == 'arm64' ]]; then
-    if build "gnutls" "3.7.9"; then
-      download "https://www.gnupg.org/ftp/gcrypt/gnutls/v3.7/gnutls-3.7.9.tar.xz"
+    if build "gnutls" "3.7.10"; then
+      download "https://www.gnupg.org/ftp/gcrypt/gnutls/v3.7/gnutls-$CURRENT_PACKAGE_VERSION.tar.xz"
       execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-doc --disable-tools --disable-cxx --disable-tests --disable-gtk-doc-html --disable-libdane --disable-nls --enable-local-libopts --disable-guile --with-included-libtasn1 --with-included-unistring --without-p11-kit CPPFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}"
       execute make -j $MJOBS
       execute make install
-      build_done "gnutls" "3.7.9"
+      build_done "gnutls" $CURRENT_PACKAGE_VERSION
     fi
     # CONFIGURE_OPTIONS+=("--enable-gmp" "--enable-gnutls")
   fi
 fi
 
-if build "cmake" "3.26.4"; then
+if build "cmake" "3.27.7"; then
   download "https://github.com/Kitware/CMake/releases/download/v$CURRENT_PACKAGE_VERSION/cmake-$CURRENT_PACKAGE_VERSION.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --parallel="${MJOBS}" -- -DCMAKE_USE_OPENSSL=OFF
   execute make -j $MJOBS
@@ -485,7 +485,7 @@ if command_exists "python3"; then
   fi
 fi
 
-if build "svtav1" "1.6.0"; then
+if build "svtav1" "1.7.0"; then
   # Last known working commit which passed CI Tests from HEAD branch
   download "https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/v$CURRENT_PACKAGE_VERSION/SVT-AV1-v$CURRENT_PACKAGE_VERSION.tar.gz" "svtav1-$CURRENT_PACKAGE_VERSION.tar.gz"
   cd "${PACKAGES}"/svtav1-$CURRENT_PACKAGE_VERSION//Build/linux || exit
@@ -501,11 +501,11 @@ CONFIGURE_OPTIONS+=("--enable-libsvtav1")
 
 if command_exists "cargo"; then
   if [[ ! "$SKIPRAV1E" == "yes" ]]; then
-    if build "rav1e" "0.6.3"; then
+    if build "rav1e" "0.6.6"; then
       execute cargo install --version "0.9.20+cargo-0.71" cargo-c
-      download "https://github.com/xiph/rav1e/archive/refs/tags/v0.6.3.tar.gz"
+      download "https://github.com/xiph/rav1e/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz"
       execute cargo cinstall --prefix="${WORKSPACE}" --library-type=staticlib --crt-static --release
-      build_done "rav1e" "0.6.3"
+      build_done "rav1e" $CURRENT_PACKAGE_VERSION
     fi
     CONFIGURE_OPTIONS+=("--enable-librav1e")
   fi
@@ -576,8 +576,8 @@ EOF
   CONFIGURE_OPTIONS+=("--enable-libx265")
 fi
 
-if build "libvpx" "1.13.0"; then
-  download "https://github.com/webmproject/libvpx/archive/refs/tags/v1.13.0.tar.gz" "libvpx-1.13.0.tar.gz"
+if build "libvpx" "1.13.1"; then
+  download "https://github.com/webmproject/libvpx/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "libvpx-$CURRENT_PACKAGE_VERSION.tar.gz"
 
   if [[ "$OSTYPE" == "darwin"* ]]; then
     echo "Applying Darwin patch"
@@ -589,7 +589,7 @@ if build "libvpx" "1.13.0"; then
   execute make -j $MJOBS
   execute make install
 
-  build_done "libvpx" "1.13.0"
+  build_done "libvpx" $CURRENT_PACKAGE_VERSION
 fi
 CONFIGURE_OPTIONS+=("--enable-libvpx")
 
@@ -615,11 +615,11 @@ if $NONFREE_AND_GPL; then
 fi
 
 if $NONFREE_AND_GPL; then
-  if build "vid_stab" "1.1.0"; then
-    download "https://github.com/georgmartius/vid.stab/archive/v1.1.0.tar.gz" "vid.stab-1.1.0.tar.gz"
+  if build "vid_stab" "1.1.1"; then
+    download "https://github.com/georgmartius/vid.stab/archive/v$CURRENT_PACKAGE_VERSION.tar.gz" "vid.stab-$CURRENT_PACKAGE_VERSION.tar.gz"
 
     if $MACOS_M1; then
-      curl -L --silent -o "$PACKAGES/vid.stab-1.1.0/fix_cmake_quoting.patch" "https://raw.githubusercontent.com/Homebrew/formula-patches/5bf1a0e0cfe666ee410305cece9c9c755641bfdf/libvidstab/fix_cmake_quoting.patch"
+      curl -L --silent -o "$PACKAGES/vid.stab-$CURRENT_PACKAGE_VERSION/fix_cmake_quoting.patch" "https://raw.githubusercontent.com/Homebrew/formula-patches/5bf1a0e0cfe666ee410305cece9c9c755641bfdf/libvidstab/fix_cmake_quoting.patch"
       patch -p1 <fix_cmake_quoting.patch
     fi
 
@@ -627,14 +627,14 @@ if $NONFREE_AND_GPL; then
     execute make
     execute make install
 
-    build_done "vid_stab" "1.1.0"
+    build_done "vid_stab" $CURRENT_PACKAGE_VERSION
   fi
   CONFIGURE_OPTIONS+=("--enable-libvidstab")
 fi
 
-if build "av1" "bcfe6fb"; then
+if build "av1" "7b5f665"; then
   # libaom bcfe6fb == v3.5.0
-  download "https://aomedia.googlesource.com/aom/+archive/bcfe6fbfed315f83ee8a95465c654ee8078dbff9.tar.gz" "av1.tar.gz" "av1"
+  download "https://aomedia.googlesource.com/aom/+archive/7b5f665231dfbcc5abc49d3b8d6d8826c75ce473.tar.gz" "av1.tar.gz" "av1"
   make_dir "$PACKAGES"/aom_build
   cd "$PACKAGES"/aom_build || exit
   if $MACOS_M1; then
@@ -645,19 +645,19 @@ if build "av1" "bcfe6fb"; then
   execute make -j $MJOBS
   execute make install
 
-  build_done "av1" "bcfe6fb"
+  build_done "av1" "7b5f665"
 fi
 CONFIGURE_OPTIONS+=("--enable-libaom")
 
-if build "zimg" "3.0.4"; then
-  download "https://github.com/sekrit-twc/zimg/archive/refs/tags/release-3.0.4.tar.gz" "zimg-3.0.4.tar.gz" "zimg"
-  cd zimg-release-3.0.4 || exit
+if build "zimg" "3.0.5"; then
+  download "https://github.com/sekrit-twc/zimg/archive/refs/tags/release-$CURRENT_PACKAGE_VERSION.tar.gz" "zimg-$CURRENT_PACKAGE_VERSION.tar.gz" "zimg"
+  cd zimg-release-$CURRENT_PACKAGE_VERSION || exit
   execute "${WORKSPACE}/bin/libtoolize" -i -f -q
   execute ./autogen.sh --prefix="${WORKSPACE}"
   execute ./configure --prefix="${WORKSPACE}" --enable-static --disable-shared
   execute make -j $MJOBS
   execute make install
-  build_done "zimg" "3.0.4"
+  build_done "zimg" $CURRENT_PACKAGE_VERSION
 fi
 CONFIGURE_OPTIONS+=("--enable-libzimg")
 
@@ -742,8 +742,8 @@ if build "lame" "3.100"; then
 fi
 CONFIGURE_OPTIONS+=("--enable-libmp3lame")
 
-if build "opus" "1.3.1"; then
-  download "https://archive.mozilla.org/pub/opus/opus-1.3.1.tar.gz"
+if build "opus" "1.4"; then
+  download "https://downloads.xiph.org/releases/opus/opus-1.4.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j $MJOBS
   execute make install
@@ -846,13 +846,13 @@ fi
 ## other library
 ##
 
-if build "libsdl" "2.26.3"; then
-  download "https://www.libsdl.org/release/SDL2-2.26.3.tar.gz"
+if build "libsdl" "2.28.5"; then
+  download "https://www.libsdl.org/release/SDL2-$CURRENT_PACKAGE_VERSION.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j $MJOBS
   execute make install
 
-  build_done "libsdl" "2.26.3"
+  build_done "libsdl" $CURRENT_PACKAGE_VERSION
 fi
 
 if build "FreeType2" "2.11.1"; then
@@ -866,8 +866,8 @@ fi
 CONFIGURE_OPTIONS+=("--enable-libfreetype")
 
 if $NONFREE_AND_GPL; then
-  if build "srt" "1.5.1"; then
-    download "https://github.com/Haivision/srt/archive/v1.5.1.tar.gz" "srt-1.5.1.tar.gz"
+  if build "srt" "1.5.3"; then
+    download "https://github.com/Haivision/srt/archive/v$CURRENT_PACKAGE_VERSION.tar.gz" "srt-$CURRENT_PACKAGE_VERSION.tar.gz"
     export OPENSSL_ROOT_DIR="${WORKSPACE}"
     export OPENSSL_LIB_DIR="${WORKSPACE}"/lib
     export OPENSSL_INCLUDE_DIR="${WORKSPACE}"/include/
@@ -878,7 +878,7 @@ if $NONFREE_AND_GPL; then
       sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "${WORKSPACE}"/lib/pkgconfig/srt.pc # The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
     fi
 
-    build_done "srt" "1.5.1"
+    build_done "srt" $CURRENT_PACKAGE_VERSION
   fi
   CONFIGURE_OPTIONS+=("--enable-libsrt")
 fi
@@ -889,11 +889,11 @@ fi
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
   if command_exists "nvcc"; then
-    if build "nv-codec" "11.1.5.2"; then
-      download "https://github.com/FFmpeg/nv-codec-headers/releases/download/n11.1.5.2/nv-codec-headers-11.1.5.2.tar.gz"
+    if build "nv-codec" "11.1.5.3"; then
+      download "https://github.com/FFmpeg/nv-codec-headers/releases/download/n$CURRENT_PACKAGE_VERSION/nv-codec-headers-$CURRENT_PACKAGE_VERSION.tar.gz"
       execute make PREFIX="${WORKSPACE}"
       execute make PREFIX="${WORKSPACE}" install
-      build_done "nv-codec" "11.1.5.2"
+      build_done "nv-codec" $CURRENT_PACKAGE_VERSION
     fi
     CFLAGS+=" -I/usr/local/cuda/include"
     LDFLAGS+=" -L/usr/local/cuda/lib64"
