@@ -260,6 +260,18 @@ $ ls build/lib
 libnppc.so.11 libnppicc.so.11 libnppidei.so.11 libnppig.so.11
 ```
 
+##### Notes on Docker build with CUDA
+
+If you see a "CUDA compute capability could not be found" message during build, first check to see if your GPU device is even available.  
+In addition, Docker build needs access to CUDA devices to detect your capability version. [some steps](https://stackoverflow.com/a/77348905/7764138) are required on the host machine to allow this access.  
+
+1. Install NVIDIA docker runtime and toolkit `sudo apt install nvidia-container-runtime nvidia-container-toolkit`
+2. Modify `/etc/docker/daemon.json` and add the line `"default-runtime": "nvidia"`
+3. Remove buildx: `sudo apt remove docker-buildx-plugin`
+4. Restart Docker: `sudo systemctl restart docker`
+5. (Optional but Recommended) If all this doesn't work, also disable buildkit with `export DOCKER_BUILDKIT=0` before building  
+
+
 #### Full static version
 
 If you're running an operating system other than the one above, a completely static build may work. To build a full
@@ -324,7 +336,7 @@ ffmpeg-build-script v1.xx
 
 Using 12 make jobs simultaneously.
 With GPL and non-free codecs
-
+CUDA compute capability: 75
 building giflib - version 5.2.1
 =======================
 Downloading https://netcologne.dl.sourceforge.net/project/giflib/giflib-5.2.1.tar.gz as giflib-5.2.1.tar.gz

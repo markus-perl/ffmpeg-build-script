@@ -278,6 +278,18 @@ if $NONFREE_AND_GPL; then
   echo "With GPL and non-free codecs"
 fi
 
+# Check CUDA compute capability
+if [[ "$OSTYPE" == "linux-gnu" ]]; then
+  if command_exists "nvcc"; then
+    export CUDA_COMPUTE_CAPABILITY=$(deviceQuery | grep Capability | head -n 1 | awk 'END {print $NF}' | tr -d '.')
+    echo "CUDA compute capability: $CUDA_COMPUTE_CAPABILITY"
+  fi
+  if [ -z "$CUDA_COMPUTE_CAPABILITY" ]; then
+    echo "CUDA compute capability could not be found... do you have CUDA access in docker?"
+    exit 1
+  fi
+fi
+
 if [ -n "$LDEXEFLAGS" ]; then
   echo "Start the build in full static mode."
 fi
@@ -847,7 +859,7 @@ fi
 ##
 
 if build "libsdl" "2.28.5"; then
-  download "https://www.libsdl.org/release/SDL2-$CURRENT_PACKAGE_VERSION.tar.gz"
+  download "https://github.com/libsdl-org/SDL/releases/download/release-$CURRENT_PACKAGE_VERSION/SDL2-$CURRENT_PACKAGE_VERSION.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j $MJOBS
   execute make install
@@ -884,6 +896,20 @@ if $NONFREE_AND_GPL; then
 fi
 
 ##
+## zmq library
+##
+
+if build "libzmq" "4.3.5"; then
+  download "https://github.com/zeromq/libzmq/releases/download/v$CURRENT_PACKAGE_VERSION/zeromq-$CURRENT_PACKAGE_VERSION.tar.gz"
+  execute ./autogen.sh
+  execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+  execute make -j $MJOBS
+  execute make install
+  build_done "libzmq" $CURRENT_PACKAGE_VERSION
+  CONFIGURE_OPTIONS+=("--enable-libzmq")
+fi
+
+##
 ## HWaccel library
 ##
 
@@ -904,7 +930,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     fi
 
     # https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
-    CONFIGURE_OPTIONS+=("--nvccflags=-gencode arch=compute_52,code=sm_52")
+    CONFIGURE_OPTIONS+=("--nvccflags=-gencode arch=compute_$CUDA_COMPUTE_CAPABILITY,code=sm_$CUDA_COMPUTE_CAPABILITY")
   else
     CONFIGURE_OPTIONS+=("--disable-ffnvcodec")
   fi
