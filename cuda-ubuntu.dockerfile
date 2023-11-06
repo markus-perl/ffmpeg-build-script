@@ -1,7 +1,7 @@
 ARG CUDAVER=12.2.2
 ARG UBUNTUVER=22.04
 
-FROM nvidia/cuda:${CUDAVER}-devel-ubuntu${UBUNTUVER} as build
+FROM nvidia/cuda:${CUDAVER}-devel-ubuntu${UBUNTUVER} AS build
 
 ENV DEBIAN_FRONTEND noninteractive
 ENV NVIDIA_VISIBLE_DEVICES all
@@ -35,7 +35,7 @@ COPY ./build-ffmpeg /app/build-ffmpeg
 RUN SKIPINSTALL=yes /app/build-ffmpeg --build --enable-gpl-and-non-free
 
 
-FROM ubuntu:${UBUNTUVER} as release
+FROM ubuntu:${UBUNTUVER} AS release
 
 ENV DEBIAN_FRONTEND noninteractive
 ENV NVIDIA_VISIBLE_DEVICES all
