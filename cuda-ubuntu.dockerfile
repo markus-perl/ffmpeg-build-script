@@ -32,8 +32,7 @@ RUN mkdir -p /code && \
 WORKDIR /app
 COPY ./build-ffmpeg /app/build-ffmpeg
 
-RUN SKIPINSTALL=yes /app/build-ffmpeg --build --enable-gpl-and-non-free
-
+RUN CUDA_COMPUTE_CAPABILITY=$(deviceQuery | grep Capability | head -n 1 | awk 'END {print $NF}' | tr -d '.') SKIPINSTALL=yes /app/build-ffmpeg --build --enable-gpl-and-non-free
 
 FROM ubuntu:${UBUNTUVER} AS release
 

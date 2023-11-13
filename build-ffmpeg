@@ -280,13 +280,14 @@ fi
 
 # Check CUDA compute capability
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
-  if command_exists "nvcc"; then
-    export CUDA_COMPUTE_CAPABILITY=$(deviceQuery | grep Capability | head -n 1 | awk 'END {print $NF}' | tr -d '.')
-    echo "CUDA compute capability: $CUDA_COMPUTE_CAPABILITY"
-  fi
-  if [ -z "$CUDA_COMPUTE_CAPABILITY" ]; then
-    echo "CUDA compute capability could not be found... do you have CUDA access in docker?"
-    exit 1
+  if [ -n "$CUDA_COMPUTE_CAPABILITY" ]; then
+    echo "CUDA env variable provided, building with compute capability $CUDA_COMPUTE_CAPABILITY"
+  else
+    # Set default value if no compute capability was found
+    # Note that multi-architecture builds are not supported in ffmpeg
+    # see https://patchwork.ffmpeg.org/comment/62905/
+    export CUDA_COMPUTE_CAPABILITY=52
+    echo "CUDA env variable not provided, using default compute capability $CUDA_COMPUTE_CAPABILITY"
   fi
 fi
 
@@ -330,80 +331,80 @@ fi
 ##
 
 if build "giflib" "5.2.1"; then
-  download "https://netcologne.dl.sourceforge.net/project/giflib/giflib-5.2.1.tar.gz"
+  download "https://netcologne.dl.sourceforge.net/project/giflib/giflib-$CURRENT_PACKAGE_VERSION.tar.gz"
   if [[ "$OSTYPE" == "darwin"* ]]; then
     download "https://sourceforge.net/p/giflib/bugs/_discuss/thread/4e811ad29b/c323/attachment/Makefile.patch"
-    execute patch -p0 --forward "${PACKAGES}/giflib-5.2.1/Makefile" "${PACKAGES}/Makefile.patch" || true
+    execute patch -p0 --forward "${PACKAGES}/giflib-$CURRENT_PACKAGE_VERSION/Makefile" "${PACKAGES}/Makefile.patch" || true
   fi
-  cd "${PACKAGES}"/giflib-5.2.1 || exit
+  cd "${PACKAGES}"/giflib-$CURRENT_PACKAGE_VERSION || exit
   #multicore build disabled for this library
   execute make
   execute make PREFIX="${WORKSPACE}" install
-  build_done "giflib" "5.2.1"
+  build_done "giflib" $CURRENT_PACKAGE_VERSION
 fi
 
 if build "pkg-config" "0.29.2"; then
-  download "https://pkgconfig.freedesktop.org/releases/pkg-config-0.29.2.tar.gz"
+  download "https://pkgconfig.freedesktop.org/releases/pkg-config-$CURRENT_PACKAGE_VERSION.tar.gz"
   execute ./configure --silent --prefix="${WORKSPACE}" --with-pc-path="${WORKSPACE}"/lib/pkgconfig --with-internal-glib
   execute make -j $MJOBS
   execute make install
-  build_done "pkg-config" "0.29.2"
+  build_done "pkg-config" $CURRENT_PACKAGE_VERSION
 fi
 
 if build "yasm" "1.3.0"; then
-  download "https://github.com/yasm/yasm/releases/download/v1.3.0/yasm-1.3.0.tar.gz"
+  download "https://github.com/yasm/yasm/releases/download/v$CURRENT_PACKAGE_VERSION/yasm-$CURRENT_PACKAGE_VERSION.tar.gz"
   execute ./configure --prefix="${WORKSPACE}"
   execute make -j $MJOBS
   execute make install
-  build_done "yasm" "1.3.0"
+  build_done "yasm" $CURRENT_PACKAGE_VERSION
 fi
 
 if build "nasm" "2.16.01"; then
-  download "https://www.nasm.us/pub/nasm/releasebuilds/2.16.01/nasm-2.16.01.tar.xz"
+  download "https://www.nasm.us/pub/nasm/releasebuilds/$CURRENT_PACKAGE_VERSION/nasm-$CURRENT_PACKAGE_VERSION.tar.xz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j $MJOBS
   execute make install
-  build_done "nasm" "2.16.01"
+  build_done "nasm" $CURRENT_PACKAGE_VERSION
 fi
 
 if build "zlib" "1.2.13"; then
-  download "https://zlib.net/fossils/zlib-1.2.13.tar.gz"
+  download "https://github.com/madler/zlib/releases/download/v$CURRENT_PACKAGE_VERSION/zlib-$CURRENT_PACKAGE_VERSION.tar.gz"
   execute ./configure --static --prefix="${WORKSPACE}"
   execute make -j $MJOBS
   execute make install
-  build_done "zlib" "1.2.13"
+  build_done "zlib" $CURRENT_PACKAGE_VERSION
 fi
 
 if build "m4" "1.4.19"; then
-  download "https://ftp.gnu.org/gnu/m4/m4-1.4.19.tar.gz"
+  download "https://ftp.gnu.org/gnu/m4/m4-$CURRENT_PACKAGE_VERSION.tar.gz"
   execute ./configure --prefix="${WORKSPACE}"
   execute make -j $MJOBS
   execute make install
-  build_done "m4" "1.4.19"
+  build_done "m4" $CURRENT_PACKAGE_VERSION
 fi
 
 if build "autoconf" "2.71"; then
-  download "https://ftp.gnu.org/gnu/autoconf/autoconf-2.71.tar.gz"
+  download "https://ftp.gnu.org/gnu/autoconf/autoconf-$CURRENT_PACKAGE_VERSION.tar.gz"
   execute ./configure --prefix="${WORKSPACE}"
   execute make -j $MJOBS
   execute make install
-  build_done "autoconf" "2.71"
+  build_done "autoconf" $CURRENT_PACKAGE_VERSION
 fi
 
 if build "automake" "1.16.5"; then
-  download "https://ftp.gnu.org/gnu/automake/automake-1.16.5.tar.gz"
+  download "https://ftp.gnu.org/gnu/automake/automake-$CURRENT_PACKAGE_VERSION.tar.gz"
   execute ./configure --prefix="${WORKSPACE}"
   execute make -j $MJOBS
   execute make install
-  build_done "automake" "1.16.5"
+  build_done "automake" $CURRENT_PACKAGE_VERSION
 fi
 
 if build "libtool" "2.4.7"; then
-  download "https://ftpmirror.gnu.org/libtool/libtool-2.4.7.tar.gz"
+  download "https://ftpmirror.gnu.org/libtool/libtool-$CURRENT_PACKAGE_VERSION.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --enable-static --disable-shared
   execute make -j $MJOBS
   execute make install
-  build_done "libtool" "2.4.7"
+  build_done "libtool" $CURRENT_PACKAGE_VERSION
 fi
 
 if $NONFREE_AND_GPL; then
@@ -422,11 +423,11 @@ if $NONFREE_AND_GPL; then
   CONFIGURE_OPTIONS+=("--enable-openssl")
 else
   if build "gmp" "6.2.1"; then
-    download "https://ftp.gnu.org/gnu/gmp/gmp-6.2.1.tar.xz"
+    download "https://ftp.gnu.org/gnu/gmp/gmp-$CURRENT_PACKAGE_VERSION.tar.xz"
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
     execute make -j $MJOBS
     execute make install
-    build_done "gmp" "6.2.1"
+    build_done "gmp" $CURRENT_PACKAGE_VERSION
   fi
 
   if build "nettle" "3.9.1"; then
@@ -475,7 +476,7 @@ if command_exists "python3"; then
   fi
   if command_exists "meson"; then
     if build "dav1d" "1.1.0"; then
-      download "https://code.videolan.org/videolan/dav1d/-/archive/1.1.0/dav1d-1.1.0.tar.gz"
+      download "https://code.videolan.org/videolan/dav1d/-/archive/$CURRENT_PACKAGE_VERSION/dav1d-$CURRENT_PACKAGE_VERSION.tar.gz"
       make_dir build
 
       CFLAGSBACKUP=$CFLAGS
@@ -491,7 +492,7 @@ if command_exists "python3"; then
         export CFLAGS=$CFLAGSBACKUP
       fi
 
-      build_done "dav1d" "1.1.0"
+      build_done "dav1d" $CURRENT_PACKAGE_VERSION
     fi
     CONFIGURE_OPTIONS+=("--enable-libdav1d")
   fi
@@ -526,8 +527,8 @@ fi
 if $NONFREE_AND_GPL; then
 
   if build "x264" "941cae6d"; then
-    download "https://code.videolan.org/videolan/x264/-/archive/941cae6d1d6d6344c9a1d27440eaf2872b18ca9a/x264-941cae6d1d6d6344c9a1d27440eaf2872b18ca9a.tar.gz" "x264-941cae6d.tar.gz"
-    cd "${PACKAGES}"/x264-941cae6d || exit
+    download "https://code.videolan.org/videolan/x264/-/archive/$CURRENT_PACKAGE_VERSION/x264-$CURRENT_PACKAGE_VERSION.tar.gz" "x264-$CURRENT_PACKAGE_VERSION.tar.gz"
+    cd "${PACKAGES}"/x264-$CURRENT_PACKAGE_VERSION || exit
 
     if [[ "$OSTYPE" == "linux-gnu" ]]; then
       execute ./configure --prefix="${WORKSPACE}" --enable-static --enable-pic CXXFLAGS="-fPIC ${CXXFLAGS}"
@@ -539,14 +540,14 @@ if $NONFREE_AND_GPL; then
     execute make install
     execute make install-lib-static
 
-    build_done "x264" "941cae6d"
+    build_done "x264" $CURRENT_PACKAGE_VERSION
   fi
   CONFIGURE_OPTIONS+=("--enable-libx264")
 fi
 
 if $NONFREE_AND_GPL; then
   if build "x265" "3.5"; then
-    download "https://github.com/videolan/x265/archive/Release_3.5.tar.gz" "x265-3.5.tar.gz" # This is actually 3.4 if looking at x265Version.txt
+    download "https://github.com/videolan/x265/archive/Release_$CURRENT_PACKAGE_VERSION.tar.gz" "x265-$CURRENT_PACKAGE_VERSION.tar.gz" # This is actually 3.4 if looking at x265Version.txt
     cd build/linux || exit
     rm -rf 8bit 10bit 12bit 2>/dev/null
     mkdir -p 8bit 10bit 12bit
@@ -583,7 +584,7 @@ EOF
       sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "${WORKSPACE}/lib/pkgconfig/x265.pc" # The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
     fi
 
-    build_done "x265" "3.5"
+    build_done "x265" $CURRENT_PACKAGE_VERSION
   fi
   CONFIGURE_OPTIONS+=("--enable-libx265")
 fi
@@ -607,7 +608,7 @@ CONFIGURE_OPTIONS+=("--enable-libvpx")
 
 if $NONFREE_AND_GPL; then
   if build "xvidcore" "1.3.7"; then
-    download "https://downloads.xvid.com/downloads/xvidcore-1.3.7.tar.gz"
+    download "https://downloads.xvid.com/downloads/xvidcore-$CURRENT_PACKAGE_VERSION.tar.gz"
     cd build/generic || exit
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
     execute make -j $MJOBS
@@ -621,7 +622,7 @@ if $NONFREE_AND_GPL; then
       execute rm "${WORKSPACE}"/lib/libxvidcore.so*
     fi
 
-    build_done "xvidcore" "1.3.7"
+    build_done "xvidcore" $CURRENT_PACKAGE_VERSION
   fi
   CONFIGURE_OPTIONS+=("--enable-libxvid")
 fi
@@ -646,7 +647,7 @@ fi
 
 if build "av1" "7b5f665"; then
   # libaom bcfe6fb == v3.5.0
-  download "https://aomedia.googlesource.com/aom/+archive/7b5f665231dfbcc5abc49d3b8d6d8826c75ce473.tar.gz" "av1.tar.gz" "av1"
+  download "https://aomedia.googlesource.com/aom/+archive/$CURRENT_PACKAGE_VERSION.tar.gz" "av1.tar.gz" "av1"
   make_dir "$PACKAGES"/aom_build
   cd "$PACKAGES"/aom_build || exit
   if $MACOS_M1; then
@@ -657,7 +658,7 @@ if build "av1" "7b5f665"; then
   execute make -j $MJOBS
   execute make install
 
-  build_done "av1" "7b5f665"
+  build_done "av1" $CURRENT_PACKAGE_VERSION
 fi
 CONFIGURE_OPTIONS+=("--enable-libaom")
 
@@ -682,50 +683,50 @@ if command_exists "python3"; then
   if command_exists "meson"; then
 
     if build "lv2" "1.18.10"; then
-      download "https://lv2plug.in/spec/lv2-1.18.10.tar.xz" "lv2-1.18.10.tar.xz"
+      download "https://lv2plug.in/spec/lv2-$CURRENT_PACKAGE_VERSION.tar.xz" "lv2-$CURRENT_PACKAGE_VERSION.tar.xz"
       execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
       execute ninja -C build
       execute ninja -C build install
-      build_done "lv2" "1.18.10"
+      build_done "lv2" $CURRENT_PACKAGE_VERSION
     fi
     if build "waflib" "b600c92"; then
-      download "https://gitlab.com/drobilla/autowaf/-/archive/b600c928b221a001faeab7bd92786d0b25714bc8/autowaf-b600c928b221a001faeab7bd92786d0b25714bc8.tar.gz" "autowaf.tar.gz"
-      build_done "waflib" "b600c92"
+      download "https://gitlab.com/drobilla/autowaf/-/archive/$CURRENT_PACKAGE_VERSION/autowaf-$CURRENT_PACKAGE_VERSION.tar.gz" "autowaf.tar.gz"
+      build_done "waflib" $CURRENT_PACKAGE_VERSION
     fi
     if build "serd" "0.30.16"; then
-      download "https://gitlab.com/drobilla/serd/-/archive/v0.30.16/serd-v0.30.16.tar.gz" "serd-v0.30.16.tar.gz"
+      download "https://gitlab.com/drobilla/serd/-/archive/v$CURRENT_PACKAGE_VERSION/serd-v$CURRENT_PACKAGE_VERSION.tar.gz" "serd-v$CURRENT_PACKAGE_VERSION.tar.gz"
       execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
       execute ninja -C build
       execute ninja -C build install
-      build_done "serd" "0.30.16"
+      build_done "serd" $CURRENT_PACKAGE_VERSION
     fi
     if build "pcre" "8.45"; then
-      download "https://altushost-swe.dl.sourceforge.net/project/pcre/pcre/8.45/pcre-8.45.tar.gz" "pcre-8.45.tar.gz"
+      download "https://altushost-swe.dl.sourceforge.net/project/pcre/pcre/$CURRENT_PACKAGE_VERSION/pcre-$CURRENT_PACKAGE_VERSION.tar.gz" "pcre-$CURRENT_PACKAGE_VERSION.tar.gz"
       execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
       execute make -j $MJOBS
       execute make install
-      build_done "pcre" "8.45"
+      build_done "pcre" $CURRENT_PACKAGE_VERSION
     fi
     if build "sord" "0.16.14"; then
-      download "https://gitlab.com/drobilla/sord/-/archive/v0.16.14/sord-v0.16.14.tar.gz" "sord-v0.16.14.tar.gz"
+      download "https://gitlab.com/drobilla/sord/-/archive/v$CURRENT_PACKAGE_VERSION/sord-v$CURRENT_PACKAGE_VERSION.tar.gz" "sord-v$CURRENT_PACKAGE_VERSION.tar.gz"
       execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
       execute ninja -C build
       execute ninja -C build install
-      build_done "sord" "0.16.14"
+      build_done "sord" $CURRENT_PACKAGE_VERSION
     fi
     if build "sratom" "0.6.14"; then
-      download "https://gitlab.com/lv2/sratom/-/archive/v0.6.14/sratom-v0.6.14.tar.gz" "sratom-v0.6.14.tar.gz"
+      download "https://gitlab.com/lv2/sratom/-/archive/v$CURRENT_PACKAGE_VERSION/sratom-v$CURRENT_PACKAGE_VERSION.tar.gz" "sratom-v$CURRENT_PACKAGE_VERSION.tar.gz"
       execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
       execute ninja -C build
       execute ninja -C build install
-      build_done "sratom" "0.6.14"
+      build_done "sratom" $CURRENT_PACKAGE_VERSION
     fi
     if build "lilv" "0.24.20"; then
-      download "https://gitlab.com/lv2/lilv/-/archive/v0.24.20/lilv-v0.24.20.tar.gz" "lilv-v0.24.20.tar.gz"
+      download "https://gitlab.com/lv2/lilv/-/archive/v$CURRENT_PACKAGE_VERSION/lilv-v$CURRENT_PACKAGE_VERSION.tar.gz" "lilv-v$CURRENT_PACKAGE_VERSION.tar.gz"
       execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
       execute ninja -C build
       execute ninja -C build install
-      build_done "lilv" "0.24.20"
+      build_done "lilv" $CURRENT_PACKAGE_VERSION
     fi
     CFLAGS+=" -I$WORKSPACE/include/lilv-0"
 
@@ -735,55 +736,55 @@ if command_exists "python3"; then
 fi
 
 if build "opencore" "0.1.6"; then
-  download "https://deac-ams.dl.sourceforge.net/project/opencore-amr/opencore-amr/opencore-amr-0.1.6.tar.gz" "opencore-amr-0.1.6.tar.gz"
+  download "https://deac-ams.dl.sourceforge.net/project/opencore-amr/opencore-amr/opencore-amr-$CURRENT_PACKAGE_VERSION.tar.gz" "opencore-amr-$CURRENT_PACKAGE_VERSION.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j $MJOBS
   execute make install
 
-  build_done "opencore" "0.1.6"
+  build_done "opencore" $CURRENT_PACKAGE_VERSION
 fi
 CONFIGURE_OPTIONS+=("--enable-libopencore_amrnb" "--enable-libopencore_amrwb")
 
 if build "lame" "3.100"; then
-  download "https://sourceforge.net/projects/lame/files/lame/3.100/lame-3.100.tar.gz/download?use_mirror=gigenet" "lame-3.100.tar.gz"
+  download "https://sourceforge.net/projects/lame/files/lame/$CURRENT_PACKAGE_VERSION/lame-$CURRENT_PACKAGE_VERSION.tar.gz/download?use_mirror=gigenet" "lame-$CURRENT_PACKAGE_VERSION.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j $MJOBS
   execute make install
 
-  build_done "lame" "3.100"
+  build_done "lame" $CURRENT_PACKAGE_VERSION
 fi
 CONFIGURE_OPTIONS+=("--enable-libmp3lame")
 
 if build "opus" "1.4"; then
-  download "https://downloads.xiph.org/releases/opus/opus-1.4.tar.gz"
+  download "https://downloads.xiph.org/releases/opus/opus-$CURRENT_PACKAGE_VERSION.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j $MJOBS
   execute make install
 
-  build_done "opus" "1.3.1"
+  build_done "opus" $CURRENT_PACKAGE_VERSION
 fi
 CONFIGURE_OPTIONS+=("--enable-libopus")
 
 if build "libogg" "1.3.5"; then
-  download "https://ftp.osuosl.org/pub/xiph/releases/ogg/libogg-1.3.5.tar.xz"
+  download "https://ftp.osuosl.org/pub/xiph/releases/ogg/libogg-$CURRENT_PACKAGE_VERSION.tar.xz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j $MJOBS
   execute make install
-  build_done "libogg" "1.3.5"
+  build_done "libogg" $CURRENT_PACKAGE_VERSION
 fi
 
 if build "libvorbis" "1.3.7"; then
-  download "https://ftp.osuosl.org/pub/xiph/releases/vorbis/libvorbis-1.3.7.tar.gz"
+  download "https://ftp.osuosl.org/pub/xiph/releases/vorbis/libvorbis-$CURRENT_PACKAGE_VERSION.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --with-ogg-libraries="${WORKSPACE}"/lib --with-ogg-includes="${WORKSPACE}"/include/ --enable-static --disable-shared --disable-oggtest
   execute make -j $MJOBS
   execute make install
 
-  build_done "libvorbis" "1.3.7"
+  build_done "libvorbis" $CURRENT_PACKAGE_VERSION
 fi
 CONFIGURE_OPTIONS+=("--enable-libvorbis")
 
 if build "libtheora" "1.1.1"; then
-  download "https://ftp.osuosl.org/pub/xiph/releases/theora/libtheora-1.1.1.tar.gz"
+  download "https://ftp.osuosl.org/pub/xiph/releases/theora/libtheora-$CURRENT_PACKAGE_VERSION.tar.gz"
   sed "s/-fforce-addr//g" configure >configure.patched
   chmod +x configure.patched
   mv configure.patched configure
@@ -800,18 +801,18 @@ if build "libtheora" "1.1.1"; then
   execute make -j $MJOBS
   execute make install
 
-  build_done "libtheora" "1.1.1"
+  build_done "libtheora" $CURRENT_PACKAGE_VERSION
 fi
 CONFIGURE_OPTIONS+=("--enable-libtheora")
 
 if $NONFREE_AND_GPL; then
   if build "fdk_aac" "2.0.2"; then
-    download "https://sourceforge.net/projects/opencore-amr/files/fdk-aac/fdk-aac-2.0.2.tar.gz/download?use_mirror=gigenet" "fdk-aac-2.0.2.tar.gz"
+    download "https://sourceforge.net/projects/opencore-amr/files/fdk-aac/fdk-aac-$CURRENT_PACKAGE_VERSION.tar.gz/download?use_mirror=gigenet" "fdk-aac-$CURRENT_PACKAGE_VERSION.tar.gz"
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --enable-pic
     execute make -j $MJOBS
     execute make install
 
-    build_done "fdk_aac" "2.0.2"
+    build_done "fdk_aac" $CURRENT_PACKAGE_VERSION
   fi
   CONFIGURE_OPTIONS+=("--enable-libfdk-aac")
 fi
@@ -821,20 +822,20 @@ fi
 ##
 
 if build "libtiff" "4.5.0"; then
-  download "https://download.osgeo.org/libtiff/tiff-4.5.0.tar.xz"
+  download "https://download.osgeo.org/libtiff/tiff-$CURRENT_PACKAGE_VERSION.tar.xz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-dependency-tracking --disable-lzma --disable-webp --disable-zstd --without-x
   execute make -j $MJOBS
   execute make install
-  build_done "libtiff" "4.5.0"
+  build_done "libtiff" $CURRENT_PACKAGE_VERSION
 fi
 if build "libpng" "1.6.39"; then
-  download "https://gigenet.dl.sourceforge.net/project/libpng/libpng16/1.6.39/libpng-1.6.39.tar.gz" "libpng-1.6.39.tar.gz"
+  download "https://gigenet.dl.sourceforge.net/project/libpng/libpng16/$CURRENT_PACKAGE_VERSION/libpng-$CURRENT_PACKAGE_VERSION.tar.gz" "libpng-$CURRENT_PACKAGE_VERSION.tar.gz"
   export LDFLAGS="${LDFLAGS}"
   export CPPFLAGS="${CFLAGS}"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j $MJOBS
   execute make install
-  build_done "libpng" "1.6.39"
+  build_done "libpng" $CURRENT_PACKAGE_VERSION
 fi
 
 ## does not compile on monterey -> _PrintGifError
@@ -842,7 +843,7 @@ if [[ "$OSTYPE" != "darwin"* ]]; then
   if build "libwebp" "1.2.2"; then
     # libwebp can fail to compile on Ubuntu if these flags were left set to CFLAGS
     CPPFLAGS=
-    download "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-1.2.2.tar.gz" "libwebp-1.2.2.tar.gz"
+    download "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-$CURRENT_PACKAGE_VERSION.tar.gz" "libwebp-$CURRENT_PACKAGE_VERSION.tar.gz"
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-dependency-tracking --disable-gl --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib
     make_dir build
     cd build || exit
@@ -850,7 +851,7 @@ if [[ "$OSTYPE" != "darwin"* ]]; then
     execute make -j $MJOBS
     execute make install
 
-    build_done "libwebp" "1.2.2"
+    build_done "libwebp" $CURRENT_PACKAGE_VERSION
   fi
   CONFIGURE_OPTIONS+=("--enable-libwebp")
 fi
@@ -868,11 +869,11 @@ if build "libsdl" "2.28.5"; then
 fi
 
 if build "FreeType2" "2.11.1"; then
-  download "https://downloads.sourceforge.net/freetype/freetype-2.11.1.tar.xz"
+  download "https://downloads.sourceforge.net/freetype/freetype-$CURRENT_PACKAGE_VERSION.tar.xz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j $MJOBS
   execute make install
-  build_done "FreeType2" "2.11.1"
+  build_done "FreeType2" $CURRENT_PACKAGE_VERSION
 fi
 
 CONFIGURE_OPTIONS+=("--enable-libfreetype")
@@ -928,9 +929,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     if [ -z "$LDEXEFLAGS" ]; then
       CONFIGURE_OPTIONS+=("--enable-libnpp") # Only libnpp cannot be statically linked.
     fi
-
-    # https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
-    CONFIGURE_OPTIONS+=("--nvccflags=-gencode arch=compute_$CUDA_COMPUTE_CAPABILITY,code=sm_$CUDA_COMPUTE_CAPABILITY")
+    CONFIGURE_OPTIONS+=("--nvccflags=-gencode arch=compute_$CUDA_COMPUTE_CAPABILITY,code=sm_$CUDA_COMPUTE_CAPABILITY -O2")
   else
     CONFIGURE_OPTIONS+=("--disable-ffnvcodec")
   fi
@@ -947,11 +946,11 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
   fi
 
   if build "amf" "1.4.30"; then
-    download 'https://github.com/GPUOpen-LibrariesAndSDKs/AMF/archive/refs/tags/v1.4.30.tar.gz' 'AMF-1.4.30.tar.gz' 'AMF-1.4.30'
+    download "https://github.com/GPUOpen-LibrariesAndSDKs/AMF/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "AMF-$CURRENT_PACKAGE_VERSION.tar.gz" "AMF-$CURRENT_PACKAGE_VERSION"
     execute rm -rf "${WORKSPACE}/include/AMF"
     execute mkdir -p "${WORKSPACE}/include/AMF"
-    execute cp -r "${PACKAGES}"/AMF-1.4.30/AMF-1.4.30/amf/public/include/* "${WORKSPACE}/include/AMF/"
-    build_done "amf" "1.4.30"
+    execute cp -r "${PACKAGES}"/AMF-$CURRENT_PACKAGE_VERSION/AMF-$CURRENT_PACKAGE_VERSION/amf/public/include/* "${WORKSPACE}/include/AMF/"
+    build_done "amf" $CURRENT_PACKAGE_VERSION
   fi
   CONFIGURE_OPTIONS+=("--enable-amf")
 fi
