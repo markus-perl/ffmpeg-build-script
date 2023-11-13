@@ -340,7 +340,6 @@ ffmpeg-build-script v1.xx
 
 Using 12 make jobs simultaneously.
 With GPL and non-free codecs
-CUDA env variable provided, building with compute capability 75
 cargo not installed. rav1e encoder will not be available.
 
 building giflib - version 5.2.1
