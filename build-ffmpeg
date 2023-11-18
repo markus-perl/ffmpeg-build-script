@@ -888,9 +888,11 @@ fi
 ## zmq library
 ##
 
-if build "libzmq" "4.3.5"; then
+if build "libzmq" "4.3.1"; then
   download "https://github.com/zeromq/libzmq/releases/download/v$CURRENT_PACKAGE_VERSION/zeromq-$CURRENT_PACKAGE_VERSION.tar.gz"
-  execute ./autogen.sh
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    export XML_CATALOG_FILES=/usr/local/etc/xml/catalog 
+  fi
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j $MJOBS
   execute make install
