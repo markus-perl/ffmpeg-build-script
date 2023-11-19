@@ -46,11 +46,11 @@ RUN apt-get update \
     && apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
 
 # Copy libnpp
-COPY --from=build /usr/local/cuda/targets/x86_64-linux/lib/libnppc.so /lib/x86_64-linux-gnu/libnppc.so
-COPY --from=build /usr/local/cuda/targets/x86_64-linux/lib/libnppig.so /lib/x86_64-linux-gnu/libnppig.so
-COPY --from=build /usr/local/cuda/targets/x86_64-linux/lib/libnppicc.so /lib/x86_64-linux-gnu/libnppicc.so
-COPY --from=build /usr/local/cuda/targets/x86_64-linux/lib/libnppidei.so /lib/x86_64-linux-gnu/libnppidei.so
-COPY --from=build /usr/local/cuda/targets/x86_64-linux/lib/libnppif.so /lib/x86_64-linux-gnu/libnppif.so
+COPY --from=build /usr/local/cuda-12.2/targets/x86_64-linux/lib/libnppc.so /lib/x86_64-linux-gnu/libnppc.so.12
+COPY --from=build /usr/local/cuda-12.2/targets/x86_64-linux/lib/libnppig.so /lib/x86_64-linux-gnu/libnppig.so.12
+COPY --from=build /usr/local/cuda-12.2/targets/x86_64-linux/lib/libnppicc.so /lib/x86_64-linux-gnu/libnppicc.so.12
+COPY --from=build /usr/local/cuda-12.2/targets/x86_64-linux/lib/libnppidei.so /lib/x86_64-linux-gnu/libnppidei.so.12
+COPY --from=build /usr/local/cuda-12.2/targets/x86_64-linux/lib/libnppif.so /lib/x86_64-linux-gnu/libnppif.so.12
 
 # Copy ffmpeg
 COPY --from=build /app/workspace/bin/ffmpeg /usr/bin/ffmpeg
