@@ -3,10 +3,10 @@ ARG DIST=ubuntu
 FROM scratch
 
 # Copy libnpp
-COPY --from=ffmpeg:cuda-${DIST} /lib/x86_64-linux-gnu/libnppc.so.11 /lib/libnppc.so.11
-COPY --from=ffmpeg:cuda-${DIST} /lib/x86_64-linux-gnu/libnppig.so.11 /lib/libnppig.so.11
-COPY --from=ffmpeg:cuda-${DIST} /lib/x86_64-linux-gnu/libnppicc.so.11 /lib/libnppicc.so.11
-COPY --from=ffmpeg:cuda-${DIST} /lib/x86_64-linux-gnu/libnppidei.so.11 /lib/libnppidei.so.11
+COPY --from=ffmpeg:cuda-${DIST} /lib/x86_64-linux-gnu/libnppc.so.12 /lib/libnppc.so.12
+COPY --from=ffmpeg:cuda-${DIST} /lib/x86_64-linux-gnu/libnppig.so.12 /lib/libnppig.so.12
+COPY --from=ffmpeg:cuda-${DIST} /lib/x86_64-linux-gnu/libnppicc.so.12 /lib/libnppicc.so.12
+COPY --from=ffmpeg:cuda-${DIST} /lib/x86_64-linux-gnu/libnppidei.so.12 /lib/libnppidei.so.12
 
 # Copy ffmpeg
 COPY --from=ffmpeg:cuda-${DIST} /usr/bin/ffmpeg /bin/ffmpeg
