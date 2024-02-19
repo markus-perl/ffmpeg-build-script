@@ -4,8 +4,8 @@
 # LICENSE: https://github.com/markus-perl/ffmpeg-build-script/blob/master/LICENSE
 
 PROGNAME=$(basename "$0")
-FFMPEG_VERSION=6.0
-SCRIPT_VERSION=1.49
+FFMPEG_VERSION=6.1
+SCRIPT_VERSION=1.50
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
 WORKSPACE="$CWD/workspace"
