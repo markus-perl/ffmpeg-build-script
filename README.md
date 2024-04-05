@@ -26,7 +26,7 @@ other than Debian and macOS, because I don't have the resources or time to maint
 
 ### macOS
 
-* XCode 10.x or greater
+* XCode 14.x or greater
 
 ### Linux
 
