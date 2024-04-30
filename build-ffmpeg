@@ -9,7 +9,7 @@ SCRIPT_VERSION=1.51
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
 WORKSPACE="$CWD/workspace"
-CFLAGS="-I$WORKSPACE/include"
+CFLAGS="-I$WORKSPACE/include -Wno-int-conversion"
 LDFLAGS="-L$WORKSPACE/lib"
 LDEXEFLAGS=""
 EXTRALIBS="-ldl -lpthread -lm -lz"
@@ -333,6 +333,10 @@ fi
 
 if build "pkg-config" "0.29.2"; then
   download "https://pkgconfig.freedesktop.org/releases/pkg-config-$CURRENT_PACKAGE_VERSION.tar.gz"
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+  	export XXFLAGS="-Wno-int-conversion" # pkg-config 0.29.2 has a warning that is treated as an error
+  	export CFLAGS="-Wno-error=int-conversion"
+  fi
   execute ./configure --silent --prefix="${WORKSPACE}" --with-pc-path="${WORKSPACE}"/lib/pkgconfig --with-internal-glib
   execute make -j $MJOBS
   execute make install
