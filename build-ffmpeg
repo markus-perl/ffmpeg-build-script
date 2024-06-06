@@ -16,6 +16,7 @@ EXTRALIBS="-ldl -lpthread -lm -lz"
 MACOS_M1=false
 CONFIGURE_OPTIONS=()
 NONFREE_AND_GPL=false
+DISABLE_LV2=false
 LATEST=false
 MANPAGES=1
 CURRENT_PACKAGE_VERSION=0
@@ -206,6 +207,7 @@ usage() {
   echo "      --version                  Display version information"
   echo "  -b, --build                    Starts the build process"
   echo "      --enable-gpl-and-non-free  Enable GPL and non-free codecs  - https://ffmpeg.org/legal.html"
+  echo "      --disable-lv2              Disable LV2 libraries"
   echo "  -c, --cleanup                  Remove all working dirs"
   echo "      --latest                   Build latest version of dependencies if newer available"
   echo "      --small                    Prioritize small size over speed and usability; don't build manpages"
@@ -236,6 +238,9 @@ while (($# > 0)); do
       CONFIGURE_OPTIONS+=("--enable-nonfree")
       CONFIGURE_OPTIONS+=("--enable-gpl")
       NONFREE_AND_GPL=true
+    fi
+    if [[ "$1" == "--disable-lv2" ]]; then
+      DISABLE_LV2=true
     fi
     if [[ "$1" == "--cleanup" || "$1" =~ '-c' && ! "$1" =~ '--' ]]; then
       cflag='-c'
@@ -359,7 +364,7 @@ if build "nasm" "2.16.01"; then
   build_done "nasm" $CURRENT_PACKAGE_VERSION
 fi
 
-if build "zlib" "1.2.13"; then
+if build "zlib" "1.3.1"; then
   download "https://github.com/madler/zlib/releases/download/v$CURRENT_PACKAGE_VERSION/zlib-$CURRENT_PACKAGE_VERSION.tar.gz"
   execute ./configure --static --prefix="${WORKSPACE}"
   execute make -j $MJOBS
@@ -400,6 +405,14 @@ if build "libtool" "2.4.7"; then
 fi
 
 if $NONFREE_AND_GPL; then
+  if build "gettext" "0.22.5"; then
+    download "https://ftpmirror.gnu.org/gettext/gettext-$CURRENT_PACKAGE_VERSION.tar.gz"
+    execute ./configure --prefix="${WORKSPACE}" --enable-static --disable-shared
+    execute make -j $MJOBS
+    execute make install
+    build_done "gettext" $CURRENT_PACKAGE_VERSION
+  fi
+
   if build "openssl" "1.1.1w"; then
     download "https://www.openssl.org/source/openssl-$CURRENT_PACKAGE_VERSION.tar.gz"
     if $MACOS_M1; then
@@ -467,7 +480,7 @@ if command_exists "python3"; then
     done
   fi
   if command_exists "meson"; then
-    if build "dav1d" "1.1.0"; then
+    if build "dav1d" "1.4.2"; then
       download "https://code.videolan.org/videolan/dav1d/-/archive/$CURRENT_PACKAGE_VERSION/dav1d-$CURRENT_PACKAGE_VERSION.tar.gz"
       make_dir build
 
@@ -490,7 +503,7 @@ if command_exists "python3"; then
   fi
 fi
 
-if build "svtav1" "2.0.0"; then
+if build "svtav1" "2.1.0"; then
   # Last known working commit which passed CI Tests from HEAD branch
   download "https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/v$CURRENT_PACKAGE_VERSION/SVT-AV1-v$CURRENT_PACKAGE_VERSION.tar.gz" "svtav1-$CURRENT_PACKAGE_VERSION.tar.gz"
   cd "${PACKAGES}"/svtav1-$CURRENT_PACKAGE_VERSION//Build/linux || exit
@@ -506,9 +519,10 @@ CONFIGURE_OPTIONS+=("--enable-libsvtav1")
 
 if command_exists "cargo"; then
   if [[ ! "$SKIPRAV1E" == "yes" ]]; then
-    if build "rav1e" "0.6.6"; then
-      execute cargo install --version "0.9.20+cargo-0.71" cargo-c
+    if build "rav1e" "0.7.1"; then
+      execute cargo install cargo-c
       download "https://github.com/xiph/rav1e/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz"
+      export RUSTFLAGS="-C target-cpu=native"  
       execute cargo cinstall --prefix="${WORKSPACE}" --library-type=staticlib --crt-static --release
       build_done "rav1e" $CURRENT_PACKAGE_VERSION
     fi
@@ -518,7 +532,7 @@ fi
 
 if $NONFREE_AND_GPL; then
 
-  if build "x264" "941cae6d"; then
+  if build "x264" "be4f0200"; then
     download "https://code.videolan.org/videolan/x264/-/archive/$CURRENT_PACKAGE_VERSION/x264-$CURRENT_PACKAGE_VERSION.tar.gz" "x264-$CURRENT_PACKAGE_VERSION.tar.gz"
     cd "${PACKAGES}"/x264-$CURRENT_PACKAGE_VERSION || exit
 
@@ -538,8 +552,8 @@ if $NONFREE_AND_GPL; then
 fi
 
 if $NONFREE_AND_GPL; then
-  if build "x265" "3.5"; then
-    download "https://github.com/videolan/x265/archive/Release_$CURRENT_PACKAGE_VERSION.tar.gz" "x265-$CURRENT_PACKAGE_VERSION.tar.gz" # This is actually 3.4 if looking at x265Version.txt
+  if build "x265" "3.6"; then
+    download "https://bitbucket.org/multicoreware/x265_git/downloads/x265_$CURRENT_PACKAGE_VERSION.tar.gz" "x265-$CURRENT_PACKAGE_VERSION.tar.gz" # This is actually 3.4 if looking at x265Version.txt
     cd build/linux || exit
     rm -rf 8bit 10bit 12bit 2>/dev/null
     mkdir -p 8bit 10bit 12bit
@@ -581,7 +595,7 @@ EOF
   CONFIGURE_OPTIONS+=("--enable-libx265")
 fi
 
-if build "libvpx" "1.13.1"; then
+if build "libvpx" "1.14.1"; then
   download "https://github.com/webmproject/libvpx/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "libvpx-$CURRENT_PACKAGE_VERSION.tar.gz"
 
   if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -637,8 +651,8 @@ if $NONFREE_AND_GPL; then
   CONFIGURE_OPTIONS+=("--enable-libvidstab")
 fi
 
-if build "av1" "6cab58c3925e0f4138e15a4ed510161ea83b6db1"; then
-  # libaom bcfe6fb == v3.5.0
+if build "av1" "42dfaa1d47022650bc157dbe20d210591d14bae4"; then
+  # libaom 42dfaa1d47022650bc157dbe20d210591d14bae4 == v3.9.0
   download "https://aomedia.googlesource.com/aom/+archive/$CURRENT_PACKAGE_VERSION.tar.gz" "av1.tar.gz" "av1"
   make_dir "$PACKAGES"/aom_build
   cd "$PACKAGES"/aom_build || exit
@@ -669,61 +683,63 @@ CONFIGURE_OPTIONS+=("--enable-libzimg")
 ##
 ## audio library
 ##
+if ! $DISABLE_LV2 ; then
 
-if command_exists "python3"; then
-
-  if command_exists "meson"; then
-
-    if build "lv2" "1.18.10"; then
-      download "https://lv2plug.in/spec/lv2-$CURRENT_PACKAGE_VERSION.tar.xz" "lv2-$CURRENT_PACKAGE_VERSION.tar.xz"
-      execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
-      execute ninja -C build
-      execute ninja -C build install
-      build_done "lv2" $CURRENT_PACKAGE_VERSION
+  if command_exists "python3"; then
+  
+    if command_exists "meson"; then
+  
+      if build "lv2" "1.18.10"; then
+        download "https://lv2plug.in/spec/lv2-$CURRENT_PACKAGE_VERSION.tar.xz" "lv2-$CURRENT_PACKAGE_VERSION.tar.xz"
+        execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
+        execute ninja -C build
+        execute ninja -C build install
+        build_done "lv2" $CURRENT_PACKAGE_VERSION
+      fi
+      if build "waflib" "b600c92"; then
+        download "https://gitlab.com/drobilla/autowaf/-/archive/$CURRENT_PACKAGE_VERSION/autowaf-$CURRENT_PACKAGE_VERSION.tar.gz" "autowaf.tar.gz"
+        build_done "waflib" $CURRENT_PACKAGE_VERSION
+      fi
+      if build "serd" "0.30.16"; then
+        download "https://gitlab.com/drobilla/serd/-/archive/v$CURRENT_PACKAGE_VERSION/serd-v$CURRENT_PACKAGE_VERSION.tar.gz" "serd-v$CURRENT_PACKAGE_VERSION.tar.gz"
+        execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
+        execute ninja -C build
+        execute ninja -C build install
+        build_done "serd" $CURRENT_PACKAGE_VERSION
+      fi
+      if build "pcre" "8.45"; then
+        download "https://altushost-swe.dl.sourceforge.net/project/pcre/pcre/$CURRENT_PACKAGE_VERSION/pcre-$CURRENT_PACKAGE_VERSION.tar.gz" "pcre-$CURRENT_PACKAGE_VERSION.tar.gz"
+        execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+        execute make -j $MJOBS
+        execute make install
+        build_done "pcre" $CURRENT_PACKAGE_VERSION
+      fi
+      if build "sord" "0.16.14"; then
+        download "https://gitlab.com/drobilla/sord/-/archive/v$CURRENT_PACKAGE_VERSION/sord-v$CURRENT_PACKAGE_VERSION.tar.gz" "sord-v$CURRENT_PACKAGE_VERSION.tar.gz"
+        execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
+        execute ninja -C build
+        execute ninja -C build install
+        build_done "sord" $CURRENT_PACKAGE_VERSION
+      fi
+      if build "sratom" "0.6.14"; then
+        download "https://gitlab.com/lv2/sratom/-/archive/v$CURRENT_PACKAGE_VERSION/sratom-v$CURRENT_PACKAGE_VERSION.tar.gz" "sratom-v$CURRENT_PACKAGE_VERSION.tar.gz"
+        execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
+        execute ninja -C build
+        execute ninja -C build install
+        build_done "sratom" $CURRENT_PACKAGE_VERSION
+      fi
+      if build "lilv" "0.24.20"; then
+        download "https://gitlab.com/lv2/lilv/-/archive/v$CURRENT_PACKAGE_VERSION/lilv-v$CURRENT_PACKAGE_VERSION.tar.gz" "lilv-v$CURRENT_PACKAGE_VERSION.tar.gz"
+        execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
+        execute ninja -C build
+        execute ninja -C build install
+        build_done "lilv" $CURRENT_PACKAGE_VERSION
+      fi
+      CFLAGS+=" -I$WORKSPACE/include/lilv-0"
+  
+      CONFIGURE_OPTIONS+=("--enable-lv2")
+  
     fi
-    if build "waflib" "b600c92"; then
-      download "https://gitlab.com/drobilla/autowaf/-/archive/$CURRENT_PACKAGE_VERSION/autowaf-$CURRENT_PACKAGE_VERSION.tar.gz" "autowaf.tar.gz"
-      build_done "waflib" $CURRENT_PACKAGE_VERSION
-    fi
-    if build "serd" "0.30.16"; then
-      download "https://gitlab.com/drobilla/serd/-/archive/v$CURRENT_PACKAGE_VERSION/serd-v$CURRENT_PACKAGE_VERSION.tar.gz" "serd-v$CURRENT_PACKAGE_VERSION.tar.gz"
-      execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
-      execute ninja -C build
-      execute ninja -C build install
-      build_done "serd" $CURRENT_PACKAGE_VERSION
-    fi
-    if build "pcre" "8.45"; then
-      download "https://altushost-swe.dl.sourceforge.net/project/pcre/pcre/$CURRENT_PACKAGE_VERSION/pcre-$CURRENT_PACKAGE_VERSION.tar.gz" "pcre-$CURRENT_PACKAGE_VERSION.tar.gz"
-      execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
-      execute make -j $MJOBS
-      execute make install
-      build_done "pcre" $CURRENT_PACKAGE_VERSION
-    fi
-    if build "sord" "0.16.14"; then
-      download "https://gitlab.com/drobilla/sord/-/archive/v$CURRENT_PACKAGE_VERSION/sord-v$CURRENT_PACKAGE_VERSION.tar.gz" "sord-v$CURRENT_PACKAGE_VERSION.tar.gz"
-      execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
-      execute ninja -C build
-      execute ninja -C build install
-      build_done "sord" $CURRENT_PACKAGE_VERSION
-    fi
-    if build "sratom" "0.6.14"; then
-      download "https://gitlab.com/lv2/sratom/-/archive/v$CURRENT_PACKAGE_VERSION/sratom-v$CURRENT_PACKAGE_VERSION.tar.gz" "sratom-v$CURRENT_PACKAGE_VERSION.tar.gz"
-      execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
-      execute ninja -C build
-      execute ninja -C build install
-      build_done "sratom" $CURRENT_PACKAGE_VERSION
-    fi
-    if build "lilv" "0.24.20"; then
-      download "https://gitlab.com/lv2/lilv/-/archive/v$CURRENT_PACKAGE_VERSION/lilv-v$CURRENT_PACKAGE_VERSION.tar.gz" "lilv-v$CURRENT_PACKAGE_VERSION.tar.gz"
-      execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
-      execute ninja -C build
-      execute ninja -C build install
-      build_done "lilv" $CURRENT_PACKAGE_VERSION
-    fi
-    CFLAGS+=" -I$WORKSPACE/include/lilv-0"
-
-    CONFIGURE_OPTIONS+=("--enable-lv2")
-
   fi
 fi
 
@@ -747,7 +763,7 @@ if build "lame" "3.100"; then
 fi
 CONFIGURE_OPTIONS+=("--enable-libmp3lame")
 
-if build "opus" "1.4"; then
+if build "opus" "1.5.2"; then
   download "https://downloads.xiph.org/releases/opus/opus-$CURRENT_PACKAGE_VERSION.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j $MJOBS
@@ -765,18 +781,19 @@ if build "libogg" "1.3.5"; then
   build_done "libogg" $CURRENT_PACKAGE_VERSION
 fi
 
-if [[ "$OSTYPE" != "darwin"* ]]; then
-  if build "libvorbis" "1.3.7"; then
-    download "https://ftp.osuosl.org/pub/xiph/releases/vorbis/libvorbis-$CURRENT_PACKAGE_VERSION.tar.gz"
-    execute ./configure --prefix="${WORKSPACE}" --with-ogg-libraries="${WORKSPACE}"/lib --with-ogg-includes="${WORKSPACE}"/include/ --enable-static --disable-shared --disable-oggtest --disable-silent-rules --disable-dependency-tracking
+if build "libvorbis" "1.3.7"; then
+  download "https://ftp.osuosl.org/pub/xiph/releases/vorbis/libvorbis-$CURRENT_PACKAGE_VERSION.tar.gz"
+  sed "s/-force_cpusubtype_ALL//g" configure.ac >configure.ac.patched
+  rm configure.ac
+  mv configure.ac.patched configure.ac
+  execute ./autogen.sh --prefix="${WORKSPACE}"
+  execute ./configure --prefix="${WORKSPACE}" --with-ogg-libraries="${WORKSPACE}"/lib --with-ogg-includes="${WORKSPACE}"/include/ --enable-static --disable-shared --disable-oggtest
+  execute make -j $MJOBS
+  execute make install
 
-    execute make -j $MJOBS
-    execute make install
-
-    build_done "libvorbis" $CURRENT_PACKAGE_VERSION
-  fi
-  CONFIGURE_OPTIONS+=("--enable-libvorbis")
+  build_done "libvorbis" $CURRENT_PACKAGE_VERSION
 fi
+CONFIGURE_OPTIONS+=("--enable-libvorbis")
 
 if build "libtheora" "1.1.1"; then
   download "https://ftp.osuosl.org/pub/xiph/releases/theora/libtheora-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -801,7 +818,7 @@ fi
 CONFIGURE_OPTIONS+=("--enable-libtheora")
 
 if $NONFREE_AND_GPL; then
-  if build "fdk_aac" "2.0.2"; then
+  if build "fdk_aac" "2.0.3"; then
     download "https://sourceforge.net/projects/opencore-amr/files/fdk-aac/fdk-aac-$CURRENT_PACKAGE_VERSION.tar.gz/download?use_mirror=gigenet" "fdk-aac-$CURRENT_PACKAGE_VERSION.tar.gz"
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --enable-pic
     execute make -j $MJOBS
@@ -816,14 +833,14 @@ fi
 ## image library
 ##
 
-if build "libtiff" "4.5.0"; then
+if build "libtiff" "4.6.0"; then
   download "https://download.osgeo.org/libtiff/tiff-$CURRENT_PACKAGE_VERSION.tar.xz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-dependency-tracking --disable-lzma --disable-webp --disable-zstd --without-x
   execute make -j $MJOBS
   execute make install
   build_done "libtiff" $CURRENT_PACKAGE_VERSION
 fi
-if build "libpng" "1.6.39"; then
+if build "libpng" "1.6.43"; then
   download "https://sourceforge.net/projects/libpng/files/libpng16/$CURRENT_PACKAGE_VERSION/libpng-$CURRENT_PACKAGE_VERSION.tar.gz" "libpng-$CURRENT_PACKAGE_VERSION.tar.gz"
   export LDFLAGS="${LDFLAGS}"
   export CPPFLAGS="${CFLAGS}"
@@ -833,28 +850,42 @@ if build "libpng" "1.6.39"; then
   build_done "libpng" $CURRENT_PACKAGE_VERSION
 fi
 
-## does not compile on monterey -> _PrintGifError
-if [[ "$OSTYPE" != "darwin"* ]]; then
-  if build "libwebp" "1.2.2"; then
-    # libwebp can fail to compile on Ubuntu if these flags were left set to CFLAGS
-    CPPFLAGS=
-    download "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-$CURRENT_PACKAGE_VERSION.tar.gz" "libwebp-$CURRENT_PACKAGE_VERSION.tar.gz"
-    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-dependency-tracking --disable-gl --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib
-    make_dir build
-    cd build || exit
-    execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=OFF -DENABLE_STATIC=ON ../
-    execute make -j $MJOBS
-    execute make install
-
-    build_done "libwebp" $CURRENT_PACKAGE_VERSION
-  fi
-  CONFIGURE_OPTIONS+=("--enable-libwebp")
+if build "libjxl" "0.10.2"; then
+  download "https://github.com/libjxl/libjxl/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "libjxl-$CURRENT_PACKAGE_VERSION.tar.gz"
+# currently needed to fix linking of static builds in non-C++ applications
+  sed "s/-ljxl_threads/-ljxl_threads @JPEGXL_THREADS_PUBLIC_LIBS@/g" lib/threads/libjxl_threads.pc.in >lib/threads/libjxl_threads.pc.in.patched
+  rm lib/threads/libjxl_threads.pc.in
+  mv lib/threads/libjxl_threads.pc.in.patched lib/threads/libjxl_threads.pc.in
+  sed 's/set(JPEGXL_REQUIRES_TYPE "Requires")/set(JPEGXL_REQUIRES_TYPE "Requires")\'$'\n''  set(JPEGXL_THREADS_PUBLIC_LIBS "-lm ${PKGCONFIG_CXX_LIB}")/g' lib/jxl_threads.cmake >lib/jxl_threads.cmake.patched
+  rm lib/jxl_threads.cmake
+  mv lib/jxl_threads.cmake.patched lib/jxl_threads.cmake
+  execute ./deps.sh
+  execute cmake -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=off -DENABLE_STATIC=ON -DCMAKE_BUILD_TYPE=Release -DJPEGXL_ENABLE_BENCHMARK=OFF -DJPEGXL_ENABLE_DOXYGEN=OFF -DJPEGXL_ENABLE_MANPAGES=OFF -DJPEGXL_ENABLE_JPEGLI_LIBJPEG=OFF -DJPEGXL_ENABLE_JPEGLI=OFF -DJPEGXL_TEST_TOOLS=OFF -DJPEGXL_ENABLE_JNI=OFF -DBUILD_TESTING=OFF .
+  execute make -j $MJOBS
+  execute make install
+  build_done "libjxl" $CURRENT_PACKAGE_VERSION
 fi
+CONFIGURE_OPTIONS+=("--enable-libjxl")
+
+if build "libwebp" "1.4.0"; then
+  # libwebp can fail to compile on Ubuntu if these flags were left set to CFLAGS
+  CPPFLAGS=
+  download "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-$CURRENT_PACKAGE_VERSION.tar.gz" "libwebp-$CURRENT_PACKAGE_VERSION.tar.gz"
+  make_dir build
+  cd build || exit
+  execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DWEBP_BUILD_CWEBP=OFF -DWEBP_BUILD_DWEBP=OFF -DWEBP_BUILD_GIF2WEBP=OFF -DWEBP_BUILD_IMG2WEBP=OFF -DWEBP_BUILD_VWEBP=OFF ../
+  execute make -j $MJOBS
+  execute make install
+
+  build_done "libwebp" $CURRENT_PACKAGE_VERSION
+fi
+CONFIGURE_OPTIONS+=("--enable-libwebp")
+
 ##
 ## other library
 ##
 
-if build "libsdl" "2.28.5"; then
+if build "libsdl" "2.30.1"; then
   download "https://github.com/libsdl-org/SDL/releases/download/release-$CURRENT_PACKAGE_VERSION/SDL2-$CURRENT_PACKAGE_VERSION.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j $MJOBS
@@ -863,7 +894,7 @@ if build "libsdl" "2.28.5"; then
   build_done "libsdl" $CURRENT_PACKAGE_VERSION
 fi
 
-if build "FreeType2" "2.11.1"; then
+if build "FreeType2" "2.13.2"; then
   download "https://downloads.sourceforge.net/freetype/freetype-$CURRENT_PACKAGE_VERSION.tar.xz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j $MJOBS
@@ -889,18 +920,31 @@ if $NONFREE_AND_GPL; then
     build_done "srt" $CURRENT_PACKAGE_VERSION
   fi
   CONFIGURE_OPTIONS+=("--enable-libsrt")
+
+  if build "zvbi" "0.2.42"; then
+    download "https://github.com/zapping-vbi/zvbi/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "zvbi-$CURRENT_PACKAGE_VERSION.tar.gz"
+    execute ./autogen.sh --prefix="${WORKSPACE}"
+    execute ./configure CFLAGS="-I${WORKSPACE}/include/libpng16 ${CFLAGS}" --prefix="${WORKSPACE}" --enable-static --disable-shared
+    execute make -j $MJOBS
+    execute make install
+    build_done "zvbi" $CURRENT_PACKAGE_VERSION
+  fi
+  CONFIGURE_OPTIONS+=("--enable-libzvbi")
 fi
 
 ##
 ## zmq library
 ##
 
-if build "libzmq" "4.3.1"; then
+if build "libzmq" "4.3.5"; then
   download "https://github.com/zeromq/libzmq/releases/download/v$CURRENT_PACKAGE_VERSION/zeromq-$CURRENT_PACKAGE_VERSION.tar.gz"
   if [[ "$OSTYPE" == "darwin"* ]]; then
     export XML_CATALOG_FILES=/usr/local/etc/xml/catalog 
   fi
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+  sed "s/stats_proxy stats = {0}/stats_proxy stats = {{{0, 0}, {0, 0}}, {{0, 0}, {0, 0}}}/g" src/proxy.cpp >src/proxy.cpp.patched
+  rm src/proxy.cpp
+  mv src/proxy.cpp.patched src/proxy.cpp
   execute make -j $MJOBS
   execute make install
   build_done "libzmq" $CURRENT_PACKAGE_VERSION
@@ -948,7 +992,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     fi
   fi
 
-  if build "amf" "1.4.30"; then
+  if build "amf" "1.4.33"; then
     download "https://github.com/GPUOpen-LibrariesAndSDKs/AMF/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "AMF-$CURRENT_PACKAGE_VERSION.tar.gz" "AMF-$CURRENT_PACKAGE_VERSION"
     execute rm -rf "${WORKSPACE}/include/AMF"
     execute mkdir -p "${WORKSPACE}/include/AMF"
