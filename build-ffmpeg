@@ -476,22 +476,23 @@ if command_exists "python3"; then
 
     #check if macOs and brew is available
     if [[ "$OSTYPE" == "darwin"* ]]; then
-      if ! command_exists "brew"; then
+      if command_exists "brew"; then
         brew install python-setuptools meson ninja
           MESON_INSTALLED=true
       fi
-    fi
+    else
+      #check if meson and ninja are installed MESON_INSTALLED AND system is not MacOS
+      if ! $MESON_INSTALLED; then
 
-    #check if meson and ninja are installed MESON_INSTALLED
-    if ! $MESON_INSTALLED; then
-      # meson and ninja can be installed via pip3
-      execute pip3 install pip setuptools --quiet --upgrade --no-cache-dir --disable-pip-version-check
-      for r in meson ninja; do
-        if ! command_exists ${r}; then
-          execute pip3 install ${r} --quiet --upgrade --no-cache-dir --disable-pip-version-check
-        fi
-        export PATH=$PATH:~/Library/Python/3.9/bin
-      done
+        # meson and ninja can be installed via pip3
+        execute pip3 install pip setuptools --quiet --upgrade --no-cache-dir --disable-pip-version-check
+        for r in meson ninja; do
+          if ! command_exists ${r}; then
+            execute pip3 install ${r} --quiet --upgrade --no-cache-dir --disable-pip-version-check
+          fi
+          export PATH=$PATH:~/Library/Python/3.9/bin
+        done
+      fi
     fi
 
   fi
