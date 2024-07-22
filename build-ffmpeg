@@ -867,7 +867,7 @@ if build "libpng" "1.6.43"; then
   build_done "libpng" $CURRENT_PACKAGE_VERSION
 fi
 
-if build "libjxl" "0.10.2"; then
+if build "libjxl" "0.10.3"; then
   download "https://github.com/libjxl/libjxl/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "libjxl-$CURRENT_PACKAGE_VERSION.tar.gz"
 # currently needed to fix linking of static builds in non-C++ applications
   sed "s/-ljxl_threads/-ljxl_threads @JPEGXL_THREADS_PUBLIC_LIBS@/g" lib/threads/libjxl_threads.pc.in >lib/threads/libjxl_threads.pc.in.patched
