@@ -20,6 +20,7 @@ DISABLE_LV2=false
 LATEST=false
 MANPAGES=1
 CURRENT_PACKAGE_VERSION=0
+SKIP_FFMPEG_BUILD=false
 
 # Check for Apple Silicon
 if [[ ("$(uname -m)" == "arm64") && ("$OSTYPE" == "darwin"*) ]]; then
@@ -259,6 +260,9 @@ while (($# > 0)); do
     if [[ "$1" == "--small" ]]; then
       CONFIGURE_OPTIONS+=("--enable-small" "--disable-doc")
       MANPAGES=0
+    fi
+    if [[ "$1" == "--skip-ffmpeg-build" ]]; then
+      SKIP_FFMPEG_BUILD=true
     fi
     shift
     ;;
@@ -1034,78 +1038,82 @@ if [ -d "$CWD/.git" ]; then
   # if build fails below, .git will remain in the wrong place...
 fi
 
-build "ffmpeg" "$FFMPEG_VERSION"
-download "https://github.com/FFmpeg/FFmpeg/archive/refs/heads/release/$FFMPEG_VERSION.tar.gz" "FFmpeg-release-$FFMPEG_VERSION.tar.gz"
-# shellcheck disable=SC2086
-./configure "${CONFIGURE_OPTIONS[@]}" \
-  --disable-debug \
-  --disable-shared \
-  --enable-pthreads \
-  --enable-static \
-  --enable-version3 \
-  --extra-cflags="${CFLAGS}" \
-  --extra-ldexeflags="${LDEXEFLAGS}" \
-  --extra-ldflags="${LDFLAGS}" \
-  --extra-libs="${EXTRALIBS}" \
-  --pkgconfigdir="$WORKSPACE/lib/pkgconfig" \
-  --pkg-config-flags="--static" \
-  --prefix="${WORKSPACE}" \
-  --extra-version="${EXTRA_VERSION}"
+if ! $SKIP_FFMPEG_BUILD ; then
+  build "ffmpeg" "$FFMPEG_VERSION"
+  download "https://github.com/FFmpeg/FFmpeg/archive/refs/heads/release/$FFMPEG_VERSION.tar.gz" "FFmpeg-release-$FFMPEG_VERSION.tar.gz"
+  # shellcheck disable=SC2086
+  ./configure "${CONFIGURE_OPTIONS[@]}" \
+    --disable-debug \
+    --disable-shared \
+    --enable-pthreads \
+    --enable-static \
+    --enable-version3 \
+    --extra-cflags="${CFLAGS}" \
+    --extra-ldexeflags="${LDEXEFLAGS}" \
+    --extra-ldflags="${LDFLAGS}" \
+    --extra-libs="${EXTRALIBS}" \
+    --pkgconfigdir="$WORKSPACE/lib/pkgconfig" \
+    --pkg-config-flags="--static" \
+    --prefix="${WORKSPACE}" \
+    --extra-version="${EXTRA_VERSION}"
 
-execute make -j $MJOBS
-execute make install
+  execute make -j $MJOBS
+  execute make install
 
-if [ -d "$CWD/.git.bak" ]; then
-  mv "$CWD/.git.bak" "$CWD/.git"
-fi
+  if [ -d "$CWD/.git.bak" ]; then
+    mv "$CWD/.git.bak" "$CWD/.git"
+  fi
 
-INSTALL_FOLDER="/usr"  # not recommended, overwrites system ffmpeg package
-if [[ "$OSTYPE" == "darwin"* ]]; then
-  INSTALL_FOLDER="/usr/local"
-else
-  if [ -d "$HOME/.local" ]; then  # systemd-standard user path
-    INSTALL_FOLDER="$HOME/.local"
-  elif [ -d "/usr/local" ]; then
+  INSTALL_FOLDER="/usr"  # not recommended, overwrites system ffmpeg package
+  if [[ "$OSTYPE" == "darwin"* ]]; then
     INSTALL_FOLDER="/usr/local"
-  fi
-fi
-
-verify_binary_type
-
-echo ""
-echo "Building done. The following binaries can be found here:"
-echo "- ffmpeg: $WORKSPACE/bin/ffmpeg"
-echo "- ffprobe: $WORKSPACE/bin/ffprobe"
-echo "- ffplay: $WORKSPACE/bin/ffplay"
-echo ""
-
-INSTALL_NOW=0
-if [[ "$AUTOINSTALL" == "yes" ]]; then
-  INSTALL_NOW=1
-elif [[ ! "$SKIPINSTALL" == "yes" ]]; then
-  read -r -p "Install these binaries to your $INSTALL_FOLDER folder? Existing binaries will be replaced. [Y/n] " response
-  case $response in
-    "" | [yY][eE][sS] | [yY])
-      INSTALL_NOW=1
-    ;;
-  esac
-fi
-
-if [ "$INSTALL_NOW" = 1 ]; then
-  if command_exists "sudo" && [[ $INSTALL_FOLDER == /usr* ]]; then
-    SUDO=sudo
-  fi
-  $SUDO cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/bin/ffmpeg"
-  $SUDO cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/bin/ffprobe"
-  $SUDO cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/bin/ffplay"
-  if [ $MANPAGES = 1 ]; then
-    $SUDO mkdir -p "$INSTALL_FOLDER/share/man/man1"
-    $SUDO cp "$WORKSPACE/share/man/man1"/ff* "$INSTALL_FOLDER/share/man/man1"
-    if command_exists "mandb"; then
-      $SUDO mandb -q
+  else
+    if [ -d "$HOME/.local" ]; then  # systemd-standard user path
+      INSTALL_FOLDER="$HOME/.local"
+    elif [ -d "/usr/local" ]; then
+      INSTALL_FOLDER="/usr/local"
     fi
   fi
-  echo "Done. FFmpeg is now installed to your system."
+
+  verify_binary_type
+
+  echo ""
+  echo "Building done. The following binaries can be found here:"
+  echo "- ffmpeg: $WORKSPACE/bin/ffmpeg"
+  echo "- ffprobe: $WORKSPACE/bin/ffprobe"
+  echo "- ffplay: $WORKSPACE/bin/ffplay"
+  echo ""
+
+  INSTALL_NOW=0
+  if [[ "$AUTOINSTALL" == "yes" ]]; then
+    INSTALL_NOW=1
+  elif [[ ! "$SKIPINSTALL" == "yes" ]]; then
+    read -r -p "Install these binaries to your $INSTALL_FOLDER folder? Existing binaries will be replaced. [Y/n] " response
+    case $response in
+      "" | [yY][eE][sS] | [yY])
+        INSTALL_NOW=1
+      ;;
+    esac
+  fi
+
+  if [ "$INSTALL_NOW" = 1 ]; then
+    if command_exists "sudo" && [[ $INSTALL_FOLDER == /usr* ]]; then
+      SUDO=sudo
+    fi
+    $SUDO cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/bin/ffmpeg"
+    $SUDO cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/bin/ffprobe"
+    $SUDO cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/bin/ffplay"
+    if [ $MANPAGES = 1 ]; then
+      $SUDO mkdir -p "$INSTALL_FOLDER/share/man/man1"
+      $SUDO cp "$WORKSPACE/share/man/man1"/ff* "$INSTALL_FOLDER/share/man/man1"
+      if command_exists "mandb"; then
+        $SUDO mandb -q
+      fi
+    fi
+    echo "Done. FFmpeg is now installed to your system."
+  fi
+else
+  echo "--skip-ffmpeg-build set, ffmpeg will not be built";
 fi
 
 exit 0

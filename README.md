@@ -136,6 +136,7 @@ Options:
       --small                    Prioritize small size over speed and usability; don't build manpages.
       --full-static              Complete static build of ffmpeg (eg. glibc, pthreads etc...) **only Linux**
                                  Note: Because of the NSS (Name Service Switch), glibc does not recommend static links.
+      --skip-ffmpeg-build        Will only build the libs. Useful when building in a Dockerfile.
 ```
 
 ### Notes on static linking
@@ -161,6 +162,8 @@ Options:
    - If you want the `dav1d` AV1 decoder, please ensure that `python3` is installed. If using the system python installation, also ensure that `meson` and `ninja` are installed before running (otherwise the script will try to install them using `pip3`).
 
    - If you want the `Lv2` filter plugin, please ensure that `python3` is installed.
+
+   - If you want the `--enable-gpl-and-non-free` build, please ensure you have git installed.
 
 1) Run the downoaded build script from the current directory, with your desired [options](#build-script-usage).
    ```bash
