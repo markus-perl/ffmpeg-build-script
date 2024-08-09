@@ -136,6 +136,7 @@ Options:
       --small                    Prioritize small size over speed and usability; don't build manpages.
       --full-static              Complete static build of ffmpeg (eg. glibc, pthreads etc...) **only Linux**
                                  Note: Because of the NSS (Name Service Switch), glibc does not recommend static links.
+      --skip-ffmpeg-build        Will only build the libs. Useful when building in a Dockerfile.
 ```
 
 ### Notes on static linking
