@@ -10,10 +10,10 @@ on:
 jobs:
   build-linux:
     name: build in native linux
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: install libva-dev
         run: |
@@ -23,7 +23,7 @@ jobs:
       - name: build ffmpeg
         run: |
           while sleep 300; do echo "=====[ $SECONDS seconds still running ]====="; done &
-          SKIPINSTALL=yes VERBOSE=yes ./build-ffmpeg --build --enable-gpl-and-non-free
+          SKIPINSTALL=yes VERBOSE=yes SKIPRAV1E=yes ./build-ffmpeg --build --enable-gpl-and-non-free
           kill %1
       - name: check shared library
         run: |
@@ -37,15 +37,15 @@ jobs:
 
   build-macos:
     name: build in native macOS
-    runs-on: macos-10.15
+    runs-on: macos-14
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: build ffmpeg
         run: |
           while sleep 300; do echo "=====[ $SECONDS seconds still running ]====="; done &
-          SKIPINSTALL=yes VERBOSE=yes ./build-ffmpeg --build --enable-gpl-and-non-free
+          SKIPINSTALL=yes VERBOSE=yes SKIPRAV1E=yes ./build-ffmpeg --build --enable-gpl-and-non-free
           kill %1
       - name: check shared library
         run: |
@@ -59,19 +59,19 @@ jobs:
 
   build-docker:
     name: build in docker
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: pull base image
         id: ubuntu_pull
         run: |
-          docker pull ubuntu:20.04
+          docker pull ubuntu:22.04
       - name: run if ubuntu_pull failed
         if: failure() && steps.ubuntu_pull.outcome == 'failure'
         run: |
-          docker pull ubuntu:20.04
+          docker pull ubuntu:22.04
       - name: build ffmpeg
         run: |
           docker build -t ffmpeg:ubuntu -f Dockerfile .
@@ -81,21 +81,21 @@ jobs:
 
   build-cuda-ubuntu-docker:
     name: build in ubuntu docker with cuda
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: pull base image
         id: cuda_ubuntu_pull
         run: |
-          docker pull nvidia/cuda:11.4.2-devel-ubuntu20.04
-          docker pull ubuntu:20.04
+          docker pull nvidia/cuda:11.8.0-devel-ubuntu22.04
+          docker pull ubuntu:22.04
       - name: run if cuda_ubuntu_pull failed
         if: failure() && steps.cuda_ubuntu_pull.outcome == 'failure'
         run: |
-          docker pull nvidia/cuda:11.4.2-devel-ubuntu20.04
-          docker pull ubuntu:20.04
+          docker pull nvidia/cuda:11.8.0-devel-ubuntu22.04
+          docker pull ubuntu:22.04
       - name: build ffmpeg
         run: |
           docker build -t ffmpeg:cuda-ubuntu -f cuda-ubuntu.dockerfile .
@@ -103,45 +103,21 @@ jobs:
         run: |
           docker run --rm ffmpeg:cuda-ubuntu -buildconf
 
-  build-cuda-rocky-docker:
-    name: build in Rockylinux docker with cuda
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: pull base image
-        id: cuda_centos_pull
-        run: |
-          docker pull nvidia/cuda:11.6.0-devel-centos8
-          docker pull rockylinux:8
-      - name: run if cuda_centos_pull failed
-        if: failure() && steps.cuda_centos_pull.outcome == 'failure'
-        run: |
-          docker pull nvidia/cuda:11.6.0-devel-centos8
-          docker pull rockylinux:8
-      - name: build ffmpeg
-        run: |
-          docker build -t ffmpeg:cuda-rocky -f cuda-rocky.dockerfile .
-      - name: test run ffmepg
-        run: |
-          docker run --rm ffmpeg:cuda-rocky -buildconf
-
   build-full-static:
     name: full static build in docker
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: pull base image
         id: cuda_ubuntu_pull
         run: |
-          docker pull nvidia/cuda:11.4.2-devel-ubuntu20.04
+          docker pull nvidia/cuda:11.8.0-devel-ubuntu22.04
       - name: run if cuda_ubuntu_pull failed
         if: failure() && steps.cuda_ubuntu_pull.outcome == 'failure'
         run: |
-          docker pull nvidia/cuda:11.4.2-devel-ubuntu20.04
+          docker pull nvidia/cuda:11.8.0-devel-ubuntu22.04
       - name: build ffmpeg
         run: |
           docker build -t ffmpeg:cuda-static -f full-static.dockerfile .
