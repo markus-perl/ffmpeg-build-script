@@ -162,6 +162,8 @@ Options:
 
    - If you want the `Lv2` filter plugin, please ensure that `python3` is installed.
 
+   - If you want the `--enable-gpl-and-non-free` build, please ensure you have git installed.
+
 1) Run the downoaded build script from the current directory, with your desired [options](#build-script-usage).
    ```bash
    $ ./build-ffmpeg [your parameters here] --build
