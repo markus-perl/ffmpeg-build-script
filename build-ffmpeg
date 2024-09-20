@@ -490,6 +490,40 @@ if command_exists "python3"; then
   fi
 fi
 
+# TODO Need to fix this error: ffmpeg: error while loading shared libraries: libvmaf.so.3: cannot open shared object file: No such file or directory
+if build "vmaf" "3.0.0"; then
+  download "https://github.com/Netflix/vmaf/archive/refs/tags/v3.0.0.tar.gz" "vmaf-3.0.0.tar.gz"
+  cd "${PACKAGES}"/vmaf-3.0.0/libvmaf
+
+  # Setting up python virtual environment
+  python3 -m pip install virtualenv
+	python3 -m virtualenv .venv
+  source .venv/bin/activate
+  pip install meson
+  # Install other dependencies for vmaf
+  # TODO Is there a way to run install these without sudo?
+  #   We COULD build all of these from source, but is that recommended
+  #   for this repo?
+  sudo apt-get install -y nasm ninja-build doxygen xxd
+
+  # Compile vmaf
+  meson setup build --buildtype release
+  # Build test and install
+  # TODO Do we REALLY need to use sudo here?? For some reason got a ERRNO13 (perm denied) when trying to remove a file?
+  sudo ninja -vC build test install
+
+  # Deactivate python virtual environment
+  deactivate
+  if [[ "$VIRTUAL_ENV" != "" ]]; then
+    echo "VIRTUAL ENVIRONMENT IS STILL ACTIVATED 😱😱😱????"
+    exit 999;
+  fi
+  build_done "vmaf" "3.0.0"
+  # TODO Is there a reason why the other build steps dont cd out??
+  cd ../../../
+fi
+CONFIGURE_OPTIONS+=("--enable-libvmaf")
+
 if build "svtav1" "2.0.0"; then
   # Last known working commit which passed CI Tests from HEAD branch
   download "https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/v$CURRENT_PACKAGE_VERSION/SVT-AV1-v$CURRENT_PACKAGE_VERSION.tar.gz" "svtav1-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -898,7 +932,7 @@ fi
 if build "libzmq" "4.3.1"; then
   download "https://github.com/zeromq/libzmq/releases/download/v$CURRENT_PACKAGE_VERSION/zeromq-$CURRENT_PACKAGE_VERSION.tar.gz"
   if [[ "$OSTYPE" == "darwin"* ]]; then
-    export XML_CATALOG_FILES=/usr/local/etc/xml/catalog 
+    export XML_CATALOG_FILES=/usr/local/etc/xml/catalog
   fi
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j $MJOBS
