@@ -702,22 +702,24 @@ if $NONFREE_AND_GPL; then
   CONFIGURE_OPTIONS+=("--enable-libvidstab")
 fi
 
-if build "av1" "42dfaa1d47022650bc157dbe20d210591d14bae4"; then
-  # libaom 42dfaa1d47022650bc157dbe20d210591d14bae4 == v3.9.0
-  download "https://aomedia.googlesource.com/aom/+archive/$CURRENT_PACKAGE_VERSION.tar.gz" "av1.tar.gz" "av1"
-  make_dir "$PACKAGES"/aom_build
-  cd "$PACKAGES"/aom_build || exit
-  if $MACOS_M1; then
-    execute cmake -DENABLE_TESTS=0 -DENABLE_EXAMPLES=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCONFIG_RUNTIME_CPU_DETECT=0 "$PACKAGES"/av1
-  else
-    execute cmake -DENABLE_TESTS=0 -DENABLE_EXAMPLES=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib "$PACKAGES"/av1
-  fi
-  execute make -j $MJOBS
-  execute make install
+if [[ ! "$SKIPAOMAV1" == "yes" ]]; then
+  if build "av1" "42dfaa1d47022650bc157dbe20d210591d14bae4"; then
+    # libaom 42dfaa1d47022650bc157dbe20d210591d14bae4 == v3.9.0
+    download "https://aomedia.googlesource.com/aom/+archive/$CURRENT_PACKAGE_VERSION.tar.gz" "av1.tar.gz" "av1"
+    make_dir "$PACKAGES"/aom_build
+    cd "$PACKAGES"/aom_build || exit
+    if $MACOS_M1; then
+      execute cmake -DENABLE_TESTS=0 -DENABLE_EXAMPLES=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCONFIG_RUNTIME_CPU_DETECT=0 "$PACKAGES"/av1
+    else
+      execute cmake -DENABLE_TESTS=0 -DENABLE_EXAMPLES=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib "$PACKAGES"/av1
+    fi
+    execute make -j $MJOBS
+    execute make install
 
-  build_done "av1" $CURRENT_PACKAGE_VERSION
+    build_done "av1" $CURRENT_PACKAGE_VERSION
+  fi
+  CONFIGURE_OPTIONS+=("--enable-libaom")
 fi
-CONFIGURE_OPTIONS+=("--enable-libaom")
 
 if build "zimg" "3.0.5"; then
   download "https://github.com/sekrit-twc/zimg/archive/refs/tags/release-$CURRENT_PACKAGE_VERSION.tar.gz" "zimg-$CURRENT_PACKAGE_VERSION.tar.gz" "zimg"
