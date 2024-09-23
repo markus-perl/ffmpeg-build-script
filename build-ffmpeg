@@ -537,10 +537,10 @@ if build "vmaf" "3.0.0"; then
   sudo apt-get install -y nasm ninja-build doxygen xxd
 
   # Compile vmaf
-  meson setup build --buildtype release
+  meson setup build --buildtype release --prefix="${WORKSPACE}" --default-library=static --libdir="${WORKSPACE}"/lib
   # Build test and install
   # TODO Do we REALLY need to use sudo here?? For some reason got a ERRNO13 (perm denied) when trying to remove a file?
-  sudo ninja -vC build test install
+  sudo ninja -C build test install
 
   # Deactivate python virtual environment
   deactivate

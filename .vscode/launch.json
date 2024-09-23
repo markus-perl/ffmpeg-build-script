@@ -9,6 +9,9 @@
 			"request": "launch",
 			"name": "Bash-Debug (simplest configuration)",
 			"program": "${file}",
+			"env": {
+				"SKIPRAV1E": "yes"
+			},
 			"args": [
 				"--enable-gpl-and-non-free",
 				"--latest",
