@@ -7,10 +7,11 @@
 		{
 			"type": "bashdb",
 			"request": "launch",
-			"name": "Bash-Debug (simplest configuration)",
-			"program": "${file}",
+			"name": "ffmpeg-build-script",
+			"program": "build-ffmpeg",
 			"env": {
-				"SKIPRAV1E": "yes"
+				"SKIPRAV1E": "yes",
+				"SKIPAOMAV1": "yes"
 			},
 			"args": [
 				"--enable-gpl-and-non-free",

@@ -520,39 +520,35 @@ if command_exists "python3"; then
   fi
 fi
 
-# TODO Need to fix this error: ffmpeg: error while loading shared libraries: libvmaf.so.3: cannot open shared object file: No such file or directory
 if build "vmaf" "3.0.0"; then
   download "https://github.com/Netflix/vmaf/archive/refs/tags/v3.0.0.tar.gz" "vmaf-3.0.0.tar.gz"
   cd "${PACKAGES}"/vmaf-3.0.0/libvmaf
 
-  # Setting up python virtual environment
-  python3 -m pip install virtualenv
-	python3 -m virtualenv .venv
-  source .venv/bin/activate
-  pip install meson
+  execute python3 -m pip install virtualenv
+	execute python3 -m virtualenv .venv
+  execute source .venv/bin/activate
+  execute pip install meson
   # Install other dependencies for vmaf
   # TODO Is there a way to run install these without sudo?
   #   We COULD build all of these from source, but is that recommended
   #   for this repo?
-  sudo apt-get install -y nasm ninja-build doxygen xxd
+  execute sudo apt-get install -y nasm ninja-build doxygen xxd
 
   # Compile vmaf
-  meson setup build --buildtype release --prefix="${WORKSPACE}" --default-library=static --libdir="${WORKSPACE}"/lib
-  # Build test and install
-  # TODO Do we REALLY need to use sudo here?? For some reason got a ERRNO13 (perm denied) when trying to remove a file?
-  sudo ninja -C build test install
+  execute meson setup build --buildtype release --prefix="${WORKSPACE}" --default-library=static --libdir="${WORKSPACE}"/lib
+  execute ninja -C build test install
+
+  execute cp build/meson-private/libvmaf.pc "${WORKSPACE}/lib/pkgconfig/"
 
   # Deactivate python virtual environment
   deactivate
-  if [[ "$VIRTUAL_ENV" != "" ]]; then
-    echo "VIRTUAL ENVIRONMENT IS STILL ACTIVATED 😱😱😱????"
-    exit 999;
-  fi
+
   build_done "vmaf" "3.0.0"
   # TODO Is there a reason why the other build steps dont cd out??
   cd ../../../
 fi
 CONFIGURE_OPTIONS+=("--enable-libvmaf")
+EXTRALIBS="$EXTRALIBS -lstdc++"
 
 if build "svtav1" "2.1.0"; then
   # Last known working commit which passed CI Tests from HEAD branch
