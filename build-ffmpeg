@@ -1010,10 +1010,10 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
   fi
 
   if build "amf" "1.4.33"; then
-    download "https://github.com/GPUOpen-LibrariesAndSDKs/AMF/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "AMF-$CURRENT_PACKAGE_VERSION.tar.gz" "AMF-$CURRENT_PACKAGE_VERSION"
+    download "https://github.com/GPUOpen-LibrariesAndSDKs/AMF/releases/download/v$CURRENT_PACKAGE_VERSION/AMF-headers-v$CURRENT_PACKAGE_VERSION.tar.gz" "AMF-$CURRENT_PACKAGE_VERSION.tar.gz" "AMF-$CURRENT_PACKAGE_VERSION"
     execute rm -rf "${WORKSPACE}/include/AMF"
     execute mkdir -p "${WORKSPACE}/include/AMF"
-    execute cp -r "${PACKAGES}"/AMF-$CURRENT_PACKAGE_VERSION/AMF-$CURRENT_PACKAGE_VERSION/amf/public/include/* "${WORKSPACE}/include/AMF/"
+    execute cp -r "${PACKAGES}"/AMF-$CURRENT_PACKAGE_VERSION/AMF-$CURRENT_PACKAGE_VERSION/AMF/* "${WORKSPACE}/include/AMF/"
     build_done "amf" $CURRENT_PACKAGE_VERSION
   fi
   CONFIGURE_OPTIONS+=("--enable-amf")
