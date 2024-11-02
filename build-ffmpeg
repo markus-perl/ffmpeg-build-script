@@ -529,10 +529,12 @@ if build "vmaf" "3.0.0"; then
   execute source .venv/bin/activate
   execute pip install meson
   # Install other dependencies for vmaf
-  # TODO Is there a way to run install these without sudo?
-  #   We COULD build all of these from source, but is that recommended
-  #   for this repo?
-  execute sudo apt-get install -y nasm ninja-build doxygen xxd
+  if ! dpkg -l nasm ninja-build doxygen xxd > /dev/null 2>&1; then
+    dpkg -l nasm ninja-build doxygen xxd | cat # Piping to cat since "dpkg -l" requires user input when the list is long
+    echo "Error: Some dependencies for VMAF are not installed. Check the logs above."
+    echo "Try running \"apt-get install -y nasm ninja-build doxygen xxd\" to install them."
+    exit 1
+  fi
 
   # Compile vmaf
   execute meson setup build --buildtype release --prefix="${WORKSPACE}" --default-library=static --libdir="${WORKSPACE}"/lib
@@ -550,7 +552,7 @@ fi
 CONFIGURE_OPTIONS+=("--enable-libvmaf")
 EXTRALIBS="$EXTRALIBS -lstdc++"
 
-if build "svtav1" "2.1.0"; then
+if build "svtav1" "2.3.0"; then
   # Last known working commit which passed CI Tests from HEAD branch
   download "https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/v$CURRENT_PACKAGE_VERSION/SVT-AV1-v$CURRENT_PACKAGE_VERSION.tar.gz" "svtav1-$CURRENT_PACKAGE_VERSION.tar.gz"
   cd "${PACKAGES}"/svtav1-$CURRENT_PACKAGE_VERSION//Build/linux || exit
@@ -558,7 +560,6 @@ if build "svtav1" "2.1.0"; then
   execute make -j $MJOBS
   execute make install
   execute cp SvtAv1Enc.pc "${WORKSPACE}/lib/pkgconfig/"
-  execute cp SvtAv1Dec.pc "${WORKSPACE}/lib/pkgconfig/"
   build_done "svtav1" $CURRENT_PACKAGE_VERSION
 fi
 CONFIGURE_OPTIONS+=("--enable-libsvtav1")
