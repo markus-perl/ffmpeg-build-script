@@ -37,7 +37,7 @@ jobs:
 
   build-macos:
     name: build in native macOS
-    runs-on: macos-14-xlarge
+    runs-on: macos-14
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -45,7 +45,7 @@ jobs:
       - name: build ffmpeg
         run: |
           while sleep 300; do echo "=====[ $SECONDS seconds still running ]====="; done &
-          SKIPINSTALL=yes VERBOSE=yes SKIPRAV1E=yes ./build-ffmpeg --build --enable-gpl-and-non-free
+          SKIPINSTALL=yes VERBOSE=yes SKIPRAV1E=yes ./build-ffmpeg --build
           kill %1
       - name: check shared library
         run: |
