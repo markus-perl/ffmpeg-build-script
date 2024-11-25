@@ -872,7 +872,7 @@ if build "libtiff" "4.6.0"; then
   execute make install
   build_done "libtiff" $CURRENT_PACKAGE_VERSION
 fi
-if build "libpng" "1.6.43"; then
+if build "libpng" "1.6.44"; then
   download "https://sourceforge.net/projects/libpng/files/libpng16/$CURRENT_PACKAGE_VERSION/libpng-$CURRENT_PACKAGE_VERSION.tar.gz" "libpng-$CURRENT_PACKAGE_VERSION.tar.gz"
   export LDFLAGS="${LDFLAGS}"
   export CPPFLAGS="${CFLAGS}"
