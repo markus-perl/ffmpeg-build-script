@@ -1,8 +1,8 @@
 FROM ubuntu:22.04 AS build
 
-ENV DEBIAN_FRONTEND noninteractive
-ENV NVIDIA_VISIBLE_DEVICES all
-ENV NVIDIA_DRIVER_CAPABILITIES compute,utility,video
+ENV DEBIAN_FRONTEND=noninteractive
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
 
 RUN apt-get update \
     && apt-get -y --no-install-recommends install build-essential curl ca-certificates python3 python-is-python3 ninja-build meson \
@@ -21,8 +21,8 @@ RUN ! ldd /app/workspace/bin/ffplay
 
 FROM scratch
 
-ENV NVIDIA_VISIBLE_DEVICES all
-ENV NVIDIA_DRIVER_CAPABILITIES compute,utility,video
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
 
 # Copy ffmpeg
 COPY --from=build /app/workspace/bin/ffmpeg /ffmpeg

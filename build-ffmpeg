@@ -4,8 +4,8 @@
 # LICENSE: https://github.com/markus-perl/ffmpeg-build-script/blob/master/LICENSE
 
 PROGNAME=$(basename "$0")
-FFMPEG_VERSION=7.0
-SCRIPT_VERSION=1.52
+FFMPEG_VERSION=7.1
+SCRIPT_VERSION=1.53
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
 WORKSPACE="$CWD/workspace"
@@ -26,6 +26,7 @@ if [[ ("$(uname -m)" == "arm64") && ("$OSTYPE" == "darwin"*) ]]; then
   # If arm64 AND darwin (macOS)
   export ARCH=arm64
   export MACOSX_DEPLOYMENT_TARGET=11.0
+  export CXX=$(which clang++)
   MACOS_M1=true
 fi
 
@@ -53,7 +54,7 @@ make_dir() {
 
 remove_dir() {
   if [ -d "$1" ]; then
-    rm -r "$1"
+    rm -rf "$1"
   fi
 }
 
@@ -120,7 +121,16 @@ download() {
   )
 }
 
+print_flags () {
+  echo "Flags: CFLAGS \"$CFLAGS\", CXXFLAGS \"$CXXFLAGS\", LDFLAGS \"$LDFLAGS\", LDEXEFLAGS \"$LDEXEFLAGS\""
+}
+
 execute() {
+
+  if [[ "$1" == *configure* ]]; then
+    print_flags
+  fi
+
   echo "$ $*"
 
   OUTPUT=$("$@" 2>&1)
@@ -251,7 +261,9 @@ while (($# > 0)); do
         echo "Error: A full static binary can only be build on Linux."
         exit 1
       fi
-      LDEXEFLAGS="-static"
+      LDEXEFLAGS="-static -fPIC"
+      CFLAGS+=" -fPIC"
+      CXXFLAGS+=" -fPIC"
     fi
     if [[ "$1" == "--latest" ]]; then
       LATEST=true
@@ -339,8 +351,8 @@ fi
 if build "pkg-config" "0.29.2"; then
   download "https://pkgconfig.freedesktop.org/releases/pkg-config-$CURRENT_PACKAGE_VERSION.tar.gz"
   if [[ "$OSTYPE" == "darwin"* ]]; then
-  	export XXFLAGS="-Wno-int-conversion" # pkg-config 0.29.2 has a warning that is treated as an error
-  	export CFLAGS="-Wno-error=int-conversion"
+  	export XXFLAGS +=" -Wno-int-conversion" # pkg-config 0.29.2 has a warning that is treated as an error
+  	export CFLAGS +=" -Wno-error=int-conversion"
   fi
   execute ./configure --silent --prefix="${WORKSPACE}" --with-pc-path="${WORKSPACE}"/lib/pkgconfig --with-internal-glib
   execute make -j $MJOBS
@@ -455,12 +467,15 @@ else
   fi
 fi
 
-if build "cmake" "3.27.7"; then
+if build "cmake" "3.31.0"; then
+  CXXFLAGS_BACKUP=$CXXFLAGS
+  export CXXFLAGS+=" -std=c++11"
   download "https://github.com/Kitware/CMake/releases/download/v$CURRENT_PACKAGE_VERSION/cmake-$CURRENT_PACKAGE_VERSION.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --parallel="${MJOBS}" -- -DCMAKE_USE_OPENSSL=OFF
   execute make -j $MJOBS
   execute make install
   build_done "cmake" $CURRENT_PACKAGE_VERSION
+  export CXXFLAGS=$CXXFLAGS_BACKUP
 fi
 
 ##
@@ -537,6 +552,7 @@ CONFIGURE_OPTIONS+=("--enable-libsvtav1")
 if command_exists "cargo"; then
   if [[ ! "$SKIPRAV1E" == "yes" ]]; then
     if build "rav1e" "0.7.1"; then
+      echo "if you get the message 'cannot be built because it requires rustc x.xx or newer, try to run 'rustup update'"
       execute cargo install cargo-c
       download "https://github.com/xiph/rav1e/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz"
       export RUSTFLAGS="-C target-cpu=native"  
@@ -1037,7 +1053,7 @@ fi
 build "ffmpeg" "$FFMPEG_VERSION"
 download "https://github.com/FFmpeg/FFmpeg/archive/refs/heads/release/$FFMPEG_VERSION.tar.gz" "FFmpeg-release-$FFMPEG_VERSION.tar.gz"
 # shellcheck disable=SC2086
-./configure "${CONFIGURE_OPTIONS[@]}" \
+execute ./configure "${CONFIGURE_OPTIONS[@]}" \
   --disable-debug \
   --disable-shared \
   --enable-pthreads \

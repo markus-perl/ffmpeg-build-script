@@ -4,3 +4,4 @@ workspace
 linux
 .artifacts
 build
+full-static-test.dockerfile
