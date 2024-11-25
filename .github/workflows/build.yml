@@ -37,7 +37,7 @@ jobs:
 
   build-macos:
     name: build in native macOS
-    runs-on: macos-14
+    runs-on: macos-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
