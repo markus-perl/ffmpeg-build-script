@@ -1,6 +1,6 @@
 FROM ubuntu:24.04 AS build
 
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update \
     && apt-get -y --no-install-recommends install build-essential curl ca-certificates libva-dev \
@@ -15,7 +15,7 @@ RUN SKIPINSTALL=yes /app/build-ffmpeg --build
 
 FROM ubuntu:24.04
 
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 
 # install va-driver
 RUN apt-get update \

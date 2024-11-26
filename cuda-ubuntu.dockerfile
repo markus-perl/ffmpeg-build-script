@@ -3,9 +3,9 @@ ARG UBUNTUVER=24.04
 
 FROM nvidia/cuda:${CUDAVER}-devel-ubuntu${UBUNTUVER} AS build
 
-ENV DEBIAN_FRONTEND noninteractive
-ENV NVIDIA_VISIBLE_DEVICES all
-ENV NVIDIA_DRIVER_CAPABILITIES compute,utility,video
+ENV DEBIAN_FRONTEND=noninteractive
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
 
 RUN apt-get update && \
     apt-get upgrade -y && \
@@ -36,9 +36,9 @@ RUN CUDA_COMPUTE_CAPABILITY=$(deviceQuery | grep Capability | head -n 1 | awk 'E
 
 FROM ubuntu:${UBUNTUVER} AS release
 
-ENV DEBIAN_FRONTEND noninteractive
-ENV NVIDIA_VISIBLE_DEVICES all
-ENV NVIDIA_DRIVER_CAPABILITIES compute,utility,video
+ENV DEBIAN_FRONTEND=noninteractive
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
 
 # install va-driver
 RUN apt-get update \
