@@ -13,7 +13,7 @@ CFLAGS="-I$WORKSPACE/include -Wno-int-conversion"
 LDFLAGS="-L$WORKSPACE/lib"
 LDEXEFLAGS=""
 EXTRALIBS="-ldl -lpthread -lm -lz"
-MACOS_M1=false
+MACOS_SILICON=false
 CONFIGURE_OPTIONS=()
 NONFREE_AND_GPL=false
 DISABLE_LV2=false
@@ -27,7 +27,20 @@ if [[ ("$(uname -m)" == "arm64") && ("$OSTYPE" == "darwin"*) ]]; then
   export ARCH=arm64
   export MACOSX_DEPLOYMENT_TARGET=11.0
   export CXX=$(which clang++)
-  MACOS_M1=true
+  MACOS_SILICON=true
+  echo "Apple Silicon detected."
+
+  # get macos version
+  MACOS_VERSION=$(sw_vers -productVersion)
+  echo "macOS Version: $MACOS_VERSION"
+
+  #check if clang++ is installed and print version. Otherwise exit with an error message
+  if command_exists "clang++"; then
+    echo "clang++ is installed. Version: $(clang++ --version | head -n 1)"
+  else
+    echo "clang++ is not installed. Please install Xcode."
+    exit 1
+  fi
 fi
 
 # Speed up the process
@@ -195,7 +208,7 @@ verify_binary_type() {
   echo ""
   case $BINARY_TYPE in
   "Mach-O 64-bit executable arm64")
-    echo "Successfully built Apple Silicon (M1) for ${OSTYPE}: ${BINARY_TYPE}"
+    echo "Successfully built Apple Silicon for ${OSTYPE}: ${BINARY_TYPE}"
     ;;
   *)
     echo "Successfully built binary for ${OSTYPE}: ${BINARY_TYPE}"
@@ -427,7 +440,7 @@ if $NONFREE_AND_GPL; then
 
   if build "openssl" "1.1.1w"; then
     download "https://www.openssl.org/source/openssl-$CURRENT_PACKAGE_VERSION.tar.gz"
-    if $MACOS_M1; then
+    if $MACOS_SILICON; then
       sed -n 's/\(##### GNU Hurd\)/"darwin64-arm64-cc" => { \n    inherit_from     => [ "darwin-common", asm("aarch64_asm") ],\n    CFLAGS           => add("-Wall"),\n    cflags           => add("-arch arm64 "),\n    lib_cppflags     => add("-DL_ENDIAN"),\n    bn_ops           => "SIXTY_FOUR_BIT_LONG", \n    perlasm_scheme   => "macosx", \n}, \n\1/g' Configurations/10-main.conf
       execute ./Configure --prefix="${WORKSPACE}" no-shared no-asm darwin64-arm64-cc
     else
@@ -517,7 +530,7 @@ if command_exists "python3"; then
       make_dir build
 
       CFLAGSBACKUP=$CFLAGS
-      if $MACOS_M1; then
+      if $MACOS_SILICON; then
         export CFLAGS="-arch arm64"
       fi
 
@@ -525,7 +538,7 @@ if command_exists "python3"; then
       execute ninja -C build
       execute ninja -C build install
 
-      if $MACOS_M1; then
+      if $MACOS_SILICON; then
         export CFLAGS=$CFLAGSBACKUP
       fi
 
@@ -669,7 +682,7 @@ if $NONFREE_AND_GPL; then
   if build "vid_stab" "1.1.1"; then
     download "https://github.com/georgmartius/vid.stab/archive/v$CURRENT_PACKAGE_VERSION.tar.gz" "vid.stab-$CURRENT_PACKAGE_VERSION.tar.gz"
 
-    if $MACOS_M1; then
+    if $MACOS_SILICON; then
       curl -L --silent -o "$PACKAGES/vid.stab-$CURRENT_PACKAGE_VERSION/fix_cmake_quoting.patch" "https://raw.githubusercontent.com/Homebrew/formula-patches/5bf1a0e0cfe666ee410305cece9c9c755641bfdf/libvidstab/fix_cmake_quoting.patch"
       patch -p1 <fix_cmake_quoting.patch
     fi
@@ -688,7 +701,7 @@ if build "av1" "42dfaa1d47022650bc157dbe20d210591d14bae4"; then
   download "https://aomedia.googlesource.com/aom/+archive/$CURRENT_PACKAGE_VERSION.tar.gz" "av1.tar.gz" "av1"
   make_dir "$PACKAGES"/aom_build
   cd "$PACKAGES"/aom_build || exit
-  if $MACOS_M1; then
+  if $MACOS_SILICON; then
     execute cmake -DENABLE_TESTS=0 -DENABLE_EXAMPLES=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCONFIG_RUNTIME_CPU_DETECT=0 "$PACKAGES"/av1
   else
     execute cmake -DENABLE_TESTS=0 -DENABLE_EXAMPLES=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib "$PACKAGES"/av1
@@ -833,7 +846,7 @@ if build "libtheora" "1.1.1"; then
   chmod +x configure.patched
   mv configure.patched configure
 
-  if ! $MACOS_M1; then
+  if ! $MACOS_SILICON; then
     ##BEGIN CONFIG.GUESS PATCH -- Updating config.guess file. Which allowed me to compile on aarch64 (ARMv8) [linux kernel 4.9 Ubuntu 20.04]
     rm config.guess
     curl -L --silent -o "config.guess" "https://raw.githubusercontent.com/gcc-mirror/gcc/master/config.guess"
