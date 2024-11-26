@@ -879,7 +879,7 @@ fi
 ## image library
 ##
 
-if build "libtiff" "4.6.0"; then
+if build "libtiff" "4.7.0"; then
   download "https://download.osgeo.org/libtiff/tiff-$CURRENT_PACKAGE_VERSION.tar.xz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-dependency-tracking --disable-lzma --disable-webp --disable-zstd --without-x
   execute make -j $MJOBS
@@ -940,7 +940,7 @@ if build "libsdl" "2.30.1"; then
   build_done "libsdl" $CURRENT_PACKAGE_VERSION
 fi
 
-if build "FreeType2" "2.13.2"; then
+if build "FreeType2" "2.13.3"; then
   download "https://downloads.sourceforge.net/freetype/freetype-$CURRENT_PACKAGE_VERSION.tar.xz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j $MJOBS
@@ -951,7 +951,7 @@ fi
 CONFIGURE_OPTIONS+=("--enable-libfreetype")
 
 if $NONFREE_AND_GPL; then
-  if build "srt" "1.5.3"; then
+  if build "srt" "1.5.4"; then
     download "https://github.com/Haivision/srt/archive/v$CURRENT_PACKAGE_VERSION.tar.gz" "srt-$CURRENT_PACKAGE_VERSION.tar.gz"
     export OPENSSL_ROOT_DIR="${WORKSPACE}"
     export OPENSSL_LIB_DIR="${WORKSPACE}"/lib
