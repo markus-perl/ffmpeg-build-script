@@ -406,7 +406,7 @@ if build "m4" "1.4.19"; then
   build_done "m4" $CURRENT_PACKAGE_VERSION
 fi
 
-if build "autoconf" "2.71"; then
+if build "autoconf" "2.72"; then
   download "https://ftp.gnu.org/gnu/autoconf/autoconf-$CURRENT_PACKAGE_VERSION.tar.gz"
   execute ./configure --prefix="${WORKSPACE}"
   execute make -j $MJOBS
@@ -414,7 +414,7 @@ if build "autoconf" "2.71"; then
   build_done "autoconf" $CURRENT_PACKAGE_VERSION
 fi
 
-if build "automake" "1.16.5"; then
+if build "automake" "1.17"; then
   download "https://ftp.gnu.org/gnu/automake/automake-$CURRENT_PACKAGE_VERSION.tar.gz"
   execute ./configure --prefix="${WORKSPACE}"
   execute make -j $MJOBS
@@ -461,7 +461,7 @@ else
     build_done "gmp" $CURRENT_PACKAGE_VERSION
   fi
 
-  if build "nettle" "3.9.1"; then
+  if build "nettle" "3.10"; then
     download "https://ftp.gnu.org/gnu/nettle/nettle-$CURRENT_PACKAGE_VERSION.tar.gz"
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-openssl --disable-documentation --libdir="${WORKSPACE}"/lib CPPFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}"
     execute make -j $MJOBS
@@ -470,8 +470,8 @@ else
   fi
 
   if [[ ! $ARCH == 'arm64' ]]; then
-    if build "gnutls" "3.7.10"; then
-      download "https://www.gnupg.org/ftp/gcrypt/gnutls/v3.7/gnutls-$CURRENT_PACKAGE_VERSION.tar.xz"
+    if build "gnutls" "3.8.4"; then
+      download "https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-$CURRENT_PACKAGE_VERSION.tar.xz"
       execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-doc --disable-tools --disable-cxx --disable-tests --disable-gtk-doc-html --disable-libdane --disable-nls --enable-local-libopts --disable-guile --with-included-libtasn1 --with-included-unistring --without-p11-kit CPPFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}"
       execute make -j $MJOBS
       execute make install
@@ -526,7 +526,7 @@ if command_exists "python3"; then
 
   fi
   if command_exists "meson"; then
-    if build "dav1d" "1.4.2"; then
+    if build "dav1d" "1.5.0"; then
       download "https://code.videolan.org/videolan/dav1d/-/archive/$CURRENT_PACKAGE_VERSION/dav1d-$CURRENT_PACKAGE_VERSION.tar.gz"
       make_dir build
 
@@ -598,7 +598,7 @@ if $NONFREE_AND_GPL; then
 fi
 
 if $NONFREE_AND_GPL; then
-  if build "x265" "3.6"; then
+  if build "x265" "4.0"; then
     download "https://bitbucket.org/multicoreware/x265_git/downloads/x265_$CURRENT_PACKAGE_VERSION.tar.gz" "x265-$CURRENT_PACKAGE_VERSION.tar.gz" # This is actually 3.4 if looking at x265Version.txt
     cd build/linux || exit
     rm -rf 8bit 10bit 12bit 2>/dev/null
@@ -641,7 +641,7 @@ EOF
   CONFIGURE_OPTIONS+=("--enable-libx265")
 fi
 
-if build "libvpx" "1.14.1"; then
+if build "libvpx" "1.15.0"; then
   download "https://github.com/webmproject/libvpx/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "libvpx-$CURRENT_PACKAGE_VERSION.tar.gz"
 
   if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -697,8 +697,8 @@ if $NONFREE_AND_GPL; then
   CONFIGURE_OPTIONS+=("--enable-libvidstab")
 fi
 
-if build "av1" "42dfaa1d47022650bc157dbe20d210591d14bae4"; then
-  # libaom 42dfaa1d47022650bc157dbe20d210591d14bae4 == v3.9.0
+if build "av1" "d6f30ae474dd6c358f26de0a0fc26a0d7340a84c"; then
+  #  d6f30ae474dd6c358f26de0a0fc26a0d7340a84c == v3.11.0
   download "https://aomedia.googlesource.com/aom/+archive/$CURRENT_PACKAGE_VERSION.tar.gz" "av1.tar.gz" "av1"
   make_dir "$PACKAGES"/aom_build
   cd "$PACKAGES"/aom_build || exit
