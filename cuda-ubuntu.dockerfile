@@ -8,7 +8,6 @@ ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
 
 
-
 # build and move deviceQuery to /usr/bin
 RUN mkdir -p /code && \
     git clone --depth 1 https://github.com/NVIDIA/cuda-samples.git /code/cuda-samples && \
@@ -29,7 +28,7 @@ ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
 
 # install va-driver
 RUN apt-get update \
-    && apt-get -y install libva-drm2 \
+    && apt-get -y install libva-drm2 git \
     && apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
 
 # Copy libnpp
