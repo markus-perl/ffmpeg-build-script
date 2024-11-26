@@ -10,7 +10,7 @@ on:
 jobs:
   build-linux:
     name: build in native linux
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -59,7 +59,7 @@ jobs:
 
   build-docker:
     name: build in docker
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -67,11 +67,11 @@ jobs:
       - name: pull base image
         id: ubuntu_pull
         run: |
-          docker pull ubuntu:22.04
+          docker pull ubuntu:24.04
       - name: run if ubuntu_pull failed
         if: failure() && steps.ubuntu_pull.outcome == 'failure'
         run: |
-          docker pull ubuntu:22.04
+          docker pull ubuntu:24.04
       - name: build ffmpeg
         run: |
           docker build -t ffmpeg:ubuntu -f Dockerfile .
