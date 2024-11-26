@@ -319,9 +319,9 @@ Contact
 Tested on
 ---------
 
-* MacOS 10.15
-* Debian 10
-* Ubuntu 20.04
+* MacOS 15.1
+* Debian 12
+* Ubuntu 22.04
 
 ## Continuous Integration
 
