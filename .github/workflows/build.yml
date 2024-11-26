@@ -89,12 +89,12 @@ jobs:
       - name: pull base image
         id: cuda_ubuntu_pull
         run: |
-          docker pull nvidia/cuda:11.8.0-devel-ubuntu22.04
+          docker pull nvidia/cuda:12.6.2-devel-ubuntu22.04
           docker pull ubuntu:22.04
       - name: run if cuda_ubuntu_pull failed
         if: failure() && steps.cuda_ubuntu_pull.outcome == 'failure'
         run: |
-          docker pull nvidia/cuda:11.8.0-devel-ubuntu22.04
+          docker pull nvidia/cuda:12.6.2-devel-ubuntu22.04
           docker pull ubuntu:22.04
       - name: build ffmpeg
         run: |
@@ -113,11 +113,11 @@ jobs:
       - name: pull base image
         id: cuda_ubuntu_pull
         run: |
-          docker pull nvidia/cuda:11.8.0-devel-ubuntu22.04
+          docker pull nvidia/cuda:12.6.2-devel-ubuntu22.04
       - name: run if cuda_ubuntu_pull failed
         if: failure() && steps.cuda_ubuntu_pull.outcome == 'failure'
         run: |
-          docker pull nvidia/cuda:11.8.0-devel-ubuntu22.04
+          docker pull nvidia/cuda:12.6.2-devel-ubuntu22.04
       - name: build ffmpeg
         run: |
           docker build -t ffmpeg:cuda-static -f full-static.dockerfile .
