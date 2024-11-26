@@ -7,6 +7,9 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
 
+RUN apt-get update \
+    && apt-get -y install git \
+    && apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
 
 # build and move deviceQuery to /usr/bin
 RUN mkdir -p /code && \
@@ -28,7 +31,7 @@ ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
 
 # install va-driver
 RUN apt-get update \
-    && apt-get -y install libva-drm2 git \
+    && apt-get -y install libva-drm2 \
     && apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
 
 # Copy libnpp
