@@ -950,6 +950,7 @@ fi
 
 CONFIGURE_OPTIONS+=("--enable-libfreetype")
 CONFIGURE_OPTIONS+=("--enable-libharfbuzz")
+CONFIGURE_OPTIONS+=("--enable-libfontconfig")
 
 if $NONFREE_AND_GPL; then
   if build "srt" "1.5.4"; then
