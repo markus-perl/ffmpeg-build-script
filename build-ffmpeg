@@ -1128,6 +1128,7 @@ echo ""
 INSTALL_NOW=0
 if [[ "$AUTOINSTALL" == "yes" ]]; then
   INSTALL_NOW=1
+  echo "Automatically installing these binaries because the --auto-install option was used or AUTOINSTALL=yes was run."
 elif [[ ! "$SKIPINSTALL" == "yes" ]]; then
   read -r -p "Install these binaries to your $INSTALL_FOLDER folder? Existing binaries will be replaced. [Y/n] " response
   case $response in
@@ -1135,6 +1136,8 @@ elif [[ ! "$SKIPINSTALL" == "yes" ]]; then
       INSTALL_NOW=1
     ;;
   esac
+else
+  echo "Skipping install of these binaries because the --skip-install option was used or SKIPINSTALL=yes was run."
 fi
 
 if [ "$INSTALL_NOW" = 1 ]; then
