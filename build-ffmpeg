@@ -552,7 +552,7 @@ fi
 CONFIGURE_OPTIONS+=("--enable-libvmaf")
 EXTRALIBS="$EXTRALIBS -lstdc++"
 
-if build "svtav1" "2.3.0"; then
+if build "svtav1" "2.3.0-A"; then
   # SVT-AV1-PSY variant
   download "https://github.com/gianni-rosato/svt-av1-psy/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "svtav1-psy-$CURRENT_PACKAGE_VERSION.tar.gz"
   cd "${PACKAGES}"/svtav1-psy-$CURRENT_PACKAGE_VERSION//Build/linux || exit
