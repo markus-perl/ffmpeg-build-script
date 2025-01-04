@@ -700,20 +700,23 @@ if $NONFREE_AND_GPL; then
 fi
 
 if [[ ! "$SKIPAOMAV1" == "yes" ]]; then
-  if build "av1" "42dfaa1d47022650bc157dbe20d210591d14bae4"; then
-    # libaom 42dfaa1d47022650bc157dbe20d210591d14bae4 == v3.9.0
-    download "https://aomedia.googlesource.com/aom/+archive/$CURRENT_PACKAGE_VERSION.tar.gz" "av1.tar.gz" "av1"
+  if build "av1" "psy101"; then
+    if [ -f "$PACKAGES/av1" ]; then
+      rm -rf "$PACKAGES/av1/"
+    fi
+    download "https://gitlab.com/damian101/aom-psy101/-/archive/psy101/aom-psy101-psy101.tar.gz" "av1.tar.gz" "av1"
     make_dir "$PACKAGES"/aom_build
     cd "$PACKAGES"/aom_build || exit
     if $MACOS_M1; then
-      execute cmake -DENABLE_TESTS=0 -DENABLE_EXAMPLES=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCONFIG_RUNTIME_CPU_DETECT=0 "$PACKAGES"/av1
+      execute cmake -DENABLE_CCACHE=1 -DENABLE_TESTS=0 -DENABLE_DOCS=0 -DENABLE_EXAMPLES=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCONFIG_RUNTIME_CPU_DETECT=0 "$PACKAGES"/av1/aom-psy101-psy101
     else
-      execute cmake -DENABLE_TESTS=0 -DENABLE_EXAMPLES=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib "$PACKAGES"/av1
+      execute cmake -DENABLE_CCACHE=1 -DCMAKE_CXX_FLAGS="-flto -O3 -march=znver2" -DCMAKE_C_FLAGS="-flto -O3 -march=znver2" -DCMAKE_C_FLAGS_INIT="-flto=8 -static" -DENABLE_TESTS=0 -DENABLE_DOCS=0 -DENABLE_EXAMPLES=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib "$PACKAGES"/av1/aom-psy101-psy101
     fi
     execute make -j $MJOBS
     execute make install
 
     build_done "av1" $CURRENT_PACKAGE_VERSION
+    rm -rf "$PACKAGES/av1.tar.gz"
   fi
   CONFIGURE_OPTIONS+=("--enable-libaom")
 fi
