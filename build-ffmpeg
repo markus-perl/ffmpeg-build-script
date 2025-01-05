@@ -710,7 +710,7 @@ if [[ ! "$SKIPAOMAV1" == "yes" ]]; then
     if $MACOS_M1; then
       execute cmake -DENABLE_CCACHE=1 -DENABLE_TESTS=0 -DENABLE_DOCS=0 -DENABLE_EXAMPLES=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCONFIG_RUNTIME_CPU_DETECT=0 "$PACKAGES"/av1/aom-psy101-psy101
     else
-      execute cmake -DENABLE_CCACHE=1 -DCMAKE_CXX_FLAGS="-flto -O3 -march=znver3" -DCMAKE_C_FLAGS="-flto -O3 -march=znver3" -DCMAKE_C_FLAGS_INIT="-flto=8 -static" -DENABLE_TESTS=0 -DENABLE_DOCS=0 -DENABLE_EXAMPLES=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib "$PACKAGES"/av1/aom-psy101-psy101
+      execute cmake -DENABLE_CCACHE=1 -DCMAKE_CXX_FLAGS="-flto -O3 -march=native" -DCMAKE_C_FLAGS="-flto -O3 -march=native" -DCMAKE_C_FLAGS_INIT="-flto=8 -static" -DENABLE_TESTS=0 -DENABLE_DOCS=0 -DENABLE_EXAMPLES=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib "$PACKAGES"/av1/aom-psy101-psy101
     fi
     execute make -j $MJOBS
     execute make install
