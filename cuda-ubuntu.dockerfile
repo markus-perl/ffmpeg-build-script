@@ -9,7 +9,7 @@ ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
 
 RUN apt-get update \
     && apt-get -y --no-install-recommends install build-essential curl ca-certificates libva-dev \
-        python3 python-is-python3 ninja-build meson git curl \
+        python3 python-is-python3 ninja-build meson git curl cmake \
     && apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/* \
     && update-ca-certificates
 
@@ -17,7 +17,7 @@ RUN apt-get update \
 RUN mkdir -p /code && \
     git clone --depth 1 https://github.com/NVIDIA/cuda-samples.git /code/cuda-samples && \
     cd /code/cuda-samples/Samples/1_Utilities/deviceQuery && \
-    make && \
+    cmake . && make && \
     mv deviceQuery /usr/local/bin
 
 WORKDIR /app
