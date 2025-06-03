@@ -1,4 +1,4 @@
-ARG CUDAVER=12.6.2
+ARG CUDAVER=12.9.0
 ARG UBUNTUVER=22.04
 
 FROM nvidia/cuda:${CUDAVER}-devel-ubuntu${UBUNTUVER} AS build
@@ -7,18 +7,23 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
 
-RUN apt-get update \
-    && apt-get -y --no-install-recommends install build-essential curl ca-certificates libva-dev \
-        python3 python-is-python3 ninja-build meson git curl \
-    && apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/* \
-    && update-ca-certificates
-
-# build and move deviceQuery to /usr/bin
-RUN mkdir -p /code && \
-    git clone --depth 1 https://github.com/NVIDIA/cuda-samples.git /code/cuda-samples && \
-    cd /code/cuda-samples/Samples/1_Utilities/deviceQuery && \
-    make && \
-    mv deviceQuery /usr/local/bin
+# Update package lists
+RUN apt-get update
+# Install required packages
+RUN apt-get -y --no-install-recommends install build-essential curl ca-certificates libva-dev \
+    python3 python-is-python3 ninja-build meson git curl
+# Clean up package cache and temporary files
+RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
+# Update CA certificates
+RUN update-ca-certificates
+# Create code directory
+RUN mkdir -p /code
+# Clone CUDA samples repository
+RUN git clone --depth 1 https://github.com/NVIDIA/cuda-samples.git /code/cuda-samples
+# Build deviceQuery
+RUN cd /code/cuda-samples/Samples/1_Utilities/deviceQuery && make
+# Move deviceQuery binary to path
+RUN mv /code/cuda-samples/Samples/1_Utilities/deviceQuery/deviceQuery /usr/local/bin
 
 WORKDIR /app
 COPY ./build-ffmpeg /app/build-ffmpeg

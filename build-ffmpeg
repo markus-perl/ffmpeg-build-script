@@ -785,7 +785,7 @@ if ! $DISABLE_LV2 ; then
       fi
       if build "lilv" "0.24.16"; then
         download "https://gitlab.com/lv2/lilv/-/archive/v$CURRENT_PACKAGE_VERSION/lilv-v$CURRENT_PACKAGE_VERSION.tar.gz" "lilv-v$CURRENT_PACKAGE_VERSION.tar.gz"
-        execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
+        execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib -Dcpp_std=c++11
         execute ninja -C build
         execute ninja -C build install
         build_done "lilv" $CURRENT_PACKAGE_VERSION
