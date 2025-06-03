@@ -45,6 +45,10 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
 
+# install va-driver
+RUN apt-get update \
+    && apt-get -y install libva-drm2 \
+    && apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
 
 # Copy libnpp
 COPY --from=build /usr/local/cuda-12.9/targets/x86_64-linux/lib/libnppc.so /lib/x86_64-linux-gnu/libnppc.so.12
