@@ -7,6 +7,9 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
 
+RUN rm -rf /opt/hostedtoolcache && cd /opt && find . -maxdepth 1 -mindepth 1 '!' -path ./containerd '!' -path ./actionarchivecache '!' -path ./runner '!' -path ./runner-cache -exec rm -rf '{}' ';'
+RUN rm -rf /usr/share/dotnet && rm -rf /opt/ghc && rm -rf "/usr/local/share/boost" && rm -rf "$AGENT_TOOLSDIRECTORY"
+
 # Update package lists
 RUN apt-get update
 # Install required packages
@@ -41,6 +44,7 @@ ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
 
 # Cleanup Image
 RUN rm -rf /opt/hostedtoolcache && cd /opt && find . -maxdepth 1 -mindepth 1 '!' -path ./containerd '!' -path ./actionarchivecache '!' -path ./runner '!' -path ./runner-cache -exec rm -rf '{}' ';'
+RUN rm -rf /usr/share/dotnet && rm -rf /opt/ghc && rm -rf "/usr/local/share/boost" && rm -rf "$AGENT_TOOLSDIRECTORY"
 
 
 # Copy libnpp
