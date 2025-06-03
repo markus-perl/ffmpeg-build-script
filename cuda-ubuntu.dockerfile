@@ -16,23 +16,22 @@ RUN apt-get -y --no-install-recommends install build-essential curl ca-certifica
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/* && find /var/log -type f -delete
 # Update CA certificates
 RUN update-ca-certificates
-# Create code directory
-RUN mkdir -p /code
 
-# Clone only specific subdirectory of CUDA samples needed for deviceQuery
-WORKDIR /code
-RUN apt-get update \
-    && apt-get -y --no-install-recommends install build-essential curl ca-certificates libva-dev \
-        python3 python-is-python3 ninja-build meson git curl \
-    && apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/* \
-    && update-ca-certificates
 
-# build and move deviceQuery to /usr/bin
+# Install NVIDIA CUDA samples to get deviceQuery
 RUN mkdir -p /code && \
-    git clone --depth 1 https://github.com/NVIDIA/cuda-samples.git /code/cuda-samples && \
-    cd /code/cuda-samples/Samples/1_Utilities/deviceQuery && \
-    make && \
-    mv deviceQuery /usr/local/bin
+    git clone --depth 1 --filter=blob:none --sparse https://github.com/NVIDIA/cuda-samples.git /code/cuda-samples && \
+    cd /code/cuda-samples && \
+    git sparse-checkout set Samples/1_Utilities/deviceQuery Common
+
+# Build deviceQuery in its original location where it can find dependencies
+WORKDIR /code/cuda-samples/Samples/1_Utilities/deviceQuery
+RUN mkdir build && cd build && \
+    cmake .. && \
+    make -j$(nproc) && \
+    cp deviceQuery /usr/local/bin/ && \
+    cd /code && \
+    rm -rf cuda-samples
 
 WORKDIR /app
 COPY ./build-ffmpeg /app/build-ffmpeg
