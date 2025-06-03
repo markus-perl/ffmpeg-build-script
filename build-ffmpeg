@@ -4,7 +4,7 @@
 # LICENSE: https://github.com/markus-perl/ffmpeg-build-script/blob/master/LICENSE
 
 PROGNAME=$(basename "$0")
-FFMPEG_VERSION=7.1
+FFMPEG_VERSION=7.1.1
 SCRIPT_VERSION=1.54
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
@@ -382,7 +382,7 @@ if build "yasm" "1.3.0"; then
   build_done "yasm" $CURRENT_PACKAGE_VERSION
 fi
 
-if build "nasm" "2.16.01"; then
+if build "nasm" "2.16.03"; then
   download "https://www.nasm.us/pub/nasm/releasebuilds/$CURRENT_PACKAGE_VERSION/nasm-$CURRENT_PACKAGE_VERSION.tar.xz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j $MJOBS
@@ -453,7 +453,7 @@ if $NONFREE_AND_GPL; then
   fi
   CONFIGURE_OPTIONS+=("--enable-openssl")
 else
-  if build "gmp" "6.2.1"; then
+  if build "gmp" "6.3.0"; then
     download "https://ftp.gnu.org/gnu/gmp/gmp-$CURRENT_PACKAGE_VERSION.tar.xz"
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
     execute make -j $MJOBS
@@ -470,7 +470,7 @@ else
   fi
 
   if [[ ! $ARCH == 'arm64' ]]; then
-    if build "gnutls" "3.8.4"; then
+    if build "gnutls" "3.8.5"; then
       download "https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-$CURRENT_PACKAGE_VERSION.tar.xz"
       execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-doc --disable-tools --disable-cxx --disable-tests --disable-gtk-doc-html --disable-libdane --disable-nls --enable-local-libopts --disable-guile --with-included-libtasn1 --with-included-unistring --without-p11-kit CPPFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}"
       execute make -j $MJOBS
@@ -481,7 +481,7 @@ else
   fi
 fi
 
-if build "cmake" "3.31.0"; then
+if build "cmake" "3.31.7"; then
   CXXFLAGS_BACKUP=$CXXFLAGS
   export CXXFLAGS+=" -std=c++11"
   download "https://github.com/Kitware/CMake/releases/download/v$CURRENT_PACKAGE_VERSION/cmake-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -526,7 +526,7 @@ if command_exists "python3"; then
 
   fi
   if command_exists "meson"; then
-    if build "dav1d" "1.5.0"; then
+    if build "dav1d" "1.5.1"; then
       download "https://code.videolan.org/videolan/dav1d/-/archive/$CURRENT_PACKAGE_VERSION/dav1d-$CURRENT_PACKAGE_VERSION.tar.gz"
       make_dir build
 
@@ -578,7 +578,7 @@ fi
 
 if $NONFREE_AND_GPL; then
 
-  if build "x264" "be4f0200"; then
+  if build "x264" "ff620d0c"; then
     download "https://code.videolan.org/videolan/x264/-/archive/$CURRENT_PACKAGE_VERSION/x264-$CURRENT_PACKAGE_VERSION.tar.gz" "x264-$CURRENT_PACKAGE_VERSION.tar.gz"
     cd "${PACKAGES}"/x264-$CURRENT_PACKAGE_VERSION || exit
 
@@ -598,7 +598,7 @@ if $NONFREE_AND_GPL; then
 fi
 
 if $NONFREE_AND_GPL; then
-  if build "x265" "4.0"; then
+  if build "x265" "4.1"; then
     download "https://bitbucket.org/multicoreware/x265_git/downloads/x265_$CURRENT_PACKAGE_VERSION.tar.gz" "x265-$CURRENT_PACKAGE_VERSION.tar.gz" # This is actually 3.4 if looking at x265Version.txt
     cd build/linux || exit
     rm -rf 8bit 10bit 12bit 2>/dev/null
@@ -746,7 +746,7 @@ if ! $DISABLE_LV2 ; then
         download "https://gitlab.com/drobilla/autowaf/-/archive/$CURRENT_PACKAGE_VERSION/autowaf-$CURRENT_PACKAGE_VERSION.tar.gz" "autowaf.tar.gz"
         build_done "waflib" $CURRENT_PACKAGE_VERSION
       fi
-      if build "serd" "0.30.16"; then
+      if build "serd" "0.32.2"; then
         download "https://gitlab.com/drobilla/serd/-/archive/v$CURRENT_PACKAGE_VERSION/serd-v$CURRENT_PACKAGE_VERSION.tar.gz" "serd-v$CURRENT_PACKAGE_VERSION.tar.gz"
         execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
         execute ninja -C build
@@ -760,21 +760,30 @@ if ! $DISABLE_LV2 ; then
         execute make install
         build_done "pcre" $CURRENT_PACKAGE_VERSION
       fi
-      if build "sord" "0.16.14"; then
+      if build "zix" "0.6.2"; then
+        download "https://gitlab.com/drobilla/zix/-/archive/v$CURRENT_PACKAGE_VERSION/zix-v$CURRENT_PACKAGE_VERSION.tar.gz" "zix-v$CURRENT_PACKAGE_VERSION.tar.gz"
+        execute meson setup build
+        cd build || exit
+        execute meson configure -Dc_args="-march=native" -Dprefix="${WORKSPACE}" -Dlibdir="${WORKSPACE}"/lib
+        execute meson compile
+        execute meson install
+        build_done "zix" $CURRENT_PACKAGE_VERSION
+      fi
+      if build "sord" "0.16.16"; then
         download "https://gitlab.com/drobilla/sord/-/archive/v$CURRENT_PACKAGE_VERSION/sord-v$CURRENT_PACKAGE_VERSION.tar.gz" "sord-v$CURRENT_PACKAGE_VERSION.tar.gz"
         execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
         execute ninja -C build
         execute ninja -C build install
         build_done "sord" $CURRENT_PACKAGE_VERSION
       fi
-      if build "sratom" "0.6.14"; then
+      if build "sratom" "0.6.16"; then
         download "https://gitlab.com/lv2/sratom/-/archive/v$CURRENT_PACKAGE_VERSION/sratom-v$CURRENT_PACKAGE_VERSION.tar.gz" "sratom-v$CURRENT_PACKAGE_VERSION.tar.gz"
         execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
         execute ninja -C build
         execute ninja -C build install
         build_done "sratom" $CURRENT_PACKAGE_VERSION
       fi
-      if build "lilv" "0.24.20"; then
+      if build "lilv" "0.24.24"; then
         download "https://gitlab.com/lv2/lilv/-/archive/v$CURRENT_PACKAGE_VERSION/lilv-v$CURRENT_PACKAGE_VERSION.tar.gz" "lilv-v$CURRENT_PACKAGE_VERSION.tar.gz"
         execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
         execute ninja -C build
@@ -886,7 +895,7 @@ if build "libtiff" "4.7.0"; then
   execute make install
   build_done "libtiff" $CURRENT_PACKAGE_VERSION
 fi
-if build "libpng" "1.6.44"; then
+if build "libpng" "1.6.48"; then
   download "https://sourceforge.net/projects/libpng/files/libpng16/$CURRENT_PACKAGE_VERSION/libpng-$CURRENT_PACKAGE_VERSION.tar.gz" "libpng-$CURRENT_PACKAGE_VERSION.tar.gz"
   export LDFLAGS="${LDFLAGS}"
   export CPPFLAGS="${CFLAGS}"
@@ -896,7 +905,7 @@ if build "libpng" "1.6.44"; then
   build_done "libpng" $CURRENT_PACKAGE_VERSION
 fi
 
-if build "libjxl" "0.11.0"; then
+if build "libjxl" "0.11.1"; then
   download "https://github.com/libjxl/libjxl/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "libjxl-$CURRENT_PACKAGE_VERSION.tar.gz"
 # currently needed to fix linking of static builds in non-C++ applications
   sed "s/-ljxl_threads/-ljxl_threads @JPEGXL_THREADS_PUBLIC_LIBS@/g" lib/threads/libjxl_threads.pc.in >lib/threads/libjxl_threads.pc.in.patched
@@ -913,7 +922,7 @@ if build "libjxl" "0.11.0"; then
 fi
 CONFIGURE_OPTIONS+=("--enable-libjxl")
 
-if build "libwebp" "1.4.0"; then
+if build "libwebp" "1.5.0"; then
   # libwebp can fail to compile on Ubuntu if these flags were left set to CFLAGS
   CPPFLAGS=
   download "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-$CURRENT_PACKAGE_VERSION.tar.gz" "libwebp-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -967,7 +976,7 @@ if $NONFREE_AND_GPL; then
   fi
   CONFIGURE_OPTIONS+=("--enable-libsrt")
 
-  if build "zvbi" "0.2.42"; then
+  if build "zvbi" "0.2.44"; then
     download "https://github.com/zapping-vbi/zvbi/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "zvbi-$CURRENT_PACKAGE_VERSION.tar.gz"
     execute ./autogen.sh --prefix="${WORKSPACE}"
     execute ./configure CFLAGS="-I${WORKSPACE}/include/libpng16 ${CFLAGS}" --prefix="${WORKSPACE}" --enable-static --disable-shared
@@ -1003,7 +1012,7 @@ fi
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
   if command_exists "nvcc"; then
-    if build "nv-codec" "11.1.5.3"; then
+    if build "nv-codec" "12.1.14.0"; then
       download "https://github.com/FFmpeg/nv-codec-headers/releases/download/n$CURRENT_PACKAGE_VERSION/nv-codec-headers-$CURRENT_PACKAGE_VERSION.tar.gz"
       execute make PREFIX="${WORKSPACE}"
       execute make PREFIX="${WORKSPACE}" install
@@ -1064,7 +1073,7 @@ if [ -d "$CWD/.git" ]; then
 fi
 
 build "ffmpeg" "$FFMPEG_VERSION"
-download "https://github.com/FFmpeg/FFmpeg/archive/refs/heads/release/$FFMPEG_VERSION.tar.gz" "FFmpeg-release-$FFMPEG_VERSION.tar.gz"
+download "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n$FFMPEG_VERSION.tar.gz" "FFmpeg-release-$FFMPEG_VERSION.tar.gz"
 # shellcheck disable=SC2086
 execute ./configure "${CONFIGURE_OPTIONS[@]}" \
   --disable-debug \
