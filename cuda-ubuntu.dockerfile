@@ -34,7 +34,7 @@ WORKDIR /app
 COPY ./build-ffmpeg /app/build-ffmpeg
 
 RUN CUDA_COMPUTE_CAPABILITY=$(deviceQuery | grep Capability | head -n 1 | awk 'END {print $NF}' | tr -d '.') SKIPINSTALL=yes /app/build-ffmpeg --build --enable-gpl-and-non-free && \
-    rm -rf /app/workspace/ffmpeg* /app/workspace/build /app/workspace/packages \
+    rm -rf /app/workspace/ffmpeg* /app/workspace/build /app/workspace/packages
 
 FROM ubuntu:${UBUNTUVER} AS release
 
