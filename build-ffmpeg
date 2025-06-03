@@ -569,7 +569,7 @@ if command_exists "cargo"; then
       execute cargo install cargo-c
       download "https://github.com/xiph/rav1e/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz"
       export RUSTFLAGS="-C target-cpu=native"  
-      execute cargo cinstall --prefix="${WORKSPACE}" --library-type=staticlib --crt-static --release
+      execute cargo cinstall --prefix="${WORKSPACE}" --libdir=lib --library-type=staticlib --crt-static --release
       build_done "rav1e" $CURRENT_PACKAGE_VERSION
     fi
     CONFIGURE_OPTIONS+=("--enable-librav1e")
