@@ -783,7 +783,7 @@ if ! $DISABLE_LV2 ; then
         execute ninja -C build install
         build_done "sratom" $CURRENT_PACKAGE_VERSION
       fi
-      if build "lilv" "0.24.24"; then
+      if build "lilv" "0.24.16"; then
         download "https://gitlab.com/lv2/lilv/-/archive/v$CURRENT_PACKAGE_VERSION/lilv-v$CURRENT_PACKAGE_VERSION.tar.gz" "lilv-v$CURRENT_PACKAGE_VERSION.tar.gz"
         execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
         execute ninja -C build
@@ -1012,7 +1012,7 @@ fi
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
   if command_exists "nvcc"; then
-    if build "nv-codec" "12.1.14.0"; then
+    if build "nv-codec" "11.1.5.3"; then
       download "https://github.com/FFmpeg/nv-codec-headers/releases/download/n$CURRENT_PACKAGE_VERSION/nv-codec-headers-$CURRENT_PACKAGE_VERSION.tar.gz"
       execute make PREFIX="${WORKSPACE}"
       execute make PREFIX="${WORKSPACE}" install
