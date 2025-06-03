@@ -27,9 +27,6 @@ RUN cd /code/cuda-samples/Samples/1_Utilities/deviceQuery && make && \
     mv deviceQuery /usr/local/bin && \
     rm -rf /code/cuda-samples
 
-# Cleanup Image
-RUN rm -rf /opt/hostedtoolcache && cd /opt && find . -maxdepth 1 -mindepth 1 '!' -path ./containerd '!' -path ./actionarchivecache '!' -path ./runner '!' -path ./runner-cache -exec rm -rf '{}' ';'
-
 WORKDIR /app
 COPY ./build-ffmpeg /app/build-ffmpeg
 
@@ -41,6 +38,10 @@ FROM ubuntu:${UBUNTUVER} AS release
 ENV DEBIAN_FRONTEND=noninteractive
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
+
+# Cleanup Image
+RUN rm -rf /opt/hostedtoolcache && cd /opt && find . -maxdepth 1 -mindepth 1 '!' -path ./containerd '!' -path ./actionarchivecache '!' -path ./runner '!' -path ./runner-cache -exec rm -rf '{}' ';'
+
 
 # Copy libnpp
 COPY --from=build /usr/local/cuda-12.9/targets/x86_64-linux/lib/libnppc.so /lib/x86_64-linux-gnu/libnppc.so.12
