@@ -25,10 +25,6 @@ RUN cd /code/cuda-samples/Samples/1_Utilities/deviceQuery && make
 # Move deviceQuery binary to path
 RUN mv /code/cuda-samples/Samples/1_Utilities/deviceQuery/deviceQuery /usr/local/bin
 
-# Cleanup Image
-RUN cd /opt && find . -maxdepth 1 -mindepth 1 '!' -path ./containerd '!' -path ./actionarchivecache '!' -path ./runner '!' -path ./runner-cache -exec rm -rf '{}' ';'
-
-
 WORKDIR /app
 COPY ./build-ffmpeg /app/build-ffmpeg
 
@@ -39,6 +35,9 @@ FROM ubuntu:${UBUNTUVER} AS release
 ENV DEBIAN_FRONTEND=noninteractive
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
+
+# Cleanup Image
+RUN cd /opt && find . -maxdepth 1 -mindepth 1 '!' -path ./containerd '!' -path ./actionarchivecache '!' -path ./runner '!' -path ./runner-cache -exec rm -rf '{}' ';'
 
 # install va-driver
 RUN apt-get update \
