@@ -10,7 +10,7 @@ ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
 # Update package lists
 RUN apt-get update
 # Install required packages
-RUN apt-get -y --no-install-recommends install build-essential curl ca-certificates libva-dev libva-drm2 \
+RUN apt-get -y --no-install-recommends install build-essential curl ca-certificates libva-dev libva-drm2 cmake \
     python3 python-is-python3 ninja-build meson git curl
 # Clean up package cache and temporary files
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/* && find /var/log -type f -delete
@@ -30,9 +30,10 @@ RUN mkdir -p /code/deviceQuery && \
 
 # Build deviceQuery (newer CUDA samples use a different directory structure)
 WORKDIR /code/deviceQuery
-RUN make && \
+RUN mkdir build && cd build && cmake .. && \
+    make -j$(nproc) && \
     cp deviceQuery /usr/local/bin/ && \
-    rm -rf /code/deviceQuery
+    rm -rf /code/cuda-samples
 
 WORKDIR /app
 COPY ./build-ffmpeg /app/build-ffmpeg
