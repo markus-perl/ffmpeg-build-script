@@ -13,7 +13,7 @@ RUN apt-get update
 RUN apt-get -y --no-install-recommends install build-essential curl ca-certificates libva-dev libva-drm2 \
     python3 python-is-python3 ninja-build meson git curl
 # Clean up package cache and temporary files
-RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
+RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/* && find /var/log -type f -delete
 # Update CA certificates
 RUN update-ca-certificates
 # Create code directory
@@ -22,13 +22,19 @@ RUN mkdir -p /code
 RUN git clone --depth 1 https://github.com/NVIDIA/cuda-samples.git /code/cuda-samples
 # Build deviceQuery
 RUN cd /code/cuda-samples/Samples/1_Utilities/deviceQuery && make
-# Move deviceQuery binary to path
-RUN mv /code/cuda-samples/Samples/1_Utilities/deviceQuery/deviceQuery /usr/local/bin
+
+RUN cd /code/cuda-samples/Samples/1_Utilities/deviceQuery && make && \
+    mv deviceQuery /usr/local/bin && \
+    rm -rf /code/cuda-samples
+
+# Cleanup Image
+RUN rm -rf /opt/hostedtoolcache && cd /opt && find . -maxdepth 1 -mindepth 1 '!' -path ./containerd '!' -path ./actionarchivecache '!' -path ./runner '!' -path ./runner-cache -exec rm -rf '{}' ';'
 
 WORKDIR /app
 COPY ./build-ffmpeg /app/build-ffmpeg
 
-RUN CUDA_COMPUTE_CAPABILITY=$(deviceQuery | grep Capability | head -n 1 | awk 'END {print $NF}' | tr -d '.') SKIPINSTALL=yes /app/build-ffmpeg --build --enable-gpl-and-non-free
+RUN CUDA_COMPUTE_CAPABILITY=$(deviceQuery | grep Capability | head -n 1 | awk 'END {print $NF}' | tr -d '.') SKIPINSTALL=yes /app/build-ffmpeg --build --enable-gpl-and-non-free && \
+    rm -rf /app/workspace/ffmpeg* /app/workspace/build /app/workspace/packages \
 
 FROM ubuntu:${UBUNTUVER} AS release
 
