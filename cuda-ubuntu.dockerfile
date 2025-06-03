@@ -7,9 +7,6 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
 
-RUN rm -rf /opt/hostedtoolcache && cd /opt && find . -maxdepth 1 -mindepth 1 '!' -path ./containerd '!' -path ./actionarchivecache '!' -path ./runner '!' -path ./runner-cache -exec rm -rf '{}' ';'
-RUN rm -rf /usr/share/dotnet && rm -rf /opt/ghc && rm -rf "/usr/local/share/boost" && rm -rf "$AGENT_TOOLSDIRECTORY"
-
 # Update package lists
 RUN apt-get update
 # Install required packages
@@ -21,14 +18,21 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/do
 RUN update-ca-certificates
 # Create code directory
 RUN mkdir -p /code
-# Clone CUDA samples repository
-RUN git clone --depth 1 https://github.com/NVIDIA/cuda-samples.git /code/cuda-samples
-# Build deviceQuery
-RUN cd /code/cuda-samples/Samples/1_Utilities/deviceQuery && make
 
-RUN cd /code/cuda-samples/Samples/1_Utilities/deviceQuery && make && \
-    mv deviceQuery /usr/local/bin && \
-    rm -rf /code/cuda-samples
+# Clone only specific subdirectory of CUDA samples needed for deviceQuery
+WORKDIR /code
+RUN mkdir -p /code/deviceQuery && \
+    git clone --depth 1 --filter=blob:none --sparse https://github.com/NVIDIA/cuda-samples.git && \
+    cd cuda-samples && \
+    git sparse-checkout set Samples/1_Utilities/deviceQuery && \
+    cp -r Samples/1_Utilities/deviceQuery/* /code/deviceQuery/ && \
+    rm -rf cuda-samples
+
+# Build deviceQuery (newer CUDA samples use a different directory structure)
+WORKDIR /code/deviceQuery
+RUN make && \
+    cp deviceQuery /usr/local/bin/ && \
+    rm -rf /code/deviceQuery
 
 WORKDIR /app
 COPY ./build-ffmpeg /app/build-ffmpeg
@@ -41,10 +45,6 @@ FROM ubuntu:${UBUNTUVER} AS release
 ENV DEBIAN_FRONTEND=noninteractive
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
-
-# Cleanup Image
-RUN rm -rf /opt/hostedtoolcache && cd /opt && find . -maxdepth 1 -mindepth 1 '!' -path ./containerd '!' -path ./actionarchivecache '!' -path ./runner '!' -path ./runner-cache -exec rm -rf '{}' ';'
-RUN rm -rf /usr/share/dotnet && rm -rf /opt/ghc && rm -rf "/usr/local/share/boost" && rm -rf "$AGENT_TOOLSDIRECTORY"
 
 
 # Copy libnpp
