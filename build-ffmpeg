@@ -237,6 +237,9 @@ usage() {
   echo "      --small                    Prioritize small size over speed and usability; don't build manpages"
   echo "      --full-static              Build a full static FFmpeg binary (eg. glibc, pthreads etc...) **only Linux**"
   echo "                                 Note: Because of the NSS (Name Service Switch), glibc does not recommend static links."
+  echo "      --skip-install             Don't install FFmpeg, FFprobe, and FFplay binaries to your system"
+  echo "      --auto-install             Install FFmpeg, FFprobe, and FFplay binaries to your system"
+  echo "                                 Note: Without --skip-install or --auto-install the script will prompt you to install."
   echo ""
 }
 
@@ -285,6 +288,20 @@ while (($# > 0)); do
     if [[ "$1" == "--small" ]]; then
       CONFIGURE_OPTIONS+=("--enable-small" "--disable-doc")
       MANPAGES=0
+    fi
+    if [[ "$1" == "--skip-install" ]]; then
+      SKIPINSTALL=yes
+      if [[ "$AUTOINSTALL" == "yes" ]]; then
+        echo "Error: The option --skip-install cannot be used with --auto-install"
+        exit 1
+      fi
+    fi
+    if [[ "$1" == "--auto-install" ]]; then
+      AUTOINSTALL=yes
+      if [[ "$SKIPINSTALL" == "yes" ]]; then
+        echo "Error: The option --auto-install cannot be used with --skip-install"
+        exit 1
+      fi
     fi
     shift
     ;;
@@ -1120,6 +1137,7 @@ echo ""
 INSTALL_NOW=0
 if [[ "$AUTOINSTALL" == "yes" ]]; then
   INSTALL_NOW=1
+  echo "Automatically installing these binaries because the --auto-install option was used or AUTOINSTALL=yes was run."
 elif [[ ! "$SKIPINSTALL" == "yes" ]]; then
   read -r -p "Install these binaries to your $INSTALL_FOLDER folder? Existing binaries will be replaced. [Y/n] " response
   case $response in
@@ -1127,6 +1145,8 @@ elif [[ ! "$SKIPINSTALL" == "yes" ]]; then
       INSTALL_NOW=1
     ;;
   esac
+else
+  echo "Skipping install of these binaries because the --skip-install option was used or SKIPINSTALL=yes was run."
 fi
 
 if [ "$INSTALL_NOW" = 1 ]; then
