@@ -10,7 +10,7 @@ ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
 # Update package lists
 RUN apt-get update
 # Install required packages
-RUN apt-get -y --no-install-recommends install build-essential curl ca-certificates libva-dev \
+RUN apt-get -y --no-install-recommends install build-essential curl ca-certificates libva-dev libva-drm2 \
     python3 python-is-python3 ninja-build meson git curl
 # Clean up package cache and temporary files
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
@@ -37,12 +37,8 @@ ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
 
 # Cleanup Image
-RUN cd /opt && find . -maxdepth 1 -mindepth 1 '!' -path ./containerd '!' -path ./actionarchivecache '!' -path ./runner '!' -path ./runner-cache -exec rm -rf '{}' ';'
+RUN rm -rf /opt/hostedtoolcache && cd /opt && find . -maxdepth 1 -mindepth 1 '!' -path ./containerd '!' -path ./actionarchivecache '!' -path ./runner '!' -path ./runner-cache -exec rm -rf '{}' ';'
 
-# install va-driver
-RUN apt-get update \
-    && apt-get -y install libva-drm2 \
-    && apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
 
 # Copy libnpp
 COPY --from=build /usr/local/cuda-12.9/targets/x86_64-linux/lib/libnppc.so /lib/x86_64-linux-gnu/libnppc.so.12
