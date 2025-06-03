@@ -25,6 +25,10 @@ RUN cd /code/cuda-samples/Samples/1_Utilities/deviceQuery && make
 # Move deviceQuery binary to path
 RUN mv /code/cuda-samples/Samples/1_Utilities/deviceQuery/deviceQuery /usr/local/bin
 
+# Cleanup Image
+RUN cd /opt && find . -maxdepth 1 -mindepth 1 '!' -path ./containerd '!' -path ./actionarchivecache '!' -path ./runner '!' -path ./runner-cache -exec rm -rf '{}' ';'
+
+
 WORKDIR /app
 COPY ./build-ffmpeg /app/build-ffmpeg
 
@@ -42,11 +46,11 @@ RUN apt-get update \
     && apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
 
 # Copy libnpp
-COPY --from=build /usr/local/cuda-12.6/targets/x86_64-linux/lib/libnppc.so /lib/x86_64-linux-gnu/libnppc.so.12
-COPY --from=build /usr/local/cuda-12.6/targets/x86_64-linux/lib/libnppig.so /lib/x86_64-linux-gnu/libnppig.so.12
-COPY --from=build /usr/local/cuda-12.6/targets/x86_64-linux/lib/libnppicc.so /lib/x86_64-linux-gnu/libnppicc.so.12
-COPY --from=build /usr/local/cuda-12.6/targets/x86_64-linux/lib/libnppidei.so /lib/x86_64-linux-gnu/libnppidei.so.12
-COPY --from=build /usr/local/cuda-12.6/targets/x86_64-linux/lib/libnppif.so /lib/x86_64-linux-gnu/libnppif.so.12
+COPY --from=build /usr/local/cuda-12.9/targets/x86_64-linux/lib/libnppc.so /lib/x86_64-linux-gnu/libnppc.so.12
+COPY --from=build /usr/local/cuda-12.9/targets/x86_64-linux/lib/libnppig.so /lib/x86_64-linux-gnu/libnppig.so.12
+COPY --from=build /usr/local/cuda-12.9/targets/x86_64-linux/lib/libnppicc.so /lib/x86_64-linux-gnu/libnppicc.so.12
+COPY --from=build /usr/local/cuda-12.9/targets/x86_64-linux/lib/libnppidei.so /lib/x86_64-linux-gnu/libnppidei.so.12
+COPY --from=build /usr/local/cuda-12.9/targets/x86_64-linux/lib/libnppif.so /lib/x86_64-linux-gnu/libnppif.so.12
 
 # Copy ffmpeg
 COPY --from=build /app/workspace/bin/ffmpeg /usr/bin/ffmpeg
