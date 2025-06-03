@@ -21,19 +21,18 @@ RUN mkdir -p /code
 
 # Clone only specific subdirectory of CUDA samples needed for deviceQuery
 WORKDIR /code
-RUN mkdir -p /code/deviceQuery && \
-    git clone --depth 1 --filter=blob:none --sparse https://github.com/NVIDIA/cuda-samples.git && \
-    cd cuda-samples && \
-    git sparse-checkout set Samples/1_Utilities/deviceQuery && \
-    cp -r Samples/1_Utilities/deviceQuery/* /code/deviceQuery/ && \
-    rm -rf cuda-samples
+RUN apt-get update \
+    && apt-get -y --no-install-recommends install build-essential curl ca-certificates libva-dev \
+        python3 python-is-python3 ninja-build meson git curl \
+    && apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/* \
+    && update-ca-certificates
 
-# Build deviceQuery (newer CUDA samples use a different directory structure)
-WORKDIR /code/deviceQuery
-RUN mkdir build && cd build && cmake .. && \
-    make -j$(nproc) && \
-    cp deviceQuery /usr/local/bin/ && \
-    rm -rf /code/cuda-samples
+# build and move deviceQuery to /usr/bin
+RUN mkdir -p /code && \
+    git clone --depth 1 https://github.com/NVIDIA/cuda-samples.git /code/cuda-samples && \
+    cd /code/cuda-samples/Samples/1_Utilities/deviceQuery && \
+    make && \
+    mv deviceQuery /usr/local/bin
 
 WORKDIR /app
 COPY ./build-ffmpeg /app/build-ffmpeg
