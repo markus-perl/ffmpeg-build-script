@@ -83,9 +83,13 @@ jobs:
     name: build in ubuntu docker with cuda
     runs-on: ubuntu-22.04
     steps:
+      - name: Free up disk space
+        run: |
+          rm -rf /usr/share/dotnet && rm -rf /opt/ghc && rm -rf "/usr/local/share/boost"
+          rm -rf /opt/hostedtoolcache && cd /opt && find . -maxdepth 1 -mindepth 1 '!' -path ./containerd '!' -path ./actionarchivecache '!' -path ./runner '!' -path ./runner-cache -exec rm -rf '{}' ';'
+          docker system prune -af
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: pull base image
         id: cuda_ubuntu_pull
         run: |
