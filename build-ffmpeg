@@ -762,7 +762,7 @@ if ! $DISABLE_LV2 ; then
       fi
       if build "zix" "0.6.2"; then
         download "https://gitlab.com/drobilla/zix/-/archive/v$CURRENT_PACKAGE_VERSION/zix-v$CURRENT_PACKAGE_VERSION.tar.gz" "zix-v$CURRENT_PACKAGE_VERSION.tar.gz"
-        execute meson setup build
+        execute meson setup build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
         cd build || exit
         execute meson configure -Dc_args="-march=native" -Dprefix="${WORKSPACE}" -Dlibdir="${WORKSPACE}"/lib
         execute meson compile
