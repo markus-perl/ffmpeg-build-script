@@ -399,7 +399,7 @@ if build "yasm" "1.3.0"; then
   build_done "yasm" $CURRENT_PACKAGE_VERSION
 fi
 
-if build "nasm" "2.16.03"; then
+if build "nasm" "2.16.01"; then
   download "https://www.nasm.us/pub/nasm/releasebuilds/$CURRENT_PACKAGE_VERSION/nasm-$CURRENT_PACKAGE_VERSION.tar.xz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j $MJOBS
@@ -456,14 +456,9 @@ if $NONFREE_AND_GPL; then
     build_done "gettext" $CURRENT_PACKAGE_VERSION
   fi
 
-  if build "openssl" "1.1.1w"; then
-    download "https://www.openssl.org/source/openssl-$CURRENT_PACKAGE_VERSION.tar.gz"
-    if $MACOS_SILICON; then
-      sed -n 's/\(##### GNU Hurd\)/"darwin64-arm64-cc" => { \n    inherit_from     => [ "darwin-common", asm("aarch64_asm") ],\n    CFLAGS           => add("-Wall"),\n    cflags           => add("-arch arm64 "),\n    lib_cppflags     => add("-DL_ENDIAN"),\n    bn_ops           => "SIXTY_FOUR_BIT_LONG", \n    perlasm_scheme   => "macosx", \n}, \n\1/g' Configurations/10-main.conf
-      execute ./Configure --prefix="${WORKSPACE}" no-shared no-asm darwin64-arm64-cc
-    else
-      execute ./config --prefix="${WORKSPACE}" --openssldir="${WORKSPACE}" --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib no-shared zlib
-    fi
+  if build "openssl" "3.5.0"; then
+    download "https://github.com/openssl/openssl/archive/refs/tags/openssl-$CURRENT_PACKAGE_VERSION.tar.gz" "openssl-$CURRENT_PACKAGE_VERSION.tar.gz"
+    execute ./Configure --prefix="${WORKSPACE}" --openssldir="${WORKSPACE}" --libdir="lib" --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib no-shared zlib
     execute make -j $MJOBS
     execute make install_sw
     build_done "openssl" $CURRENT_PACKAGE_VERSION
@@ -515,21 +510,27 @@ fi
 
 if command_exists "python3"; then
   # dav1d needs meson and ninja along with nasm to be built
-  if command_exists "pip3"; then
 
   #set variable meson and ninja installed to false
   MESON_INSTALLED=false
 
-    #check if macOs and brew is available
+  if command_exists "meson"; then
+    if command_exists "ninja"; then
+      MESON_INSTALLED=true
+    fi
+  fi
+
+  if ! $MESON_INSTALLED; then
+    #check if macOS and brew is available
     if [[ "$OSTYPE" == "darwin"* ]]; then
       if command_exists "brew"; then
         brew install python-setuptools meson ninja
-          MESON_INSTALLED=true
+        MESON_INSTALLED=true
       fi
     else
-      #check if meson and ninja are installed MESON_INSTALLED AND system is not MacOS
-      if ! $MESON_INSTALLED; then
-
+      if command_exists "pip3"; then
+        echo "Try to install meson and ninja using pip3."
+        echo "If you get an error (like externally-managed-environment), try to install meson using your system package manager"
         # meson and ninja can be installed via pip3
         execute pip3 install pip setuptools --quiet --upgrade --no-cache-dir --disable-pip-version-check
         for r in meson ninja; do
@@ -538,9 +539,10 @@ if command_exists "python3"; then
           fi
           export PATH=$PATH:~/Library/Python/3.9/bin
         done
+      else
+        echo "Try to install meson using your system package manager to be able to compile ffmpeg with dav1d."
       fi
     fi
-
   fi
   if command_exists "meson"; then
     if build "dav1d" "1.5.1"; then
@@ -566,7 +568,7 @@ if command_exists "python3"; then
   fi
 fi
 
-if build "svtav1" "2.3.0"; then
+if build "svtav1" "3.0.2"; then
   # Last known working commit which passed CI Tests from HEAD branch
   download "https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/v$CURRENT_PACKAGE_VERSION/SVT-AV1-v$CURRENT_PACKAGE_VERSION.tar.gz" "svtav1-$CURRENT_PACKAGE_VERSION.tar.gz"
   cd "${PACKAGES}"/svtav1-$CURRENT_PACKAGE_VERSION//Build/linux || exit
@@ -581,7 +583,7 @@ CONFIGURE_OPTIONS+=("--enable-libsvtav1")
 
 if command_exists "cargo"; then
   if [[ ! "$SKIPRAV1E" == "yes" ]]; then
-    if build "rav1e" "0.7.1"; then
+    if build "rav1e" "0.8.0"; then
       echo "if you get the message 'cannot be built because it requires rustc x.xx or newer, try to run 'rustup update'"
       execute cargo install cargo-c
       download "https://github.com/xiph/rav1e/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -595,7 +597,7 @@ fi
 
 if $NONFREE_AND_GPL; then
 
-  if build "x264" "ff620d0c"; then
+  if build "x264" "b35605ac"; then
     download "https://code.videolan.org/videolan/x264/-/archive/$CURRENT_PACKAGE_VERSION/x264-$CURRENT_PACKAGE_VERSION.tar.gz" "x264-$CURRENT_PACKAGE_VERSION.tar.gz"
     cd "${PACKAGES}"/x264-$CURRENT_PACKAGE_VERSION || exit
 
@@ -658,7 +660,7 @@ EOF
   CONFIGURE_OPTIONS+=("--enable-libx265")
 fi
 
-if build "libvpx" "1.15.0"; then
+if build "libvpx" "1.15.2"; then
   download "https://github.com/webmproject/libvpx/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "libvpx-$CURRENT_PACKAGE_VERSION.tar.gz"
 
   if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -714,8 +716,8 @@ if $NONFREE_AND_GPL; then
   CONFIGURE_OPTIONS+=("--enable-libvidstab")
 fi
 
-if build "av1" "d6f30ae474dd6c358f26de0a0fc26a0d7340a84c"; then
-  #  d6f30ae474dd6c358f26de0a0fc26a0d7340a84c == v3.11.0
+if build "av1" "10aece4157eb79315da205f39e19bf6ab3ee30d0"; then
+  #  10aece4157eb79315da205f39e19bf6ab3ee30d0 == v3.12.1
   download "https://aomedia.googlesource.com/aom/+archive/$CURRENT_PACKAGE_VERSION.tar.gz" "av1.tar.gz" "av1"
   make_dir "$PACKAGES"/aom_build
   cd "$PACKAGES"/aom_build || exit
@@ -867,21 +869,9 @@ if build "libvorbis" "1.3.7"; then
 fi
 CONFIGURE_OPTIONS+=("--enable-libvorbis")
 
-if build "libtheora" "1.1.1"; then
+if build "libtheora" "1.2.0"; then
   download "https://ftp.osuosl.org/pub/xiph/releases/theora/libtheora-$CURRENT_PACKAGE_VERSION.tar.gz"
-  sed "s/-fforce-addr//g" configure >configure.patched
-  chmod +x configure.patched
-  mv configure.patched configure
-
-  if ! $MACOS_SILICON; then
-    ##BEGIN CONFIG.GUESS PATCH -- Updating config.guess file. Which allowed me to compile on aarch64 (ARMv8) [linux kernel 4.9 Ubuntu 20.04]
-    rm config.guess
-    curl -L --silent -o "config.guess" "https://raw.githubusercontent.com/gcc-mirror/gcc/master/config.guess"
-    chmod +x config.guess
-    ##END OF CONFIG.GUESS PATCH
-  fi
-
-  execute ./configure --prefix="${WORKSPACE}" --with-ogg-libraries="${WORKSPACE}"/lib --with-ogg-includes="${WORKSPACE}"/include/ --with-vorbis-libraries="${WORKSPACE}"/lib --with-vorbis-includes="${WORKSPACE}"/include/ --enable-static --disable-shared --disable-oggtest --disable-vorbistest --disable-examples --disable-asm --disable-spec
+  execute ./configure --prefix="${WORKSPACE}" --with-ogg-libraries="${WORKSPACE}"/lib --with-ogg-includes="${WORKSPACE}"/include/ --with-vorbis-libraries="${WORKSPACE}"/lib --with-vorbis-includes="${WORKSPACE}"/include/ --enable-static --disable-shared --disable-oggtest --disable-vorbistest --disable-examples --disable-spec
   execute make -j $MJOBS
   execute make install
 
@@ -957,7 +947,7 @@ CONFIGURE_OPTIONS+=("--enable-libwebp")
 ## other library
 ##
 
-if build "libsdl" "2.30.1"; then
+if build "libsdl" "2.32.8"; then
   download "https://github.com/libsdl-org/SDL/releases/download/release-$CURRENT_PACKAGE_VERSION/SDL2-$CURRENT_PACKAGE_VERSION.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j $MJOBS
@@ -975,6 +965,17 @@ if build "FreeType2" "2.13.3"; then
 fi
 
 CONFIGURE_OPTIONS+=("--enable-libfreetype")
+
+if build "VapourSynth" "72"; then
+  # VapourSynth library is loaded dynamically by ffmpeg if a VapourSynth script is opened
+  # no need to build it at compile team, only headers need to be installed
+  download "https://github.com/vapoursynth/vapoursynth/archive/R$CURRENT_PACKAGE_VERSION.tar.gz"
+  execute mkdir -p "${WORKSPACE}/include/vapoursynth"
+  execute cp -r "include/." "${WORKSPACE}/include/vapoursynth/"
+  build_done "VapourSynth" $CURRENT_PACKAGE_VERSION
+fi
+
+CONFIGURE_OPTIONS+=("--enable-vapoursynth")
 
 if $NONFREE_AND_GPL; then
   if build "srt" "1.5.4"; then
@@ -1064,7 +1065,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     fi
   fi
 
-  if build "amf" "1.4.35"; then
+  if build "amf" "1.4.36"; then
     download "https://github.com/GPUOpen-LibrariesAndSDKs/AMF/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "AMF-$CURRENT_PACKAGE_VERSION.tar.gz" "AMF-$CURRENT_PACKAGE_VERSION"
     execute rm -rf "${WORKSPACE}/include/AMF"
     execute mkdir -p "${WORKSPACE}/include/AMF"
@@ -1092,6 +1093,14 @@ fi
 build "ffmpeg" "$FFMPEG_VERSION"
 download "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n$FFMPEG_VERSION.tar.gz" "FFmpeg-release-$FFMPEG_VERSION.tar.gz"
 # shellcheck disable=SC2086
+
+# this is a temporary fix to allow building ffmpeg 7.1.x with svtav1 >= 3.0.0
+#  (API change in svtav1 3.0: one unused parameter removed)
+# the patch already in ffmpeg master branch was not backported to 7.1.x
+sed 's/svt_av1_enc_init_handle(\&svt_enc->svt_handle, svt_enc, \&svt_enc->enc_params);/svt_av1_enc_init_handle(\&svt_enc->svt_handle, \&svt_enc->enc_params);/g' libavcodec/libsvtav1.c >libavcodec/libsvtav1.c.patched
+execute rm libavcodec/libsvtav1.c
+execute mv libavcodec/libsvtav1.c.patched libavcodec/libsvtav1.c
+
 execute ./configure "${CONFIGURE_OPTIONS[@]}" \
   --disable-debug \
   --disable-shared \
