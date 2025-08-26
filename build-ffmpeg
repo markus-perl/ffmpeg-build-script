@@ -1042,7 +1042,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     CONFIGURE_OPTIONS+=("--enable-cuda-nvcc" "--enable-cuvid" "--enable-nvdec" "--enable-nvenc" "--enable-cuda-llvm" "--enable-ffnvcodec")
 
     if [ -z "$LDEXEFLAGS" ]; then
-      CONFIGURE_OPTIONS+=("--enable-libnpp") # Only libnpp cannot be statically linked.
+   #   CONFIGURE_OPTIONS+=("--enable-libnpp") # Only libnpp cannot be statically linked.
     fi
     if [ -z "$CUDA_COMPUTE_CAPABILITY" ]; then
       # Set default value if no compute capability was found
