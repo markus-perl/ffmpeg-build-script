@@ -366,12 +366,8 @@ fi
 ## build tools
 ##
 
-if build "giflib" "5.2.1"; then
+if build "giflib" "5.2.2"; then
   download "https://netcologne.dl.sourceforge.net/project/giflib/giflib-$CURRENT_PACKAGE_VERSION.tar.gz"
-  if [[ "$OSTYPE" == "darwin"* ]]; then
-    download "https://sourceforge.net/p/giflib/bugs/_discuss/thread/4e811ad29b/c323/attachment/Makefile.patch"
-    execute patch -p0 --forward "${PACKAGES}/giflib-$CURRENT_PACKAGE_VERSION/Makefile" "${PACKAGES}/Makefile.patch" || true
-  fi
   cd "${PACKAGES}"/giflib-$CURRENT_PACKAGE_VERSION || exit
   #multicore build disabled for this library
   execute make
@@ -457,7 +453,7 @@ if $NONFREE_AND_GPL; then
     build_done "gettext" $CURRENT_PACKAGE_VERSION
   fi
 
-  if build "openssl" "3.5.0"; then
+  if build "openssl" "3.5.2"; then
     download "https://github.com/openssl/openssl/archive/refs/tags/openssl-$CURRENT_PACKAGE_VERSION.tar.gz" "openssl-$CURRENT_PACKAGE_VERSION.tar.gz"
     execute ./Configure --prefix="${WORKSPACE}" --openssldir="${WORKSPACE}" --libdir="lib" --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib no-shared zlib
     execute make -j $MJOBS
@@ -483,7 +479,7 @@ else
   fi
 
   if [[ ! $ARCH == 'arm64' ]]; then
-    if build "gnutls" "3.8.5"; then
+    if build "gnutls" "3.8.10"; then
       download "https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-$CURRENT_PACKAGE_VERSION.tar.xz"
       execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-doc --disable-tools --disable-cxx --disable-tests --disable-gtk-doc-html --disable-libdane --disable-nls --enable-local-libopts --disable-guile --with-included-libtasn1 --with-included-unistring --without-p11-kit CPPFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}"
       execute make -j $MJOBS
@@ -569,7 +565,7 @@ if command_exists "python3"; then
   fi
 fi
 
-if build "svtav1" "3.0.2"; then
+if build "svtav1" "3.1.2"; then
   # Last known working commit which passed CI Tests from HEAD branch
   download "https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/v$CURRENT_PACKAGE_VERSION/SVT-AV1-v$CURRENT_PACKAGE_VERSION.tar.gz" "svtav1-$CURRENT_PACKAGE_VERSION.tar.gz"
   cd "${PACKAGES}"/svtav1-$CURRENT_PACKAGE_VERSION//Build/linux || exit
@@ -584,7 +580,7 @@ CONFIGURE_OPTIONS+=("--enable-libsvtav1")
 
 if command_exists "cargo"; then
   if [[ ! "$SKIPRAV1E" == "yes" ]]; then
-    if build "rav1e" "0.8.0"; then
+    if build "rav1e" "0.8.1"; then
       echo "if you get the message 'cannot be built because it requires rustc x.xx or newer, try to run 'rustup update'"
       execute cargo install cargo-c
       download "https://github.com/xiph/rav1e/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -717,8 +713,8 @@ if $NONFREE_AND_GPL; then
   CONFIGURE_OPTIONS+=("--enable-libvidstab")
 fi
 
-if build "av1" "10aece4157eb79315da205f39e19bf6ab3ee30d0"; then
-  #  10aece4157eb79315da205f39e19bf6ab3ee30d0 == v3.12.1
+if build "av1" "d9c115ce0951324dee243041ef810e27202de20f"; then
+  #  d9c115ce0951324dee243041ef810e27202de20f == v3.13.0
   download "https://aomedia.googlesource.com/aom/+archive/$CURRENT_PACKAGE_VERSION.tar.gz" "av1.tar.gz" "av1"
   make_dir "$PACKAGES"/aom_build
   cd "$PACKAGES"/aom_build || exit
@@ -734,7 +730,7 @@ if build "av1" "10aece4157eb79315da205f39e19bf6ab3ee30d0"; then
 fi
 CONFIGURE_OPTIONS+=("--enable-libaom")
 
-if build "zimg" "3.0.5"; then
+if build "zimg" "3.0.6"; then
   download "https://github.com/sekrit-twc/zimg/archive/refs/tags/release-$CURRENT_PACKAGE_VERSION.tar.gz" "zimg-$CURRENT_PACKAGE_VERSION.tar.gz" "zimg"
   cd zimg-release-$CURRENT_PACKAGE_VERSION || exit
   execute "${WORKSPACE}/bin/libtoolize" -i -f -q
@@ -798,14 +794,14 @@ if ! $DISABLE_LV2 ; then
       fi
       if build "sratom" "0.6.16"; then
         download "https://gitlab.com/lv2/sratom/-/archive/v$CURRENT_PACKAGE_VERSION/sratom-v$CURRENT_PACKAGE_VERSION.tar.gz" "sratom-v$CURRENT_PACKAGE_VERSION.tar.gz"
-        execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
+        execute meson build --prefix="${WORKSPACE}" -Ddocs=disabled --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
         execute ninja -C build
         execute ninja -C build install
         build_done "sratom" $CURRENT_PACKAGE_VERSION
       fi
       if build "lilv" "0.24.16"; then
         download "https://gitlab.com/lv2/lilv/-/archive/v$CURRENT_PACKAGE_VERSION/lilv-v$CURRENT_PACKAGE_VERSION.tar.gz" "lilv-v$CURRENT_PACKAGE_VERSION.tar.gz"
-        execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib -Dcpp_std=c++11
+        execute meson build --prefix="${WORKSPACE}" -Ddocs=disabled --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib -Dcpp_std=c++11
         execute ninja -C build
         execute ninja -C build install
         build_done "lilv" $CURRENT_PACKAGE_VERSION
@@ -848,7 +844,7 @@ if build "opus" "1.5.2"; then
 fi
 CONFIGURE_OPTIONS+=("--enable-libopus")
 
-if build "libogg" "1.3.5"; then
+if build "libogg" "1.3.6"; then
   download "https://ftp.osuosl.org/pub/xiph/releases/ogg/libogg-$CURRENT_PACKAGE_VERSION.tar.xz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j $MJOBS
@@ -903,7 +899,7 @@ if build "libtiff" "4.7.0"; then
   execute make install
   build_done "libtiff" $CURRENT_PACKAGE_VERSION
 fi
-if build "libpng" "1.6.48"; then
+if build "libpng" "1.6.50"; then
   download "https://sourceforge.net/projects/libpng/files/libpng16/$CURRENT_PACKAGE_VERSION/libpng-$CURRENT_PACKAGE_VERSION.tar.gz" "libpng-$CURRENT_PACKAGE_VERSION.tar.gz"
   export LDFLAGS="${LDFLAGS}"
   export CPPFLAGS="${CFLAGS}"
@@ -930,7 +926,7 @@ if build "libjxl" "0.11.1"; then
 fi
 CONFIGURE_OPTIONS+=("--enable-libjxl")
 
-if build "libwebp" "1.5.0"; then
+if build "libwebp" "1.6.0"; then
   # libwebp can fail to compile on Ubuntu if these flags were left set to CFLAGS
   CPPFLAGS=
   download "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-$CURRENT_PACKAGE_VERSION.tar.gz" "libwebp-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -948,7 +944,7 @@ CONFIGURE_OPTIONS+=("--enable-libwebp")
 ## other library
 ##
 
-if build "libsdl" "2.32.8"; then
+if build "libsdl" "2.32.10"; then
   download "https://github.com/libsdl-org/SDL/releases/download/release-$CURRENT_PACKAGE_VERSION/SDL2-$CURRENT_PACKAGE_VERSION.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j $MJOBS
@@ -1029,6 +1025,27 @@ fi
 ## HWaccel library
 ##
 
+if build "vulkan-headers" "1.4.326"; then
+  download "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "Vulkan-Headers-$CURRENT_PACKAGE_VERSION.tar.gz"
+  execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -B build/
+  execute cmake --install build --prefix "${WORKSPACE}"
+  build_done "vulkan-headers" $CURRENT_PACKAGE_VERSION
+fi
+CONFIGURE_OPTIONS+=("--enable-vulkan")
+
+# vulkan filters and some encoders/decorders are implemented using shaders, for those we need a shader compiler
+if command_exists "python3"; then
+  if build "glslang" "15.4.0"; then
+    download "https://github.com/KhronosGroup/glslang/archive/refs/tags/$CURRENT_PACKAGE_VERSION.tar.gz" "glslang-$CURRENT_PACKAGE_VERSION.tar.gz"
+    execute ./update_glslang_sources.py
+    execute cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" .
+    execute make -j $MJOBS
+    execute make install
+    build_done "glslang" $CURRENT_PACKAGE_VERSION
+  fi
+  CONFIGURE_OPTIONS+=("--enable-libglslang")
+fi
+
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
   if command_exists "nvcc"; then
     if build "nv-codec" "11.1.5.3"; then
@@ -1075,6 +1092,20 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     build_done "amf" $CURRENT_PACKAGE_VERSION
   fi
   CONFIGURE_OPTIONS+=("--enable-amf")
+
+  if build "opencl-headers" "2025.07.22"; then
+    download "https://github.com/KhronosGroup/OpenCL-Headers/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "OpenCL-Headers-$CURRENT_PACKAGE_VERSION.tar.gz"
+    execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -B build/
+    execute cmake --build build --target install
+    build_done "opencl-headers" $CURRENT_PACKAGE_VERSION
+  fi
+  if build "opencl-icd-loader" "2025.07.22"; then
+    download "https://github.com/KhronosGroup/OpenCL-ICD-Loader/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "OpenCL-ICD-Loader-$CURRENT_PACKAGE_VERSION.tar.gz"
+    execute cmake -DCMAKE_PREFIX_PATH="${WORKSPACE}" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}"  -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -B build/
+    execute cmake --build build --target install
+    build_done "opencl-icd-loader" $CURRENT_PACKAGE_VERSION
+  fi
+  CONFIGURE_OPTIONS+=("--enable-opencl")
 fi
 
 ##
@@ -1095,13 +1126,6 @@ fi
 build "ffmpeg" "$FFMPEG_VERSION"
 download "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n$FFMPEG_VERSION.tar.gz" "FFmpeg-release-$FFMPEG_VERSION.tar.gz"
 # shellcheck disable=SC2086
-
-# this is a temporary fix to allow building ffmpeg 7.1.x with svtav1 >= 3.0.0
-#  (API change in svtav1 3.0: one unused parameter removed)
-# the patch already in ffmpeg master branch was not backported to 7.1.x
-sed 's/svt_av1_enc_init_handle(\&svt_enc->svt_handle, svt_enc, \&svt_enc->enc_params);/svt_av1_enc_init_handle(\&svt_enc->svt_handle, \&svt_enc->enc_params);/g' libavcodec/libsvtav1.c >libavcodec/libsvtav1.c.patched
-execute rm libavcodec/libsvtav1.c
-execute mv libavcodec/libsvtav1.c.patched libavcodec/libsvtav1.c
 
 execute ./configure "${CONFIGURE_OPTIONS[@]}" \
   --disable-debug \
