@@ -369,6 +369,11 @@ fi
 if build "giflib" "5.2.2"; then
   download "https://netcologne.dl.sourceforge.net/project/giflib/giflib-$CURRENT_PACKAGE_VERSION.tar.gz"
   cd "${PACKAGES}"/giflib-$CURRENT_PACKAGE_VERSION || exit
+  #building docs fails if the tools needed are not installed
+  #there is no option to not build the docs on Linux, we need to modify the Makefile
+  sed 's/$(MAKE) -C doc//g' Makefile >Makefile.patched
+  rm Makefile
+  sed 's/install: all install-bin install-include install-lib install-man/install: all install-bin install-include install-lib/g' Makefile.patched >Makefile
   #multicore build disabled for this library
   execute make
   execute make PREFIX="${WORKSPACE}" install
