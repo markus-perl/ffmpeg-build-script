@@ -140,6 +140,7 @@ $ ./build-ffmpeg --enable-gpl-and-non-free --build
         * H264 `h264_vulkan`
         * H265 `hevc_vulkan`
         * AV1 `av1_vulkan`
+
   Additionally, FFmpeg implements [video filters](https://ffmpeg.org/ffmpeg-filters.html#Vulkan-Video-Filters)
   using shaders on the GPU, as well as these encoders/decoders:
     * Decoders
