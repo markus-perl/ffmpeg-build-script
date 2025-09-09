@@ -116,11 +116,47 @@ $ ./build-ffmpeg --enable-gpl-and-non-free --build
         * MPEG2 video `mpeg2_vaapi`
         * VP8 `vp8_vaapi`
         * VP9 `vp9_vaapi`
-* `AMF`: [AMD's Advanced Media Framework](https://github.com/GPUOpen-LibrariesAndSDKs/AMF). These encoders will only 
+* `AMF`: [AMD's Advanced Media Framework](https://github.com/GPUOpen-LibrariesAndSDKs/AMF). These encoders/decoders will only 
   be available if `amdgpu` drivers are detected in use on the system with `lspci -v`. 
+    * Decoders
+        * H264 `h264_amf`
+        * H265 `hevc_amf`
+        * AV1 `av1_amf`
+        * VP9 `vp9_amf`
     * Encoders
-        * H264 `h264_amf` 
+        * H264 `h264_amf`
+        * H265 `hevc_amf`
+        * AV1 `av1_amf`
+* `Vulkan`: [Cross-platform graphics and compute API](https://www.vulkan.org/). These encoders/decoders will only be available if
+  Vulkan drivers are detected on the system. Follow the [Wiki](https://trac.ffmpeg.org/wiki/HWAccelIntro#Vulkan) to enable Vulkan decoding.
+  macOS is supported when MoltenVK is available, but functionality may be limited.
+  These encoders/decoders will be available using fixed-function blocks in the GPU:
+    * Decoders
+        * H264
+        * H265
+        * AV1
+        * VP9
+    * Encoders
+        * H264 `h264_vulkan`
+        * H265 `hevc_vulkan`
+        * AV1 `av1_vulkan`
 
+  Additionally, FFmpeg implements [video filters](https://ffmpeg.org/ffmpeg-filters.html#Vulkan-Video-Filters)
+  using shaders on the GPU, as well as these encoders/decoders:
+    * Decoders
+        * FFV1
+        * ProRes RAW
+    * Encoders
+        * FFV1 `ffv1_vulkan`
+* `OpenCL`: [Cross-platform compute API](https://www.khronos.org/opencl/) Several [filters](https://ffmpeg.org/ffmpeg-filters.html#OpenCL-Video-Filters)
+  are implemented in FFmpeg using OpenCL. As Apple has discontinued support for OpenCL, it is not available on macOS.
+
+* `Video Toolbox`: [Apple API](https://developer.apple.com/documentation/videotoolbox) to access hardware-acclerated enncoders/decoders
+  on macOS:
+    * Encoders an decoders
+        * H264 `h264_videotoolbox`
+        * H265 `hevc_videotoolbox`
+        * ProRes `prores_videotoolbox`
 
 ## Build Script Usage
 
