@@ -418,7 +418,7 @@ if build "zlib" "1.3.1"; then
 fi
 
 if build "m4" "1.4.19"; then
-  download "https://ftp.gnu.org/gnu/m4/m4-$CURRENT_PACKAGE_VERSION.tar.gz"
+  download "https://ftpmirror.gnu.org/gnu/m4/m4-$CURRENT_PACKAGE_VERSION.tar.gz"
   execute ./configure --prefix="${WORKSPACE}"
   execute make -j $MJOBS
   execute make install
@@ -426,7 +426,7 @@ if build "m4" "1.4.19"; then
 fi
 
 if build "autoconf" "2.72"; then
-  download "https://ftp.gnu.org/gnu/autoconf/autoconf-$CURRENT_PACKAGE_VERSION.tar.gz"
+  download "https://ftpmirror.gnu.org/gnu/autoconf/autoconf-$CURRENT_PACKAGE_VERSION.tar.gz"
   execute ./configure --prefix="${WORKSPACE}"
   execute make -j $MJOBS
   execute make install
@@ -434,7 +434,7 @@ if build "autoconf" "2.72"; then
 fi
 
 if build "automake" "1.17"; then
-  download "https://ftp.gnu.org/gnu/automake/automake-$CURRENT_PACKAGE_VERSION.tar.gz"
+  download "https://ftpmirror.gnu.org/gnu/automake/automake-$CURRENT_PACKAGE_VERSION.tar.gz"
   execute ./configure --prefix="${WORKSPACE}"
   execute make -j $MJOBS
   execute make install
@@ -468,7 +468,7 @@ if $NONFREE_AND_GPL; then
   CONFIGURE_OPTIONS+=("--enable-openssl")
 else
   if build "gmp" "6.3.0"; then
-    download "https://ftp.gnu.org/gnu/gmp/gmp-$CURRENT_PACKAGE_VERSION.tar.xz"
+    download "https://ftpmirror.gnu.org/gnu/gmp/gmp-$CURRENT_PACKAGE_VERSION.tar.xz"
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
     execute make -j $MJOBS
     execute make install
@@ -476,7 +476,7 @@ else
   fi
 
   if build "nettle" "3.10"; then
-    download "https://ftp.gnu.org/gnu/nettle/nettle-$CURRENT_PACKAGE_VERSION.tar.gz"
+    download "https://ftpmirror.gnu.org/gnu/nettle/nettle-$CURRENT_PACKAGE_VERSION.tar.gz"
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-openssl --disable-documentation --libdir="${WORKSPACE}"/lib CPPFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}"
     execute make -j $MJOBS
     execute make install
