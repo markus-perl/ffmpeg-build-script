@@ -893,6 +893,18 @@ if $NONFREE_AND_GPL; then
   CONFIGURE_OPTIONS+=("--enable-libfdk-aac")
 fi
 
+if build "soxr" "0.1.3"; then
+  download "https://sourceforge.net/projects/soxr/files/soxr-$CURRENT_PACKAGE_VERSION-Source.tar.xz/download?use_mirror=gigenet" "soxr-$CURRENT_PACKAGE_VERSION.tar.xz"
+
+  mkdir build && cd build
+  execute cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DBUILD_SHARED_LIBS:bool=off -DWITH_OPENMP:bool=off -DBUILD_TESTS:bool=off -Wno-dev ..
+  execute make -j $MJOBS
+  execute make install
+
+  build_done "soxr" $CURRENT_PACKAGE_VERSION
+fi
+CONFIGURE_OPTIONS+=("--enable-libsoxr")
+
 ##
 ## image library
 ##
