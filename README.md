@@ -87,6 +87,7 @@ $ ./build-ffmpeg --enable-gpl-and-non-free --build
 * `opus`: Lossy audio coding format
 * `srt`: Secure Reliable Transport
 * `webp`: Image format both lossless and lossy
+* `libsoxr`: SoX Resampler Library
 
 ### HardwareAccel
 
