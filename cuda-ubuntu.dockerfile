@@ -22,7 +22,7 @@ RUN update-ca-certificates
 RUN mkdir -p /code && \
     git clone --depth 1 --filter=blob:none --sparse https://github.com/NVIDIA/cuda-samples.git /code/cuda-samples && \
     cd /code/cuda-samples && \
-    git sparse-checkout set Samples/1_Utilities/deviceQuery Common
+    git sparse-checkout set Samples/1_Utilities/deviceQuery Common cmake
 
 # Build deviceQuery in its original location where it can find dependencies
 WORKDIR /code/cuda-samples/Samples/1_Utilities/deviceQuery
