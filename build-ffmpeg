@@ -5,7 +5,8 @@
 
 PROGNAME=$(basename "$0")
 FFMPEG_VERSION=8.0.1
-SCRIPT_VERSION=1.57
+SCRIPT_VERSION=1.58
+
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
 WORKSPACE="$CWD/workspace"
