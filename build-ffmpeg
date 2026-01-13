@@ -4,8 +4,9 @@
 # LICENSE: https://github.com/markus-perl/ffmpeg-build-script/blob/master/LICENSE
 
 PROGNAME=$(basename "$0")
-FFMPEG_VERSION=8.0
+FFMPEG_VERSION=8.0.1
 SCRIPT_VERSION=1.58
+
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
 WORKSPACE="$CWD/workspace"
@@ -458,7 +459,7 @@ if $NONFREE_AND_GPL; then
     build_done "gettext" $CURRENT_PACKAGE_VERSION
   fi
 
-  if build "openssl" "3.5.2"; then
+  if build "openssl" "3.5.4"; then
     download "https://github.com/openssl/openssl/archive/refs/tags/openssl-$CURRENT_PACKAGE_VERSION.tar.gz" "openssl-$CURRENT_PACKAGE_VERSION.tar.gz"
     execute ./Configure --prefix="${WORKSPACE}" --openssldir="${WORKSPACE}" --libdir="lib" --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib no-shared zlib
     execute make -j $MJOBS
@@ -475,7 +476,7 @@ else
     build_done "gmp" $CURRENT_PACKAGE_VERSION
   fi
 
-  if build "nettle" "3.10"; then
+  if build "nettle" "3.10.2"; then
     download "https://ftpmirror.gnu.org/gnu/nettle/nettle-$CURRENT_PACKAGE_VERSION.tar.gz"
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-openssl --disable-documentation --libdir="${WORKSPACE}"/lib CPPFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}"
     execute make -j $MJOBS
@@ -484,7 +485,7 @@ else
   fi
 
   if [[ ! $ARCH == 'arm64' ]]; then
-    if build "gnutls" "3.8.10"; then
+    if build "gnutls" "3.8.11"; then
       download "https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-$CURRENT_PACKAGE_VERSION.tar.xz"
       execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-doc --disable-tools --disable-cxx --disable-tests --disable-gtk-doc-html --disable-libdane --disable-nls --enable-local-libopts --disable-guile --with-included-libtasn1 --with-included-unistring --without-p11-kit CPPFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}"
       execute make -j $MJOBS
@@ -547,7 +548,7 @@ if command_exists "python3"; then
     fi
   fi
   if command_exists "meson"; then
-    if build "dav1d" "1.5.1"; then
+    if build "dav1d" "1.5.3"; then
       download "https://code.videolan.org/videolan/dav1d/-/archive/$CURRENT_PACKAGE_VERSION/dav1d-$CURRENT_PACKAGE_VERSION.tar.gz"
       make_dir build
 
@@ -599,7 +600,7 @@ fi
 
 if $NONFREE_AND_GPL; then
 
-  if build "x264" "b35605ac"; then
+  if build "x264" "0480cb05"; then
     download "https://code.videolan.org/videolan/x264/-/archive/$CURRENT_PACKAGE_VERSION/x264-$CURRENT_PACKAGE_VERSION.tar.gz" "x264-$CURRENT_PACKAGE_VERSION.tar.gz"
     cd "${PACKAGES}"/x264-$CURRENT_PACKAGE_VERSION || exit
 
@@ -718,8 +719,8 @@ if $NONFREE_AND_GPL; then
   CONFIGURE_OPTIONS+=("--enable-libvidstab")
 fi
 
-if build "av1" "d9c115ce0951324dee243041ef810e27202de20f"; then
-  #  d9c115ce0951324dee243041ef810e27202de20f == v3.13.0
+if build "av1" "d772e334cc724105040382a977ebb10dfd393293"; then
+  #  d772e334cc724105040382a977ebb10dfd393293 == v3.13.1
   download "https://aomedia.googlesource.com/aom/+archive/$CURRENT_PACKAGE_VERSION.tar.gz" "av1.tar.gz" "av1"
   make_dir "$PACKAGES"/aom_build
   cd "$PACKAGES"/aom_build || exit
@@ -767,7 +768,7 @@ if ! $DISABLE_LV2 ; then
         download "https://gitlab.com/drobilla/autowaf/-/archive/$CURRENT_PACKAGE_VERSION/autowaf-$CURRENT_PACKAGE_VERSION.tar.gz" "autowaf.tar.gz"
         build_done "waflib" $CURRENT_PACKAGE_VERSION
       fi
-      if build "serd" "0.32.2"; then
+      if build "serd" "0.32.6"; then
         download "https://gitlab.com/drobilla/serd/-/archive/v$CURRENT_PACKAGE_VERSION/serd-v$CURRENT_PACKAGE_VERSION.tar.gz" "serd-v$CURRENT_PACKAGE_VERSION.tar.gz"
         execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
         execute ninja -C build
@@ -781,7 +782,7 @@ if ! $DISABLE_LV2 ; then
         execute make install
         build_done "pcre" $CURRENT_PACKAGE_VERSION
       fi
-      if build "zix" "0.6.2"; then
+      if build "zix" "0.8.0"; then
         download "https://gitlab.com/drobilla/zix/-/archive/v$CURRENT_PACKAGE_VERSION/zix-v$CURRENT_PACKAGE_VERSION.tar.gz" "zix-v$CURRENT_PACKAGE_VERSION.tar.gz"
         execute meson setup build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
         cd build || exit
@@ -790,21 +791,21 @@ if ! $DISABLE_LV2 ; then
         execute meson install
         build_done "zix" $CURRENT_PACKAGE_VERSION
       fi
-      if build "sord" "0.16.16"; then
+      if build "sord" "0.16.20"; then
         download "https://gitlab.com/drobilla/sord/-/archive/v$CURRENT_PACKAGE_VERSION/sord-v$CURRENT_PACKAGE_VERSION.tar.gz" "sord-v$CURRENT_PACKAGE_VERSION.tar.gz"
         execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
         execute ninja -C build
         execute ninja -C build install
         build_done "sord" $CURRENT_PACKAGE_VERSION
       fi
-      if build "sratom" "0.6.16"; then
+      if build "sratom" "0.6.20"; then
         download "https://gitlab.com/lv2/sratom/-/archive/v$CURRENT_PACKAGE_VERSION/sratom-v$CURRENT_PACKAGE_VERSION.tar.gz" "sratom-v$CURRENT_PACKAGE_VERSION.tar.gz"
         execute meson build --prefix="${WORKSPACE}" -Ddocs=disabled --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
         execute ninja -C build
         execute ninja -C build install
         build_done "sratom" $CURRENT_PACKAGE_VERSION
       fi
-      if build "lilv" "0.24.16"; then
+      if build "lilv" "0.26.2"; then
         download "https://gitlab.com/lv2/lilv/-/archive/v$CURRENT_PACKAGE_VERSION/lilv-v$CURRENT_PACKAGE_VERSION.tar.gz" "lilv-v$CURRENT_PACKAGE_VERSION.tar.gz"
         execute meson build --prefix="${WORKSPACE}" -Ddocs=disabled --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib -Dcpp_std=c++11
         execute ninja -C build
@@ -839,7 +840,7 @@ if build "lame" "3.100"; then
 fi
 CONFIGURE_OPTIONS+=("--enable-libmp3lame")
 
-if build "opus" "1.5.2"; then
+if build "opus" "1.6"; then
   download "https://downloads.xiph.org/releases/opus/opus-$CURRENT_PACKAGE_VERSION.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j $MJOBS
@@ -909,14 +910,14 @@ CONFIGURE_OPTIONS+=("--enable-libsoxr")
 ## image library
 ##
 
-if build "libtiff" "4.7.0"; then
+if build "libtiff" "4.7.1"; then
   download "https://download.osgeo.org/libtiff/tiff-$CURRENT_PACKAGE_VERSION.tar.xz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-dependency-tracking --disable-lzma --disable-webp --disable-zstd --without-x
   execute make -j $MJOBS
   execute make install
   build_done "libtiff" $CURRENT_PACKAGE_VERSION
 fi
-if build "libpng" "1.6.50"; then
+if build "libpng" "1.6.53"; then
   download "https://sourceforge.net/projects/libpng/files/libpng16/$CURRENT_PACKAGE_VERSION/libpng-$CURRENT_PACKAGE_VERSION.tar.gz" "libpng-$CURRENT_PACKAGE_VERSION.tar.gz"
   export LDFLAGS="${LDFLAGS}"
   export CPPFLAGS="${CFLAGS}"
@@ -970,7 +971,7 @@ if build "libsdl" "2.32.10"; then
   build_done "libsdl" $CURRENT_PACKAGE_VERSION
 fi
 
-if build "FreeType2" "2.13.3"; then
+if build "FreeType2" "2.14.1"; then
   download "https://downloads.sourceforge.net/freetype/freetype-$CURRENT_PACKAGE_VERSION.tar.xz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j $MJOBS
@@ -980,7 +981,7 @@ fi
 
 CONFIGURE_OPTIONS+=("--enable-libfreetype")
 
-if build "VapourSynth" "72"; then
+if build "VapourSynth" "73"; then
   # VapourSynth library is loaded dynamically by ffmpeg if a VapourSynth script is opened
   # no need to build it at compile team, only headers need to be installed
   download "https://github.com/vapoursynth/vapoursynth/archive/R$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -1042,7 +1043,7 @@ fi
 ## HWaccel library
 ##
 
-if build "vulkan-headers" "1.4.326"; then
+if build "vulkan-headers" "1.4.338"; then
   download "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "Vulkan-Headers-$CURRENT_PACKAGE_VERSION.tar.gz"
   execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -B build/
   execute cmake --install build --prefix "${WORKSPACE}"
@@ -1052,7 +1053,7 @@ CONFIGURE_OPTIONS+=("--enable-vulkan")
 
 # vulkan filters and some encoders/decorders are implemented using shaders, for those we need a shader compiler
 if command_exists "python3"; then
-  if build "glslang" "15.4.0"; then
+  if build "glslang" "16.1.0"; then
     download "https://github.com/KhronosGroup/glslang/archive/refs/tags/$CURRENT_PACKAGE_VERSION.tar.gz" "glslang-$CURRENT_PACKAGE_VERSION.tar.gz"
     execute ./update_glslang_sources.py
     execute cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" .
@@ -1101,7 +1102,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     fi
   fi
 
-  if build "amf" "1.4.36"; then
+  if build "amf" "1.5.0"; then
     download "https://github.com/GPUOpen-LibrariesAndSDKs/AMF/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "AMF-$CURRENT_PACKAGE_VERSION.tar.gz" "AMF-$CURRENT_PACKAGE_VERSION"
     execute rm -rf "${WORKSPACE}/include/AMF"
     execute mkdir -p "${WORKSPACE}/include/AMF"
