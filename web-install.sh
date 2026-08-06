@@ -1,13 +1,13 @@
 #!/bin/bash
 # Helper script to download and run the build-ffmpeg script.
 
-make_dir () {
+make_dir() {
     if [ ! -d $1 ]; then
-        if ! mkdir $1; then            
-            printf "\n Failed to create dir %s" "$1";
+        if ! mkdir $1; then
+            printf "\n Failed to create dir %s" "$1"
             exit 1
         fi
-    fi    
+    fi
 }
 
 command_exists() {
@@ -21,7 +21,7 @@ command_exists() {
 TARGET='ffmpeg-build'
 
 if ! command_exists "curl"; then
-    echo "curl not installed.";
+    echo "curl not installed."
     exit 1
 fi
 
