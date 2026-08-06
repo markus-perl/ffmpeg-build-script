@@ -1094,6 +1094,12 @@ if build "libsdl" "3.4.14"; then
         "-DSDL_TESTS=OFF"
         "-DSDL_DISABLE_INSTALL_DOCS=ON"
     )
+    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        # SDL3 aborts configuration if neither X11 nor Wayland headers are present, while SDL2
+        # only warned and fell back to the dummy video driver. ffmpeg links SDL for ffplay only,
+        # and the build host is not required to have a desktop, so keep the old behaviour.
+        SDL_CMAKE_OPTIONS+=("-DSDL_UNIX_CONSOLE_BUILD=ON")
+    fi
     if [[ "$MACOS_SILICON" == true ]]; then
         SDL_CMAKE_OPTIONS+=(
             "-DCMAKE_OSX_ARCHITECTURES=${ARCH}"
@@ -1188,18 +1194,9 @@ if build "vulkan-headers" "1.4.358"; then
 fi
 CONFIGURE_OPTIONS+=("--enable-vulkan")
 
-# vulkan filters and some encoders/decorders are implemented using shaders, for those we need a shader compiler
-if command_exists "python3"; then
-    if build "glslang" "16.2.0"; then
-        download "https://github.com/KhronosGroup/glslang/archive/refs/tags/$CURRENT_PACKAGE_VERSION.tar.gz" "glslang-$CURRENT_PACKAGE_VERSION.tar.gz"
-        execute ./update_glslang_sources.py
-        execute cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" .
-        execute make -j "$MJOBS"
-        execute make install
-        build_done "glslang" $CURRENT_PACKAGE_VERSION
-    fi
-    CONFIGURE_OPTIONS+=("--enable-libglslang")
-fi
+# NOTE: vulkan filters and some encoders/decoders are implemented using shaders and need a
+# shader compiler. ffmpeg 9.0 dropped --enable-libglslang, so glslang is no longer built here.
+# libshaderc is the remaining option if shader compilation is wanted back.
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
     if command_exists "nvcc"; then
@@ -1221,7 +1218,14 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
             # Set default value if no compute capability was found
             # Note that multi-architecture builds are not supported in ffmpeg
             # see https://patchwork.ffmpeg.org/comment/62905/
-            export CUDA_COMPUTE_CAPABILITY=52
+            # CUDA 13 dropped Maxwell/Pascal/Volta, so compute_52 no longer
+            # compiles there; Turing (75) is the oldest arch it still accepts.
+            NVCC_MAJOR_VERSION=$(nvcc --version | grep -oE 'release [0-9]+' | awk '{print $2}')
+            if [ -n "$NVCC_MAJOR_VERSION" ] && [ "$NVCC_MAJOR_VERSION" -ge 13 ]; then
+                export CUDA_COMPUTE_CAPABILITY=75
+            else
+                export CUDA_COMPUTE_CAPABILITY=52
+            fi
         fi
         CONFIGURE_OPTIONS+=("--nvccflags=-gencode arch=compute_$CUDA_COMPUTE_CAPABILITY,code=sm_$CUDA_COMPUTE_CAPABILITY -O2")
     else
