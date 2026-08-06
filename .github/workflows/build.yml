@@ -111,12 +111,12 @@ jobs:
       - name: pull base image
         id: cuda_ubuntu_pull
         run: |
-          docker pull nvidia/cuda:12.6.2-devel-ubuntu22.04
+          docker pull nvidia/cuda:13.3.1-devel-ubuntu22.04
           docker pull ubuntu:22.04
       - name: run if cuda_ubuntu_pull failed
         if: failure() && steps.cuda_ubuntu_pull.outcome == 'failure'
         run: |
-          docker pull nvidia/cuda:12.6.2-devel-ubuntu22.04
+          docker pull nvidia/cuda:13.3.1-devel-ubuntu22.04
           docker pull ubuntu:22.04
       - name: build ffmpeg
         run: |
@@ -132,14 +132,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # full-static.dockerfile builds FROM ubuntu:24.04, not from a cuda image
       - name: pull base image
-        id: cuda_ubuntu_pull
+        id: ubuntu_pull
         run: |
-          docker pull nvidia/cuda:12.6.2-devel-ubuntu22.04
-      - name: run if cuda_ubuntu_pull failed
-        if: failure() && steps.cuda_ubuntu_pull.outcome == 'failure'
+          docker pull ubuntu:24.04
+      - name: run if ubuntu_pull failed
+        if: failure() && steps.ubuntu_pull.outcome == 'failure'
         run: |
-          docker pull nvidia/cuda:12.6.2-devel-ubuntu22.04
+          docker pull ubuntu:24.04
       - name: build ffmpeg
         run: |
           docker build -t ffmpeg:cuda-static -f full-static.dockerfile .

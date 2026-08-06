@@ -1,5 +1,9 @@
-ARG CUDAVER=12.9.0
+ARG CUDAVER=13.3.1
 ARG UBUNTUVER=22.04
+# cuda-samples tag to build deviceQuery from. Keep in sync with CUDAVER.
+# Never track master: the layout changes between releases (v13.0 moved
+# Samples/ to cpp/), which silently breaks the sparse-checkout below.
+ARG CUDASAMPLESVER=v13.3
 
 FROM nvidia/cuda:${CUDAVER}-devel-ubuntu${UBUNTUVER} AS build
 
@@ -19,13 +23,15 @@ RUN update-ca-certificates
 
 
 # Install NVIDIA CUDA samples to get deviceQuery
+ARG CUDASAMPLESVER
 RUN mkdir -p /code && \
-    git clone --depth 1 --filter=blob:none --sparse https://github.com/NVIDIA/cuda-samples.git /code/cuda-samples && \
+    git clone --depth 1 --branch "$CUDASAMPLESVER" --filter=blob:none --sparse https://github.com/NVIDIA/cuda-samples.git /code/cuda-samples && \
     cd /code/cuda-samples && \
-    git sparse-checkout set Samples/1_Utilities/deviceQuery Common cmake
+    git sparse-checkout set cpp/1_Utilities/deviceQuery Common cmake && \
+    test -f cpp/1_Utilities/deviceQuery/CMakeLists.txt
 
 # Build deviceQuery in its original location where it can find dependencies
-WORKDIR /code/cuda-samples/Samples/1_Utilities/deviceQuery
+WORKDIR /code/cuda-samples/cpp/1_Utilities/deviceQuery
 RUN mkdir build && cd build && \
     cmake .. && \
     make -j$(nproc) && \
@@ -34,6 +40,13 @@ RUN mkdir build && cd build && \
     rm -rf cuda-samples
 
 WORKDIR /app
+
+# Stage the NPP runtime libs for the release image. Copying the real SONAME
+# files (libnppc.so.13, ...) keeps this independent of the CUDA version, unlike
+# hardcoding /usr/local/cuda-<ver> and the .so.<major> suffix.
+RUN mkdir -p /npp && cd /usr/local/cuda/targets/x86_64-linux/lib && \
+    cp -a libnppc.so.* libnppig.so.* libnppicc.so.* libnppidei.so.* libnppif.so.* /npp/
+
 COPY ./build-ffmpeg /app/build-ffmpeg
 
 RUN CUDA_COMPUTE_CAPABILITY=$(deviceQuery | grep Capability | head -n 1 | awk 'END {print $NF}' | tr -d '.') SKIPINSTALL=yes /app/build-ffmpeg --build --enable-gpl-and-non-free && \
@@ -50,12 +63,8 @@ RUN apt-get update \
     && apt-get -y install libva-drm2 \
     && apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
 
-# Copy libnpp
-COPY --from=build /usr/local/cuda-12.9/targets/x86_64-linux/lib/libnppc.so /lib/x86_64-linux-gnu/libnppc.so.12
-COPY --from=build /usr/local/cuda-12.9/targets/x86_64-linux/lib/libnppig.so /lib/x86_64-linux-gnu/libnppig.so.12
-COPY --from=build /usr/local/cuda-12.9/targets/x86_64-linux/lib/libnppicc.so /lib/x86_64-linux-gnu/libnppicc.so.12
-COPY --from=build /usr/local/cuda-12.9/targets/x86_64-linux/lib/libnppidei.so /lib/x86_64-linux-gnu/libnppidei.so.12
-COPY --from=build /usr/local/cuda-12.9/targets/x86_64-linux/lib/libnppif.so /lib/x86_64-linux-gnu/libnppif.so.12
+# Copy libnpp (staged in the build stage, so no CUDA version appears here)
+COPY --from=build /npp/ /lib/x86_64-linux-gnu/
 
 # Copy ffmpeg
 COPY --from=build /app/workspace/bin/ffmpeg /usr/bin/ffmpeg
