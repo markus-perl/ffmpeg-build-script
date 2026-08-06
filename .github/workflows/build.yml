@@ -8,6 +8,24 @@ on:
     branches: [ master ]
 
 jobs:
+  lint:
+    name: shell format and lint
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # shfmt reads the indent settings from .editorconfig
+      - name: check formatting with shfmt
+        run: |
+          curl -sSfL -o /tmp/shfmt https://github.com/mvdan/sh/releases/download/v3.12.0/shfmt_v3.12.0_linux_amd64
+          chmod +x /tmp/shfmt
+          /tmp/shfmt -d build-ffmpeg web-install.sh web-install-gpl-and-non-free.sh
+
+      - name: shellcheck
+        run: |
+          shellcheck --severity=error build-ffmpeg web-install.sh web-install-gpl-and-non-free.sh
+
   build-linux:
     name: build in native linux
     runs-on: ubuntu-24.04

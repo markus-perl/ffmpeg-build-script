@@ -1,0 +1,7 @@
+# Revisions to skip in `git blame`.
+# Enable locally with:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+# GitHub picks this file up automatically.
+
+# formatting with zed (shfmt) - whitespace only, no functional change
+025f9b33cd7c9edd57800c584f0bd3cd0e695aeb
