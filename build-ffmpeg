@@ -1123,6 +1123,65 @@ fi
 
 CONFIGURE_OPTIONS+=("--enable-libfreetype")
 
+##
+## text shaping and subtitle library
+##
+
+# libxml2 is required by ffmpeg for the DASH and IMF demuxers, and is used here as
+# fontconfig's XML parser so that expat is not needed as well.
+if build "libxml2" "2.15.3"; then
+    download "https://download.gnome.org/sources/libxml2/2.15/libxml2-$CURRENT_PACKAGE_VERSION.tar.xz"
+    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --without-python --without-debug --without-docs
+    execute make -j "$MJOBS"
+    execute make install
+    build_done "libxml2" $CURRENT_PACKAGE_VERSION
+fi
+CONFIGURE_OPTIONS+=("--enable-libxml2")
+
+if build "fribidi" "1.0.16"; then
+    download "https://github.com/fribidi/fribidi/releases/download/v$CURRENT_PACKAGE_VERSION/fribidi-$CURRENT_PACKAGE_VERSION.tar.xz"
+    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-debug --disable-deprecated
+    execute make -j "$MJOBS"
+    execute make install
+    build_done "fribidi" $CURRENT_PACKAGE_VERSION
+fi
+CONFIGURE_OPTIONS+=("--enable-libfribidi")
+
+# harfbuzz dropped autotools, so it can only be built when meson and ninja are available.
+# Without it libass and drawtext still work, but complex scripts are not shaped.
+if command_exists "meson"; then
+    if build "harfbuzz" "14.3.0"; then
+        download "https://github.com/harfbuzz/harfbuzz/releases/download/$CURRENT_PACKAGE_VERSION/harfbuzz-$CURRENT_PACKAGE_VERSION.tar.xz"
+        execute meson setup build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib \
+            -Dfreetype=enabled -Dglib=disabled -Dgobject=disabled -Dcairo=disabled -Dchafa=disabled -Dicu=disabled \
+            -Dtests=disabled -Ddocs=disabled -Dbenchmark=disabled -Dutilities=disabled -Dintrospection=disabled
+        execute ninja -C build
+        execute ninja -C build install
+        build_done "harfbuzz" $CURRENT_PACKAGE_VERSION
+    fi
+    CONFIGURE_OPTIONS+=("--enable-libharfbuzz")
+fi
+
+# The fontconfig configuration is installed inside the workspace, so a relocated binary
+# falls back to fontconfig's built-in font directories.
+if build "fontconfig" "2.18.3"; then
+    download "https://gitlab.freedesktop.org/api/v4/projects/890/packages/generic/fontconfig/$CURRENT_PACKAGE_VERSION/fontconfig-$CURRENT_PACKAGE_VERSION.tar.xz"
+    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --enable-libxml2 --disable-docs --disable-nls --disable-cache-build
+    execute make -j "$MJOBS"
+    execute make install
+    build_done "fontconfig" $CURRENT_PACKAGE_VERSION
+fi
+CONFIGURE_OPTIONS+=("--enable-libfontconfig")
+
+if build "libass" "0.17.5"; then
+    download "https://github.com/libass/libass/releases/download/$CURRENT_PACKAGE_VERSION/libass-$CURRENT_PACKAGE_VERSION.tar.xz"
+    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --enable-fontconfig --disable-test --disable-profile --disable-fuzz
+    execute make -j "$MJOBS"
+    execute make install
+    build_done "libass" $CURRENT_PACKAGE_VERSION
+fi
+CONFIGURE_OPTIONS+=("--enable-libass")
+
 if build "VapourSynth" "78"; then
     # VapourSynth library is loaded dynamically by ffmpeg if a VapourSynth script is opened
     # no need to build it at compile team, only headers need to be installed
@@ -1274,7 +1333,9 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     fi
     if build "opencl-icd-loader" "2026.05.29"; then
         download "https://github.com/KhronosGroup/OpenCL-ICD-Loader/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "OpenCL-ICD-Loader-$CURRENT_PACKAGE_VERSION.tar.gz"
-        execute cmake -DCMAKE_PREFIX_PATH="${WORKSPACE}" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -B build/
+        # the test suite links the static, non-PIC libOpenCL.a into a shared module, which fails
+        # to relocate. ffmpeg only needs the library, so do not build the tests at all.
+        execute cmake -DCMAKE_PREFIX_PATH="${WORKSPACE}" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DBUILD_TESTING=OFF -DOPENCL_ICD_LOADER_BUILD_TESTING=OFF -B build/
         execute cmake --build build --target install
         build_done "opencl-icd-loader" $CURRENT_PACKAGE_VERSION
     fi
