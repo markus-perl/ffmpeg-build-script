@@ -5,7 +5,7 @@
 
 PROGNAME=$(basename "$0")
 FFMPEG_VERSION=9.0
-SCRIPT_VERSION=1.59
+SCRIPT_VERSION=1.60
 
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
@@ -448,18 +448,15 @@ fi
 if build "giflib" "6.1.3"; then
     download "https://sf-eu-introserv-1.dl.sourceforge.net/project/giflib/giflib-6.x/giflib-$CURRENT_PACKAGE_VERSION.tar.gz"
     cd "${PACKAGES}"/giflib-$CURRENT_PACKAGE_VERSION || exit
-    #building docs fails if the tools needed are not installed
-    #there is no option to not build the docs on Linux, we need to modify the Makefile
-    sed 's/$(MAKE) -C doc//g' Makefile >Makefile.patched
-    rm Makefile
-    sed 's/install: all install-bin install-include install-lib install-man/install: all install-bin install-include install-lib/g' Makefile.patched >Makefile
     # giflib 6.1.3's Darwin rule builds libutil.dylib without libgif.dylib,
     # although qprintf.c references GifErrorString from libgif.
     sed 's/$(CC) $(CFLAGS) -dynamiclib -current_version $(LIBVER) $(UOBJECTS) -o $(LIBUTILSO)/$(CC) $(CFLAGS) -dynamiclib -current_version $(LIBVER) $(UOBJECTS) $(LIBGIFSO) -o $(LIBUTILSO)/' Makefile >Makefile.patched
     mv Makefile.patched Makefile
     #multicore build disabled for this library
     execute make
-    execute make PREFIX="${WORKSPACE}" install
+    # the default install target pulls in install-man and install-doc, and building
+    # the docs fails if the tools needed are not installed. only install what ffmpeg needs.
+    execute make PREFIX="${WORKSPACE}" install-bin install-include install-lib
     build_done "giflib" $CURRENT_PACKAGE_VERSION
 fi
 
@@ -1190,6 +1187,19 @@ if build "vulkan-headers" "1.4.358"; then
     build_done "vulkan-headers" $CURRENT_PACKAGE_VERSION
 fi
 CONFIGURE_OPTIONS+=("--enable-vulkan")
+
+# vulkan filters and some encoders/decorders are implemented using shaders, for those we need a shader compiler
+if command_exists "python3"; then
+    if build "glslang" "16.2.0"; then
+        download "https://github.com/KhronosGroup/glslang/archive/refs/tags/$CURRENT_PACKAGE_VERSION.tar.gz" "glslang-$CURRENT_PACKAGE_VERSION.tar.gz"
+        execute ./update_glslang_sources.py
+        execute cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" .
+        execute make -j "$MJOBS"
+        execute make install
+        build_done "glslang" $CURRENT_PACKAGE_VERSION
+    fi
+    CONFIGURE_OPTIONS+=("--enable-libglslang")
+fi
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
     if command_exists "nvcc"; then
