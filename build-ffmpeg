@@ -1164,9 +1164,12 @@ fi
 
 # The fontconfig configuration is installed inside the workspace, so a relocated binary
 # falls back to fontconfig's built-in font directories.
+#
+# The fc-* tools are linked statically, so pkg-config has to resolve private dependencies
+# as well: freetype2.pc requires libbrotlidec, which in turn needs libbrotlicommon.
 if build "fontconfig" "2.18.3"; then
     download "https://gitlab.freedesktop.org/api/v4/projects/890/packages/generic/fontconfig/$CURRENT_PACKAGE_VERSION/fontconfig-$CURRENT_PACKAGE_VERSION.tar.xz"
-    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --enable-libxml2 --disable-docs --disable-nls --disable-cache-build
+    execute ./configure PKG_CONFIG="pkg-config --static" --prefix="${WORKSPACE}" --disable-shared --enable-static --enable-libxml2 --disable-docs --disable-nls --disable-cache-build
     execute make -j "$MJOBS"
     execute make install
     build_done "fontconfig" $CURRENT_PACKAGE_VERSION

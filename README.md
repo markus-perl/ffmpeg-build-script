@@ -88,6 +88,10 @@ $ ./build-ffmpeg --enable-gpl-and-non-free --build
 * `srt`: Secure Reliable Transport
 * `webp`: Image format both lossless and lossy
 * `libsoxr`: SoX Resampler Library
+* `libass`: Subtitle renderer for the `subtitles` and `ass` filters, so SRT and ASS subtitles can be burned into video.
+  Built together with `fribidi` (bidirectional text), `harfbuzz` (text shaping) and `fontconfig` (font lookup by name),
+  which also make `drawtext` accept `font=Helvetica` instead of only an explicit `fontfile=` path.
+* `libxml2`: XML parser required for the DASH and IMF demuxers
 * `avisynth`: Reading of [AviSynth+](http://avs-plus.net/) script files (only with `--enable-gpl-and-non-free`).
   Only the headers are built; the AviSynth+ library itself is loaded at runtime and has to be installed separately.
 
