@@ -1135,6 +1135,20 @@ fi
 CONFIGURE_OPTIONS+=("--enable-vapoursynth")
 
 if $NONFREE_AND_GPL; then
+    # AviSynth+ is loaded dynamically by ffmpeg if an AviSynth script is opened,
+    # so only the headers need to be installed. ffmpeg requires 3.7.3 or newer and
+    # looks for avisynth/avisynth_c.h and avisynth/avs/version.h.
+    if build "avisynth" "3.7.5"; then
+        download "https://github.com/AviSynth/AviSynthPlus/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "AviSynthPlus-$CURRENT_PACKAGE_VERSION.tar.gz"
+        execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DHEADERS_ONLY=ON -B build/
+        # VersionGen generates avs/version.h and avs/arch.h, which the install step
+        # expects but which are not part of the default target.
+        execute cmake --build build/ --target VersionGen
+        execute cmake --build build/ --target install
+        build_done "avisynth" $CURRENT_PACKAGE_VERSION
+    fi
+    CONFIGURE_OPTIONS+=("--enable-avisynth")
+
     if build "srt" "1.5.6"; then
         download "https://github.com/Haivision/srt/archive/v$CURRENT_PACKAGE_VERSION.tar.gz" "srt-$CURRENT_PACKAGE_VERSION.tar.gz"
         export OPENSSL_ROOT_DIR="${WORKSPACE}"
