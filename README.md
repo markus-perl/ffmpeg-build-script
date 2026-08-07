@@ -13,6 +13,19 @@ The FFmpeg build script provides an easy way to build a **static** FFmpeg on **m
 
 *Youtube: How-To build and install FFmpeg on macOS*
 
+## Pick your system
+
+| Your system | Go to |
+| --- | --- |
+| **macOS** (Intel or Apple Silicon) | [Build on macOS](#build-on-macos) |
+| **Debian / Ubuntu** | [Build on Linux](#build-on-linux) |
+| **Fedora / RHEL / Rocky / Oracle Linux** | [Build on Linux](#build-on-linux) |
+| **Any OS with Docker** (no changes to the host) | [Build with Docker](#build-with-docker) |
+| **Just want to run FFmpeg in a container** | [Run FFmpeg with Docker](#run-ffmpeg-with-docker) |
+| Windows | not supported — use Docker or WSL2 with the Linux instructions |
+
+Then, if you want GPU acceleration, continue with [Hardware acceleration](#hardware-acceleration).
+
 ## Disclaimer And Data Privacy Notice
 
 This script will download different packages with different licenses from various sources, which may track your usage.
@@ -22,43 +35,43 @@ By downloading and using this script, you are fully aware of this.
 Use this script at your own risk. I maintain this script in my spare time. Please do not file bug reports for systems
 other than Debian and macOS, because I don't have the resources or time to maintain different systems.
 
-## Requirements to build
+---
 
-### macOS
+# Build on macOS
 
-* XCode 14.x or greater
+**Supported:** macOS on Intel and on Apple Silicon (M1 and newer).
 
-### Linux
+### 1. Install the prerequisites
 
-* Debian >= Buster, Ubuntu => Focal Fossa; other distributions might work too
-* Rocky Linux 8
+* XCode 14.x or greater. `xcode-select --install` is enough — the full IDE is not required:
+
+  ```bash
+  $ xcode-select --install
+  ```
+
+The script builds its own `pkg-config`, `nasm`, `yasm`, autotools and `cmake` into `workspace/`,
+so nothing else has to be installed. Homebrew is **not** required.
+
+Optional, for extra features:
+
+| Tool | What you get | Install |
+| --- | --- | --- |
+| `python3`, `meson`, `ninja` | dav1d (fast AV1 decoding), LV2 filters, harfbuzz text shaping | `brew install python meson ninja` |
+| `cargo` / `rust` | rav1e (AV1 encoding) | see [rust installation](https://doc.rust-lang.org/cargo/getting-started/installation.html) |
+
+### 2. Build
+
+Fastest way — download and build in one command:
 
 ```bash
-# Debian and Ubuntu
-$ sudo apt install build-essential curl
-
-# Fedora
-$ sudo dnf install @development-tools curl
-```
-
-## Quick Script Installation 
-
-Note: to enable hardware acceleration, see details below.
-### Quick install and build (macOS, Linux)
-
-Open your command line and run (curl needs to be installed):
-
-```bash
-# Without GPL and non-free codes, see https://ffmpeg.org/legal.html 
+# Without GPL and non-free codecs, see https://ffmpeg.org/legal.html
 $ bash <(curl -s "https://raw.githubusercontent.com/markus-perl/ffmpeg-build-script/master/web-install.sh?v1")
 
-# With GPL and non-free codes, see https://ffmpeg.org/legal.html 
+# With GPL and non-free codecs, see https://ffmpeg.org/legal.html
 $ bash <(curl -s "https://raw.githubusercontent.com/markus-perl/ffmpeg-build-script/master/web-install-gpl-and-non-free.sh?v1")
 ```
 
-This command downloads the build script and automatically starts the build process.
-
-### Common install and build (macOS, Linux)
+Or clone the repository and build from it:
 
 ```bash
 $ git clone https://github.com/markus-perl/ffmpeg-build-script.git
@@ -69,234 +82,183 @@ $ ./build-ffmpeg --build
 $ ./build-ffmpeg --enable-gpl-and-non-free --build
 ```
 
-## Supported Codecs
+See [Build script options](#build-script-options) for all switches.
 
-* `x264`: H.264 Video Codec (MPEG-4 AVC)
-* `x265`: H.265 Video Codec (HEVC)
-* `libsvtav1`: SVT-AV1 Encoder and Decoder
-* `aom`: AV1 Video Codec (Experimental and very slow!)
-* `librav1e`: rust based AV1 encoder (only available if [`cargo` is installed](https://doc.rust-lang.org/cargo/getting-started/installation.html)) 
-* `libdav1d`: Fastest AV1 decoder developed by the VideoLAN and FFmpeg communities and sponsored by the AOMedia (only available if `meson` and `ninja` are available)
-* `fdk_aac`: Fraunhofer FDK AAC Codec
-* `xvidcore`: MPEG-4 video coding standard
-* `VP8/VP9/webm`: VP8 / VP9 Video Codec for the WebM video file format
-* `mp3`: MPEG-1 or MPEG-2 Audio Layer III
-* `ogg`: Free, open container format
-* `vorbis`: Lossy audio compression format
-* `theora`: Free lossy video compression format
-* `opus`: Lossy audio coding format
-* `opencore-amr`: AMR-NB and AMR-WB speech codecs
-* `srt`: Secure Reliable Transport
-* `webp`: Image format both lossless and lossy
-* `libjxl`: JPEG XL image format
-* `lcms2`: ICC profile support in the image decoders and the `iccdetect` and `iccgen` filters
-* `libsoxr`: SoX Resampler Library
-* `libzimg`: Scaling and colorspace conversion for the `zscale` filter
-* `vid.stab`: Video stabilization for the `vidstabdetect` and `vidstabtransform` filters
-  (only with `--enable-gpl-and-non-free`)
-* `zvbi`: Teletext decoding (only with `--enable-gpl-and-non-free`)
-* `libzmq`: The `zmq` and `azmq` filters, for changing filter options of a running ffmpeg via ZeroMQ
-* `lv2`: LV2 audio plugin hosting, see [LV2 Plugin Support](#lv2-plugin-support)
-* `vapoursynth`: Reading of VapourSynth script files. Only the headers are built; the VapourSynth
-  library itself is loaded at runtime and has to be installed separately.
-* `openssl`: TLS for the `https` and `tls` protocols
-* `libass`: Subtitle renderer for the `subtitles` and `ass` filters, so SRT and ASS subtitles can be burned into video.
-  Built together with `fribidi` (bidirectional text), `harfbuzz` (text shaping), `libunibreak` (Unicode line
-  breaking for CJK and Thai) and `fontconfig` (font lookup by name). The latter three also make `drawtext`
-  accept `font=Helvetica` instead of only an explicit `fontfile=` path.
-* `libxml2`: XML parser required for the DASH and IMF demuxers
-* `avisynth`: Reading of [AviSynth+](http://avs-plus.net/) script files (only with `--enable-gpl-and-non-free`).
-  Only the headers are built; the AviSynth+ library itself is loaded at runtime and has to be installed separately.
+### 3. Install
 
-### HardwareAccel
+Upon completion, `build-ffmpeg` prompts you for whether to install the binaries into `/usr/local/bin`.
+The binaries are also left in the `workspace/bin/` subdirectory. Once installed, the
+`ffmpeg-build-script` directory can be removed completely.
 
-* `nv-codec`: [NVIDIA's GPU accelerated video codecs](https://devblogs.nvidia.com/nvidia-ffmpeg-transcoding-guide/).
-  These encoders/decoders will only be available if a CUDA installation was found while building the binary.
-  Follow [these](#Cuda-installation) instructions for installation. Supported codecs in nvcodec:
-    * Decoders
-        * H264 `h264_cuvid`
-        * H265 `hevc_cuvid`
-        * Motion JPEG `mjpeg_cuvid`
-        * MPEG1 video `mpeg1_cuvid`
-        * MPEG2 video `mpeg2_cuvid`
-        * MPEG4 part 2 video `mepg4_cuvid`
-        * VC-1 `vc1_cuvid`
-        * VP8 `vp8_cuvid`
-        * VP9 `vp9_cuvid`
-    * Encoders
-        * H264 `nvenc_h264`
-        * H265 `nvenc_hevc`
-* `vaapi`: [Video Acceleration API](https://trac.ffmpeg.org/wiki/Hardware/VAAPI). These encoders/decoders will only be
-  available if a libva driver installation was found while building the binary. Follow [these](#Vaapi-installation)
-  instructions for installation. Supported codecs in vaapi:
-    * Encoders
-        * H264 `h264_vaapi`
-        * H265 `hevc_vaapi`
-        * Motion JPEG `mjpeg_vaapi`
-        * MPEG2 video `mpeg2_vaapi`
-        * VP8 `vp8_vaapi`
-        * VP9 `vp9_vaapi`
-* `AMF`: [AMD's Advanced Media Framework](https://github.com/GPUOpen-LibrariesAndSDKs/AMF). These encoders/decoders will only 
-  be available if `amdgpu` drivers are detected in use on the system with `lspci -v`. 
-    * Decoders
-        * H264 `h264_amf`
-        * H265 `hevc_amf`
-        * AV1 `av1_amf`
-        * VP9 `vp9_amf`
-    * Encoders
-        * H264 `h264_amf`
-        * H265 `hevc_amf`
-        * AV1 `av1_amf`
-* `Vulkan`: [Cross-platform graphics and compute API](https://www.vulkan.org/). These encoders/decoders will only be available if
-  Vulkan drivers are detected on the system. Follow the [Wiki](https://trac.ffmpeg.org/wiki/HWAccelIntro#Vulkan) to enable Vulkan decoding.
-  macOS is supported when MoltenVK is available, but functionality may be limited.
-  These encoders/decoders will be available using fixed-function blocks in the GPU:
-    * Decoders
-        * H264
-        * H265
-        * AV1
-        * VP9
-    * Encoders
-        * H264 `h264_vulkan`
-        * H265 `hevc_vulkan`
-        * AV1 `av1_vulkan`
+Hardware acceleration on macOS comes from [Video Toolbox](#video-toolbox-macos) and, if available,
+[Vulkan/MoltenVK](#vulkan). OpenCL is not available, as Apple has discontinued support for it.
 
-  Additionally, FFmpeg implements [video filters](https://ffmpeg.org/ffmpeg-filters.html#Vulkan-Video-Filters)
-  using shaders on the GPU, as well as these encoders/decoders:
-    * Decoders
-        * FFV1
-        * ProRes RAW
-    * Encoders
-        * FFV1 `ffv1_vulkan`
-* `OpenCL`: [Cross-platform compute API](https://www.khronos.org/opencl/) Several [filters](https://ffmpeg.org/ffmpeg-filters.html#OpenCL-Video-Filters)
-  are implemented in FFmpeg using OpenCL. As Apple has discontinued support for OpenCL, it is not available on macOS.
+---
 
-* `Video Toolbox`: [Apple API](https://developer.apple.com/documentation/videotoolbox) to access hardware-acclerated enncoders/decoders
-  on macOS:
-    * Encoders an decoders
-        * H264 `h264_videotoolbox`
-        * H265 `hevc_videotoolbox`
-        * ProRes `prores_videotoolbox`
+# Build on Linux
 
-## Build Script Usage
+**Supported:** Debian >= Buster, Ubuntu >= Focal Fossa and Rocky Linux 8 — these are the ones I can
+maintain and that run in CI. Other distributions (openSUSE, Arch, Alpine, …) generally work too;
+install commands for them are below, but please do not file bug reports for them.
+
+### 1. Install the prerequisites
+
+The script builds its own `pkg-config`, `nasm`, `yasm`, autotools and `cmake` into `workspace/`,
+so the host only has to provide a C/C++ toolchain and a few tools. Everything else is downloaded
+and compiled by the script.
+
+**Required:**
+
+| Tool | Why |
+| --- | --- |
+| `make`, `g++` | compiling every package — the script exits at startup if either is missing |
+| `curl` | downloading the sources — same check |
+| `tar`, `xz`, `gzip` | unpacking the source archives |
+| `diffutils`, `findutils` | used by the packages' own `configure` scripts; absent on minimal/UBI images |
+
+(`file` is used only to report the type of the finished binary and is not required.)
+
+**Optional, but parts of FFmpeg are silently skipped without them:**
+
+| Tool | What is lost if missing |
+| --- | --- |
+| `python3` | meson/ninja bootstrap → no dav1d (AV1 decoding), no LV2 filters, no harfbuzz |
+| `meson`, `ninja` | same as above. Installing them from your package manager is more reliable than the script's `pip` fallback (see the [PEP 668 note](#meson-fails-with-externally-managed-environment)) |
+| `cargo` / `rust` | no rav1e (AV1 encoding) |
+| X11 development headers | `ffplay`. SDL is compiled from source and picks up whatever X11 headers it finds — a partial set makes the SDL build fail (`X11/extensions/Xext.h: No such file`), and no X11 at all leaves `ffplay` unable to open a video device |
+
+Pick the block for your distribution. In every block, the first line is the required toolchain and
+the following lines are optional: they buy you dav1d, rav1e and `ffplay`.
+
+**Debian, Ubuntu** (and derivatives: Linux Mint, Pop!\_OS, Raspberry Pi OS, Kali)
 
 ```bash
-Usage: build-ffmpeg [OPTIONS]
-Options:
-  -h, --help                     Display usage information
-      --version                  Display version information
-  -b, --build                    Starts the build process
-      --enable-gpl-and-non-free  Enable non-free codecs  - https://ffmpeg.org/legal.html
-      --latest                   Build latest version of dependencies if newer available
-  -c, --cleanup                  Remove all working dirs
-      --small                    Prioritize small size over speed and usability; don't build manpages.
-      --full-static              Complete static build of ffmpeg (eg. glibc, pthreads etc...) **only Linux**
-                                 Note: Because of the NSS (Name Service Switch), glibc does not recommend static links.
+$ sudo apt install build-essential curl tar xz-utils file \
+      python3 python3-pip meson ninja-build \
+      cargo \
+      libx11-dev libxext-dev
 ```
 
-### Notes on static linking
-
-- Because of the NSS (Name Service Switch), glibc does **not recommend** static links. See [more details here](https://sourceware.org/glibc/wiki/FAQ#Even_statically_linked_programs_need_some_shared_libraries_which_is_not_acceptable_for_me.__What_can_I_do.3F).
-
-- The libnpp in the CUDA SDK cannot be statically linked.
-- Vaapi cannot be statically linked.
-
-
-## Common full build (macOS, Linux)
-
-1) Install the [prerequisites](#requirements-to-build), above.
-1) Install optional dependencies, as desired.
-   - If you have an NVIDIA GPU and want to enable CUDA acceleration, please refer to [these instructions](#Cuda-installation) to install the SDK.
-
-   - If you have an AMD GPU and want to enable AMF acceleration, please refer to [these instructions](#amf-installation) to install the drivers.
-
-   - If you want to enable Vaapi acceleration (for most GPUs), please refer to [these instructions](#Vaapi-installation) to install the driver.
-
-   - If you want the `librav1e` AV1 encoder, please install [rust](https://doc.rust-lang.org/cargo/getting-started/installation.html) to get `cargo` for the build process. Be sure to start a new shell before building, so that `cargo` is in the new path. If desired, it can be removed with `rustup self uninstall` after the build is complete.
-
-   - If you want the `dav1d` AV1 decoder, please ensure that `python3` is installed. If using the system python installation, also ensure that `meson` and `ninja` are installed before running (otherwise the script will try to install them using `pip3`).
-
-   - If you want the `Lv2` filter plugin, please ensure that `python3` is installed.
-
-1) Run the downoaded build script from the current directory, with your desired [options](#build-script-usage).
-   ```bash
-   $ ./build-ffmpeg [your parameters here] --build
-   ```
-   - Packages will be under the `packages/` subdirectory.
-   - Build results will be under the `workspace/` subdirectory.
-   
-   Upon completion, build-ffmpeg will prompt you for whether to install.
-
-1) Once installed, if you are satisfied with your ffmpeg build, the ffmpeg-build-script directory can be removed completely.
-
-### CUDA installation
-
-CUDA is a parallel computing platform developed by NVIDIA. To be able to compile ffmpeg with CUDA support, you first
-need a compatible NVIDIA GPU and the NVIDIA compiler nvcc from the CUDA toolkit.
-
-- Ubuntu: To install the CUDA toolkit on Ubuntu, run 
-  ```bash
-  sudo apt install nvidia-cuda-toolkit
-  ``` 
-  After compilation, you can run 
-  ```bash
-  sudo apt install nvidia-cuda-dev && sudo apt remove nvidia-cuda-toolkit
-  ``` 
-  This removes the compilers but leaves the needed shared library `libnpp`.
-
-- Other Linux distributions: Once you have the GPU and display driver installed, you can follow the
-  [official instructions](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html)
-  or [this blog](https://www.pugetsystems.com/labs/hpc/How-To-Install-CUDA-10-1-on-Ubuntu-19-04-1405/)
-  to setup the CUDA toolkit.
-
-It is also beneficial to set the `CUDA_COMPUTE_CAPABILITY` environmental variable so the build is tailored to your hardware and its capabilities. There are many ways you can find your compute capability, for example by using [nvidia-smi](https://stackoverflow.com/questions/40695455/what-utility-binary-can-i-call-to-determine-an-nvidia-gpus-compute-capability).
-
-### Vaapi installation
-
-You will need the libva driver, so please install it below.
+**Fedora**
 
 ```bash
-# Debian and Ubuntu
-$ sudo apt install libva-dev vainfo
-
-# Fedora and CentOS
-$ sudo dnf install libva-devel libva-intel-driver libva-utils
+$ sudo dnf install @development-tools curl tar xz file \
+      python3 python3-pip meson ninja-build \
+      cargo \
+      libX11-devel libXext-devel
 ```
 
-### AMF installation
-
-To use the AMF encoder, you will need to be using the AMD GPU Pro drivers with OpenCL support.
-Download the drivers from https://www.amd.com/en/support and install the appropriate opencl versions.
+**RHEL, Rocky Linux, AlmaLinux, CentOS Stream, Oracle Linux** (8 and newer, including minimal and UBI images)
 
 ```bash
-./amdgpu-pro-install -y --opencl=rocr,legacy
+$ sudo dnf install gcc gcc-c++ make curl tar gzip xz diffutils findutils file \
+      python3 python3-pip meson ninja-build \
+      cargo \
+      libX11-devel libXext-devel
 ```
 
-### LV2 Plugin Support
+On RHEL 8 and clones, `meson`, `ninja-build` and `cargo` live in the *AppStream* and *CodeReady
+Builder* repositories. If `dnf` cannot find them, enable CRB first
+(`sudo dnf config-manager --set-enabled crb`, or `powertools` on 8) or drop those packages and
+build without dav1d and rav1e.
 
-If python 3 is available, the script will build a ffmpeg binary with [Lv2 filter](https://github.com/lv2/lv2/wiki) plugin support.
+**openSUSE Leap and Tumbleweed**
 
-### Apple M1 (Apple Silicon) Support
+```bash
+$ sudo zypper install -t pattern devel_C_C++
+$ sudo zypper install curl tar gzip xz diffutils findutils file \
+      python3 python3-pip meson ninja \
+      cargo \
+      libX11-devel libXext-devel
+```
 
-The script also builds FFmpeg on a new MacBook with an Apple Silicon M1 processor.
+**Arch Linux** (and derivatives: Manjaro, EndeavourOS)
 
+```bash
+$ sudo pacman -S --needed base-devel curl tar xz \
+      python python-pip meson ninja \
+      rust \
+      libx11 libxext
+```
 
-## Build in Docker (Linux)
+On Arch, `base-devel` already provides `make`, `gcc`, `file`, `findutils` and `gzip`, and the
+`libx11`/`libxext` packages ship the headers — there are no separate `-dev` packages.
+
+**Alpine Linux**
+
+```bash
+$ sudo apk add bash build-base linux-headers curl tar xz gzip diffutils findutils file \
+      python3 py3-pip meson ninja \
+      cargo \
+      libx11-dev libxext-dev
+```
+
+`bash` is required because the build script itself is a bash script, and `linux-headers` because
+several packages do not compile against musl without them. Alpine is not part of the CI matrix, so
+treat a musl build as best effort.
+
+If you want GPU acceleration, install the corresponding driver/SDK now — see
+[CUDA](#cuda-nvidia), [VAAPI](#vaapi-most-gpus) or [AMF](#amf-amd) — because the build only enables
+what it finds on the system.
+
+### 2. Build
+
+Fastest way — download and build in one command:
+
+```bash
+# Without GPL and non-free codecs, see https://ffmpeg.org/legal.html
+$ bash <(curl -s "https://raw.githubusercontent.com/markus-perl/ffmpeg-build-script/master/web-install.sh?v1")
+
+# With GPL and non-free codecs, see https://ffmpeg.org/legal.html
+$ bash <(curl -s "https://raw.githubusercontent.com/markus-perl/ffmpeg-build-script/master/web-install-gpl-and-non-free.sh?v1")
+```
+
+Or clone the repository and build from it:
+
+```bash
+$ git clone https://github.com/markus-perl/ffmpeg-build-script.git
+$ cd ffmpeg-build-script
+# Without GPL and non-free codecs
+$ ./build-ffmpeg --build
+# With GPL and non-free codecs
+$ ./build-ffmpeg --enable-gpl-and-non-free --build
+```
+
+See [Build script options](#build-script-options) for all switches, for example `--full-static`
+for a completely static binary or `--small` for a size-optimized one.
+
+### 3. Install
+
+- Packages will be under the `packages/` subdirectory.
+- Build results will be under the `workspace/` subdirectory.
+
+Upon completion, `build-ffmpeg` prompts you for whether to install the binaries into `/usr/local/bin`.
+Once installed, the `ffmpeg-build-script` directory can be removed completely.
+
+---
+
+# Build with Docker
 
 With Docker, FFmpeg can be built reliably without altering the host system. Also, there is no need to have the CUDA SDK
-installed outside of the Docker image.
+installed outside of the Docker image. This works on Linux and macOS hosts.
 
-#### Default
-
-If you're running an operating system other than the one above, a completely static build may work. To build a full
-statically linked binary inside Docker, just run the following command:
+### Default
 
 ```bash
 $ docker build --tag=ffmpeg:default --output type=local,dest=build -f Dockerfile .
 ```
 
-#### CUDA
-These builds are always built with the --enable-gpl-and-non-free switch, as CUDA is non-free. See https://ffmpeg.org/legal.html
+### Full static version
+
+If you're running an operating system other than the ones listed above, a completely static build may work:
+
+```bash
+$ sudo -E docker build --tag=ffmpeg:cuda-static --output type=local,dest=build -f full-static.dockerfile .
+```
+
+### CUDA
+
+These builds are always built with the `--enable-gpl-and-non-free` switch, as CUDA is non-free. See https://ffmpeg.org/legal.html
 
 ```bash
 ## Start the build
@@ -318,43 +280,34 @@ $ ls build/lib
 libnppc.so.11 libnppicc.so.11 libnppidei.so.11 libnppig.so.11
 ```
 
----
+#### Enabling GPU access during the build
 
-By default, newer docker versions don't allow GPU access while building the image. **If you intend to build with docker on the same system you intend to run the built image on**, allowing this access is beneficial for detecting CUDA compute capability, and tailoring the build to your hardware.  
+By default, newer docker versions don't allow GPU access while building the image. **If you intend to build with docker on the same system you intend to run the built image on**, allowing this access is beneficial for detecting CUDA compute capability, and tailoring the build to your hardware.
 
-[some steps](https://stackoverflow.com/a/77348905/7764138) are required on the host machine to allow CUDA access during build:  
+[some steps](https://stackoverflow.com/a/77348905/7764138) are required on the host machine to allow CUDA access during build:
 
 1. Install NVIDIA docker runtime and toolkit `sudo apt install nvidia-container-runtime nvidia-container-toolkit`
 2. Modify `/etc/docker/daemon.json` and add the line `"default-runtime": "nvidia"`
 3. Restart Docker: `sudo systemctl restart docker`
-4. Disable buildkit with `export DOCKER_BUILDKIT=0` before building  
+4. Disable buildkit with `export DOCKER_BUILDKIT=0` before building
 5. If all this doesn't work, also remove buildx: `sudo apt remove docker-buildx-plugin`
 
 You should now see the message `CUDA env variable provided` during the docker build process.
 
-#### Full static version
+---
 
-If you're running an operating system other than the one above, a completely static build may work. To build a full
-statically linked binary inside Docker, just run the following command:
+# Run FFmpeg with Docker
 
-```bash
-$ sudo -E docker build --tag=ffmpeg:cuda-static --output type=local,dest=build -f full-static.dockerfile .
-```
+You can also run FFmpeg directly inside a Docker container, without installing anything on the host.
 
-### Run with Docker (macOS, Linux)
-
-You can also run the FFmpeg directly inside a Docker container.
-
-#### Default - Without CUDA (macOS, Linux)
-
-If CUDA is not required, a dockerized FFmpeg build can be executed with the following command:
+### Without CUDA (macOS, Linux)
 
 ```bash
 $ sudo docker build --tag=ffmpeg .
 $ sudo docker run ffmpeg -i https://files.coconut.co.s3.amazonaws.com/test.mp4 -f webm -c:v libvpx -c:a libvorbis - > test.mp4
 ```
 
-#### With CUDA (Linux)
+### With CUDA (Linux)
 
 To use CUDA from inside the container, the installed Docker version must be >= 19.03. Install the driver
 and `nvidia-docker2`
@@ -366,27 +319,244 @@ $ sudo docker build --tag=ffmpeg:cuda -f cuda-ubuntu.dockerfile .
 $ sudo docker run --gpus all ffmpeg-cuda -hwaccel cuvid -c:v h264_cuvid -i https://files.coconut.co.s3.amazonaws.com/test.mp4 -c:v hevc_nvenc -vf scale_npp=-1:1080 - > test.mp4
 ```
 
+---
 
-Contact
--------
+# Build script options
 
-* Github: [http://www.github.com/markus-perl/](https://github.com/markus-perl/ffmpeg-build-script)
+```bash
+Usage: build-ffmpeg [OPTIONS]
+Options:
+  -h, --help                     Display usage information
+      --version                  Display version information
+  -b, --build                    Starts the build process
+      --enable-gpl-and-non-free  Enable non-free codecs  - https://ffmpeg.org/legal.html
+      --latest                   Build latest version of dependencies if newer available
+  -c, --cleanup                  Remove all working dirs
+      --small                    Prioritize small size over speed and usability; don't build manpages.
+      --full-static              Complete static build of ffmpeg (eg. glibc, pthreads etc...) **only Linux**
+                                 Note: Because of the NSS (Name Service Switch), glibc does not recommend static links.
+```
 
-Tested on
----------
+Environment variables:
 
-* MacOS 15.1
-* Debian 12
-* Ubuntu 22.04
+| Variable | Effect |
+| --- | --- |
+| `SKIPINSTALL=yes` | do not prompt for installing the binaries after the build |
+| `CUDA_COMPUTE_CAPABILITY=75` | tailor the CUDA build to your hardware, see [CUDA](#cuda-nvidia) |
 
-## Continuous Integration
+---
 
-ffmpeg-build-script is very stable. Every commit runs against Linux and macOS
-with https://github.com/markus-perl/ffmpeg-build-script/actions to make sure everything works as expected.
+# Hardware acceleration
 
+Hardware encoders and decoders are only compiled in if the corresponding SDK or driver is found
+**while building**, so install these before running the build.
 
-Example
--------
+| Backend | Platform | Setup |
+| --- | --- | --- |
+| [CUDA / NVENC / NVDEC](#cuda-nvidia) | Linux (NVIDIA GPU) | install the CUDA toolkit |
+| [VAAPI](#vaapi-most-gpus) | Linux (most GPUs) | install the libva driver |
+| [AMF](#amf-amd) | Linux (AMD GPU) | install the AMD GPU Pro drivers |
+| [Vulkan](#vulkan) | Linux, macOS (MoltenVK) | install Vulkan drivers |
+| [OpenCL](#opencl) | Linux | install an OpenCL runtime |
+| [Video Toolbox](#video-toolbox-macos) | macOS | nothing to do, always available |
+
+### CUDA (NVIDIA)
+
+CUDA is a parallel computing platform developed by NVIDIA. To be able to compile ffmpeg with CUDA support, you first
+need a compatible NVIDIA GPU and the NVIDIA compiler nvcc from the CUDA toolkit.
+
+- Ubuntu: To install the CUDA toolkit on Ubuntu, run
+  ```bash
+  sudo apt install nvidia-cuda-toolkit
+  ```
+  After compilation, you can run
+  ```bash
+  sudo apt install nvidia-cuda-dev && sudo apt remove nvidia-cuda-toolkit
+  ```
+  This removes the compilers but leaves the needed shared library `libnpp`.
+
+- Other Linux distributions: Once you have the GPU and display driver installed, you can follow the
+  [official instructions](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html)
+  or [this blog](https://www.pugetsystems.com/labs/hpc/How-To-Install-CUDA-10-1-on-Ubuntu-19-04-1405/)
+  to setup the CUDA toolkit.
+
+It is also beneficial to set the `CUDA_COMPUTE_CAPABILITY` environmental variable so the build is tailored to your hardware and its capabilities. There are many ways you can find your compute capability, for example by using [nvidia-smi](https://stackoverflow.com/questions/40695455/what-utility-binary-can-i-call-to-determine-an-nvidia-gpus-compute-capability).
+
+Supported codecs in [nv-codec](https://devblogs.nvidia.com/nvidia-ffmpeg-transcoding-guide/):
+
+* Decoders
+    * H264 `h264_cuvid`
+    * H265 `hevc_cuvid`
+    * Motion JPEG `mjpeg_cuvid`
+    * MPEG1 video `mpeg1_cuvid`
+    * MPEG2 video `mpeg2_cuvid`
+    * MPEG4 part 2 video `mepg4_cuvid`
+    * VC-1 `vc1_cuvid`
+    * VP8 `vp8_cuvid`
+    * VP9 `vp9_cuvid`
+* Encoders
+    * H264 `nvenc_h264`
+    * H265 `nvenc_hevc`
+
+### VAAPI (most GPUs)
+
+[Video Acceleration API](https://trac.ffmpeg.org/wiki/Hardware/VAAPI). You will need the libva driver:
+
+```bash
+# Debian and Ubuntu
+$ sudo apt install libva-dev vainfo
+
+# Fedora and CentOS
+$ sudo dnf install libva-devel libva-intel-driver libva-utils
+```
+
+Supported codecs in vaapi:
+
+* Encoders
+    * H264 `h264_vaapi`
+    * H265 `hevc_vaapi`
+    * Motion JPEG `mjpeg_vaapi`
+    * MPEG2 video `mpeg2_vaapi`
+    * VP8 `vp8_vaapi`
+    * VP9 `vp9_vaapi`
+
+Note: vaapi cannot be statically linked.
+
+### AMF (AMD)
+
+[AMD's Advanced Media Framework](https://github.com/GPUOpen-LibrariesAndSDKs/AMF). These encoders/decoders will only
+be available if `amdgpu` drivers are detected in use on the system with `lspci -v`.
+
+To use the AMF encoder, you will need to be using the AMD GPU Pro drivers with OpenCL support.
+Download the drivers from https://www.amd.com/en/support and install the appropriate opencl versions.
+
+```bash
+./amdgpu-pro-install -y --opencl=rocr,legacy
+```
+
+* Decoders
+    * H264 `h264_amf`
+    * H265 `hevc_amf`
+    * AV1 `av1_amf`
+    * VP9 `vp9_amf`
+* Encoders
+    * H264 `h264_amf`
+    * H265 `hevc_amf`
+    * AV1 `av1_amf`
+
+### Vulkan
+
+[Cross-platform graphics and compute API](https://www.vulkan.org/). These encoders/decoders will only be available if
+Vulkan drivers are detected on the system. Follow the [Wiki](https://trac.ffmpeg.org/wiki/HWAccelIntro#Vulkan) to enable Vulkan decoding.
+macOS is supported when MoltenVK is available, but functionality may be limited.
+These encoders/decoders will be available using fixed-function blocks in the GPU:
+
+* Decoders
+    * H264
+    * H265
+    * AV1
+    * VP9
+* Encoders
+    * H264 `h264_vulkan`
+    * H265 `hevc_vulkan`
+    * AV1 `av1_vulkan`
+
+Additionally, FFmpeg implements [video filters](https://ffmpeg.org/ffmpeg-filters.html#Vulkan-Video-Filters)
+using shaders on the GPU, as well as these encoders/decoders:
+
+* Decoders
+    * FFV1
+    * ProRes RAW
+* Encoders
+    * FFV1 `ffv1_vulkan`
+
+### OpenCL
+
+[Cross-platform compute API](https://www.khronos.org/opencl/). Several [filters](https://ffmpeg.org/ffmpeg-filters.html#OpenCL-Video-Filters)
+are implemented in FFmpeg using OpenCL. As Apple has discontinued support for OpenCL, it is not available on macOS.
+
+### Video Toolbox (macOS)
+
+[Apple API](https://developer.apple.com/documentation/videotoolbox) to access hardware-accelerated encoders/decoders
+on macOS. Always available on macOS, nothing to install:
+
+* Encoders and decoders
+    * H264 `h264_videotoolbox`
+    * H265 `hevc_videotoolbox`
+    * ProRes `prores_videotoolbox`
+
+---
+
+# Supported codecs and libraries
+
+* `x264`: H.264 Video Codec (MPEG-4 AVC)
+* `x265`: H.265 Video Codec (HEVC)
+* `libsvtav1`: SVT-AV1 Encoder and Decoder
+* `aom`: AV1 Video Codec (Experimental and very slow!)
+* `librav1e`: rust based AV1 encoder (only available if [`cargo` is installed](https://doc.rust-lang.org/cargo/getting-started/installation.html))
+* `libdav1d`: Fastest AV1 decoder developed by the VideoLAN and FFmpeg communities and sponsored by the AOMedia (only available if `meson` and `ninja` are available)
+* `fdk_aac`: Fraunhofer FDK AAC Codec
+* `xvidcore`: MPEG-4 video coding standard
+* `VP8/VP9/webm`: VP8 / VP9 Video Codec for the WebM video file format
+* `mp3`: MPEG-1 or MPEG-2 Audio Layer III
+* `ogg`: Free, open container format
+* `vorbis`: Lossy audio compression format
+* `theora`: Free lossy video compression format
+* `opus`: Lossy audio coding format
+* `opencore-amr`: AMR-NB and AMR-WB speech codecs
+* `srt`: Secure Reliable Transport
+* `webp`: Image format both lossless and lossy
+* `libjxl`: JPEG XL image format
+* `lcms2`: ICC profile support in the image decoders and the `iccdetect` and `iccgen` filters
+* `libsoxr`: SoX Resampler Library
+* `libzimg`: Scaling and colorspace conversion for the `zscale` filter
+* `vid.stab`: Video stabilization for the `vidstabdetect` and `vidstabtransform` filters
+  (only with `--enable-gpl-and-non-free`)
+* `zvbi`: Teletext decoding (only with `--enable-gpl-and-non-free`)
+* `libzmq`: The `zmq` and `azmq` filters, for changing filter options of a running ffmpeg via ZeroMQ
+* `lv2`: LV2 audio plugin hosting. If python 3 is available, the script builds a ffmpeg binary with
+  [Lv2 filter](https://github.com/lv2/lv2/wiki) plugin support.
+* `vapoursynth`: Reading of VapourSynth script files. Only the headers are built; the VapourSynth
+  library itself is loaded at runtime and has to be installed separately.
+* `openssl`: TLS for the `https` and `tls` protocols
+* `libass`: Subtitle renderer for the `subtitles` and `ass` filters, so SRT and ASS subtitles can be burned into video.
+  Built together with `fribidi` (bidirectional text), `harfbuzz` (text shaping), `libunibreak` (Unicode line
+  breaking for CJK and Thai) and `fontconfig` (font lookup by name). The latter three also make `drawtext`
+  accept `font=Helvetica` instead of only an explicit `fontfile=` path.
+* `libxml2`: XML parser required for the DASH and IMF demuxers
+* `avisynth`: Reading of [AviSynth+](http://avs-plus.net/) script files (only with `--enable-gpl-and-non-free`).
+  Only the headers are built; the AviSynth+ library itself is loaded at runtime and has to be installed separately.
+
+---
+
+# Troubleshooting and notes
+
+### meson fails with `externally-managed-environment`
+
+If `meson` is not already installed, the script tries to install it with `pip3`. On Debian 12,
+Ubuntu 24.04 and other distributions that mark the system Python as externally managed, that call
+fails with `error: externally-managed-environment` and takes the build with it. Installing `meson`
+and `ninja` from your package manager beforehand — as in the
+[Linux prerequisites](#1-install-the-prerequisites-1) — avoids the problem entirely.
+
+### SDL fails with `X11/extensions/Xext.h: No such file`
+
+A partial set of X11 development headers makes the SDL build fail. Install `libx11-dev` and
+`libxext-dev` (Debian/Ubuntu) or `libX11-devel` and `libXext-devel` (Fedora/RHEL), or remove the
+X11 headers entirely — then `ffplay` is built without video device support.
+
+### Notes on static linking
+
+- Because of the NSS (Name Service Switch), glibc does **not recommend** static links. See [more details here](https://sourceware.org/glibc/wiki/FAQ#Even_statically_linked_programs_need_some_shared_libraries_which_is_not_acceptable_for_me.__What_can_I_do.3F).
+- The libnpp in the CUDA SDK cannot be statically linked.
+- Vaapi cannot be statically linked.
+
+---
+
+# Example build output
+
+<details>
+<summary>Click to expand a full build log</summary>
 
 ```
 CUDA_COMPUTE_CAPABILITY=75 SKIPINSTALL=yes ./build-ffmpeg --build --enable-gpl-and-non-free
@@ -1543,8 +1713,28 @@ Password:
 Done. FFmpeg is now installed to your system.
 ```
 
-Other Projects Of Mine
-------------
+</details>
+
+---
+
+# Project info
+
+### Tested on
+
+* MacOS 15.1
+* Debian 12
+* Ubuntu 22.04
+
+### Continuous Integration
+
+ffmpeg-build-script is very stable. Every commit runs against Linux and macOS
+with https://github.com/markus-perl/ffmpeg-build-script/actions to make sure everything works as expected.
+
+### Contact
+
+* Github: [http://www.github.com/markus-perl/](https://github.com/markus-perl/ffmpeg-build-script)
+
+### Other Projects Of Mine
 
 - [Pushover CLI Client](https://github.com/markus-perl/pushover-cli)
 - [Gender API](https://gender-api.com): [Genderize A Name](https://gender-api.com)
