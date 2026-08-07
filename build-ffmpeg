@@ -419,7 +419,12 @@ if [ -n "$LDEXEFLAGS" ]; then
 fi
 
 mkdir -p "$PACKAGES"
-mkdir -p "$WORKSPACE"
+# Create the workspace subdirectories up front. CFLAGS and LDFLAGS point at
+# include/ and lib/ from the very first package, and a -L pointing at a
+# non-existent directory makes configure tests fail on newer toolchains.
+# Without this the build order silently depends on whichever package happens
+# to be built first creating them.
+mkdir -p "$WORKSPACE" "$WORKSPACE"/lib/pkgconfig "$WORKSPACE"/include "$WORKSPACE"/bin
 
 export PATH="${WORKSPACE}/bin:$PATH"
 PKG_CONFIG_PATH="$WORKSPACE/lib/pkgconfig:/usr/local/lib/x86_64-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig"
@@ -475,7 +480,15 @@ if build "pkg-config" "0.29.2"; then
         CFLAGS+=" -Wno-error=int-conversion"
         export CFLAGS
     fi
-    execute ./configure --silent --prefix="${WORKSPACE}" --with-pc-path="${WORKSPACE}"/lib/pkgconfig --with-internal-glib
+    # pkg-config 0.29.2 bundles a glib that uses "bool" as a struct member name.
+    # GCC 15 (Ubuntu 26.04) defaults to -std=gnu23, where bool is a keyword, so
+    # goption.c fails to compile. Build it as gnu17 where the compiler knows the
+    # option; older compilers already default to a suitable standard.
+    PKG_CONFIG_STD_FLAG=""
+    if echo 'int main(void) { return 0; }' | "${CC:-cc}" -std=gnu17 -x c - -o /dev/null >/dev/null 2>&1; then
+        PKG_CONFIG_STD_FLAG=" -std=gnu17"
+    fi
+    execute ./configure --silent --prefix="${WORKSPACE}" --with-pc-path="${WORKSPACE}"/lib/pkgconfig --with-internal-glib CFLAGS="${CFLAGS}${PKG_CONFIG_STD_FLAG}"
     execute make -j "$MJOBS"
     execute make install
     build_done "pkg-config" $CURRENT_PACKAGE_VERSION
@@ -623,11 +636,18 @@ if command_exists "python3"; then
                 echo "If you get an error (like externally-managed-environment), try to install meson using your system package manager"
                 # meson and ninja can be installed via pip3
                 execute pip3 install pip setuptools --quiet --upgrade --no-cache-dir --disable-pip-version-check
+                # pip installs console scripts into the Python user base, which is
+                # ~/.local/bin on Linux and is not on PATH in a minimal image.
+                PYTHON_USER_BIN="$(python3 -m site --user-base 2>/dev/null)"
+                if [ -n "$PYTHON_USER_BIN" ]; then
+                    export PATH="$PATH:${PYTHON_USER_BIN}/bin"
+                else
+                    export PATH="$PATH:$HOME/.local/bin"
+                fi
                 for r in meson ninja; do
                     if ! command_exists ${r}; then
                         execute pip3 install ${r} --quiet --upgrade --no-cache-dir --disable-pip-version-check
                     fi
-                    export PATH=$PATH:~/Library/Python/3.9/bin
                 done
             else
                 echo "Try to install meson using your system package manager to be able to compile ffmpeg with dav1d."
@@ -661,7 +681,7 @@ fi
 if build "svtav1" "4.2.0"; then
     # Last known working commit which passed CI Tests from HEAD branch
     download "https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/v$CURRENT_PACKAGE_VERSION/SVT-AV1-v$CURRENT_PACKAGE_VERSION.tar.gz" "svtav1-$CURRENT_PACKAGE_VERSION.tar.gz"
-    cd "${PACKAGES}"/svtav1-$CURRENT_PACKAGE_VERSION//Build/linux || exit
+    cd "${PACKAGES}"/svtav1-$CURRENT_PACKAGE_VERSION/Build/linux || exit
     execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF ../.. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
     execute make -j "$MJOBS"
     execute make install
@@ -1234,6 +1254,7 @@ if $NONFREE_AND_GPL; then
         export OPENSSL_LIB_DIR="${WORKSPACE}"/lib
         export OPENSSL_INCLUDE_DIR="${WORKSPACE}"/include/
         execute cmake . -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DENABLE_APPS=OFF -DUSE_STATIC_LIBSTDCXX=ON
+        execute make -j "$MJOBS"
         execute make install
 
         if [ -n "$LDEXEFLAGS" ]; then
