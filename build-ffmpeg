@@ -235,6 +235,14 @@ command_exists() {
     return 0
 }
 
+# Does the C++ compiler accept this flag? Compiles an empty translation unit to find out.
+# Written for -march feature flags, where "a compiler is installed" and "the compiler
+# knows this architecture" are very different questions - see build_x265.
+cxx_supports_flag() {
+    printf 'int main(void) { return 0; }\n' |
+        "${CXX:-c++}" "$1" -x c++ -c -o /dev/null - >/dev/null 2>&1
+}
+
 # Check for Apple Silicon
 if [[ ("$(uname -m)" == "arm64") && ("$OSTYPE" == "darwin"*) ]]; then
     # If arm64 AND darwin (macOS)
@@ -1102,19 +1110,56 @@ build_x265() {
             export CXXFLAGS="-DHAVE_NEON=1 ${CXXFLAGS}"
         fi
 
+        # On AArch64, x265 turns its SIMD extensions on without ever asking whether the
+        # compiler can target them. AARCH64_RUNTIME_CPU_DETECT defaults to ON
+        # (source/CMakeLists.txt line 96) and that path force-sets CPU_HAS_SVE2 and friends
+        # at line 342 with no probe at all. The one compile test it does run, at line 361,
+        # only covers AARCH64_SVE_FLAG - nothing anywhere checks AARCH64_SVE2_FLAG, which is
+        # "-march=armv9-a+i8mm+sve2", and armv9-a did not exist before GCC 12.
+        #
+        # So on Ubuntu 22.04's GCC 11 cmake succeeds and the build dies several minutes later
+        # assembling the SVE2 kernels:
+        #
+        #   cc1: error: unknown value 'armv9-a+i8mm+sve2' for '-march'
+        #
+        # which is why aarch64 jammy could not build this script at all. CI never caught it
+        # because the only 22.04 job is the CUDA one and that image is x86_64.
+        #
+        # Probe CMAKE_CXX_COMPILER, which is what actually assembles the .S files (line 1003),
+        # and switch off whatever it cannot target. x265 already cascades a disabled extension
+        # to the higher-order ones (line 413 onwards), so the flags need no ordering. With
+        # run-time detection the only consequence is that those kernels are absent. Apple
+        # clang accepts all of these, so this is a no-op on macOS.
+        X265_ARCH_FLAGS=()
+        if [[ "$(uname -m)" == "aarch64" || "$(uname -m)" == "arm64" ]]; then
+            for x265_probe in \
+                "ENABLE_NEON_DOTPROD=-march=armv8.2-a+dotprod" \
+                "ENABLE_NEON_I8MM=-march=armv8.2-a+dotprod+i8mm" \
+                "ENABLE_SVE=-march=armv8.2-a+dotprod+i8mm+sve" \
+                "ENABLE_SVE2=-march=armv9-a+i8mm+sve2" \
+                "ENABLE_SVE2_BITPERM=-march=armv9-a+i8mm+sve2-bitperm"; do
+                x265_option="${x265_probe%%=*}"
+                x265_flag="${x265_probe#*=}"
+                if ! cxx_supports_flag "$x265_flag"; then
+                    echo "x265: ${CXX:-c++} does not accept ${x265_flag}, so ${x265_option} is off."
+                    X265_ARCH_FLAGS+=("-D${x265_option}=OFF")
+                fi
+            done
+        fi
+
         cd build/linux || exit
         rm -rf 8bit 10bit 12bit 2>/dev/null
         mkdir -p 8bit 10bit 12bit
         cd 12bit || exit
-        execute cmake ../../../source -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DHIGH_BIT_DEPTH=ON -DENABLE_HDR10_PLUS=ON -DEXPORT_C_API=OFF -DENABLE_CLI=OFF -DMAIN12=ON
+        execute cmake ../../../source -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DHIGH_BIT_DEPTH=ON -DENABLE_HDR10_PLUS=ON -DEXPORT_C_API=OFF -DENABLE_CLI=OFF -DMAIN12=ON "${X265_ARCH_FLAGS[@]}"
         execute make -j "$MJOBS"
         cd ../10bit || exit
-        execute cmake ../../../source -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DHIGH_BIT_DEPTH=ON -DENABLE_HDR10_PLUS=ON -DEXPORT_C_API=OFF -DENABLE_CLI=OFF
+        execute cmake ../../../source -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DHIGH_BIT_DEPTH=ON -DENABLE_HDR10_PLUS=ON -DEXPORT_C_API=OFF -DENABLE_CLI=OFF "${X265_ARCH_FLAGS[@]}"
         execute make -j "$MJOBS"
         cd ../8bit || exit
         ln -sf ../10bit/libx265.a libx265_main10.a
         ln -sf ../12bit/libx265.a libx265_main12.a
-        execute cmake ../../../source -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DEXTRA_LIB="x265_main10.a;x265_main12.a;-ldl" -DEXTRA_LINK_FLAGS=-L. -DLINKED_10BIT=ON -DLINKED_12BIT=ON
+        execute cmake ../../../source -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DEXTRA_LIB="x265_main10.a;x265_main12.a;-ldl" -DEXTRA_LINK_FLAGS=-L. -DLINKED_10BIT=ON -DLINKED_12BIT=ON "${X265_ARCH_FLAGS[@]}"
         execute make -j "$MJOBS"
 
         mv libx265.a libx265_main.a
