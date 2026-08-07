@@ -68,6 +68,7 @@ VER_FREI0R=("3.2.3" "898f80e5fdae6108a2d9b2317649af576a4b5e636c73429ee11b64397a5
 # tarball on every request with different bytes, so no hash is ever stable.
 VER_AV1=("3.14.1" "")
 VER_ZIMG=("3.0.6" "be89390f13a5c9b2388ce0f44a5e89364a20c1c57ce46d382b1fcc3967057577")
+VER_LIBVMAF=("3.2.0" "a28f93f3b4fa65601be324587072e32a6a704a304ba7b1aec9b70b3f709bc1dc")
 
 ## audio library
 VER_LV2=("1.18.10" "78c51bcf21b54e58bb6329accbb4dae03b2ed79b520f9a01e734bd9de530953f")
@@ -101,6 +102,7 @@ VER_LIBPNG=("1.6.58" "8c9b05b675ca7301a458df2c2e46f26e1d41ff36b8863f8c33530bc58c
 VER_LCMS2=("2.19.1" "bfc54f7bab59fbc921012014a8032e4cba4abd46db47d46b76416a8c0b2815c8")
 VER_LIBJXL=("0.12.0" "03e9be69a30be4011f559da75328b6d7cea8ad921fabfbd551ce10bf45cdc992")
 VER_LIBWEBP=("1.6.0" "e4ab7009bf0629fd11982d4c2aa83964cf244cffba7347ecd39019a9e38c4564")
+VER_OPENJPEG=("2.5.4" "a695fbe19c0165f295a8531b1e4e855cd94d0875d2f88ec4b61080677e27188a")
 
 ## other library
 VER_LIBSDL=("2.32.10" "5f5993c530f084535c65a6879e9b26ad441169b3e25d789d83287040a9ca5165")
@@ -1253,6 +1255,129 @@ build_zimg() {
     CONFIGURE_OPTIONS+=("--enable-libzimg")
 }
 
+# Last in the video section because nothing else depends on it: libvmaf is a quality *metric*, not a
+# codec - it backs the vmaf filter, which scores a distorted stream against a reference. It only
+# needs to come after build_meson_and_ninja (its sole build system) and after build_nasm, which the
+# build-tools section has already installed for its x86 cpuid.asm.
+#
+# Deliberately not behind $NONFREE_AND_GPL: ffmpeg 9.0 lists libvmaf in the plain
+# EXTERNAL_LIBRARY_LIST (configure line 2140) and in none of the GPL/nonfree/version3 lists - Netflix
+# releases it under BSD-2-Clause-Patent.
+build_libvmaf() {
+    # python3 is needed twice over: meson itself is a Python program, and the xxd shim below is
+    # Python. Mirrors build_dav1d/build_libplacebo, which skip themselves the same way.
+    if ! command_exists "python3"; then return; fi
+    if ! command_exists "meson"; then return; fi
+
+    if build "libvmaf" "${VER_LIBVMAF[0]}"; then
+        download "https://github.com/Netflix/vmaf/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "vmaf-$CURRENT_PACKAGE_VERSION.tar.gz"
+
+        # The default VMAF models ship as JSON under model/ and are *compiled into* the library:
+        # libvmaf/src/meson.build runs "xxd -i -n src_<file>" over each one and links the resulting
+        # arrays, which is what makes vmaf_model_load(&m, &cfg, "vmaf_v0.6.1") work with nothing on
+        # disk. ffmpeg needs exactly that - vf_libvmaf's "model" option defaults to
+        # "version=vmaf_v0.6.1" (vf_libvmaf.c line 78) and resolves it through vmaf_model_load - so
+        # the models must not be left out. But meson only does "find_program('xxd', required:
+        # false)": with no xxd the models are silently dropped, the library still builds, ffmpeg
+        # still configures, and the filter only fails at runtime. That is exactly the kind of
+        # failure this script should not ship, and xxd is not a dependency worth adding to the
+        # documented prerequisites - ubuntu:24.04 has no xxd, and the project Dockerfile does not
+        # install one. So supply a shim covering the two invocations meson makes: the
+        # "xxd -n test" capability probe, and "xxd -i -n <symbol> <in> <out>". Names are sanitised
+        # the same way real xxd does it, because model.c declares the symbols as
+        # src_vmaf_v0_6_1_json - dots turned into underscores.
+        if ! command_exists "xxd"; then
+            # mkdir -p, not make_dir: make_dir removes the directory first, and $WORKSPACE/bin is
+            # where pkg-config, nasm and cmake already live.
+            execute mkdir -p "${WORKSPACE}/bin"
+            # A heredoc cannot be routed through execute(), so the write is checked inline.
+            if ! cat >"${WORKSPACE}/bin/xxd" <<'XXD_SHIM'; then
+#!/usr/bin/env python3
+import re
+import sys
+
+name = None
+files = []
+args = sys.argv[1:]
+i = 0
+while i < len(args):
+    if args[i] == '-n':
+        name = args[i + 1]
+        i += 2
+    elif args[i].startswith('-'):
+        i += 1
+    else:
+        files.append(args[i])
+        i += 1
+
+# This shim implements exactly the two calls meson makes and nothing else. It stays in
+# $WORKSPACE/bin, which is on PATH for the rest of the run, so anything it does not understand
+# must fail loudly rather than succeed quietly and hand back an empty file.
+if len(files) == 0:
+    # "xxd -n test": the capability probe, which only wants a zero exit status.
+    sys.exit(0)
+if len(files) != 2:
+    sys.stderr.write(
+        'xxd shim (ffmpeg-build-script): only "xxd -i -n <symbol> <in> <out>" is supported, '
+        'got: %s\n' % ' '.join(sys.argv[1:])
+    )
+    sys.exit(1)
+
+with open(files[0], 'rb') as fh:
+    data = fh.read()
+
+symbol = re.sub(r'[^0-9A-Za-z_]', '_', name if name else files[0])
+octets = ['0x%02x' % b for b in bytearray(data)]
+rows = [', '.join(octets[j:j + 12]) for j in range(0, len(octets), 12)]
+
+with open(files[1], 'w') as fh:
+    fh.write('unsigned char %s[] = {\n' % symbol)
+    if rows:
+        fh.write('  ' + ',\n  '.join(rows) + '\n')
+    fh.write('};\n')
+    fh.write('unsigned int %s_len = %d;\n' % (symbol, len(octets)))
+XXD_SHIM
+                echo "Failed to write the xxd shim to ${WORKSPACE}/bin/xxd" >&2
+                exit 1
+            fi
+            execute chmod +x "${WORKSPACE}/bin/xxd"
+        fi
+
+        # The meson project lives in libvmaf/, not at the top of the repository.
+        cd libvmaf || exit
+
+        # enable_float pulls in the legacy floating-point feature extractors, which only add the
+        # vmaf_float_* model variants ffmpeg never asks for by default; the fixed-point path is the
+        # one upstream recommends. enable_tools would build the "vmaf" CLI and enable_docs wants
+        # doxygen - neither is of any use to ffmpeg.
+        execute meson setup build --prefix="${WORKSPACE}" --libdir="${WORKSPACE}"/lib --buildtype=release --default-library=static \
+            -Denable_tests=false -Denable_docs=false -Denable_tools=false \
+            -Denable_float=false -Dbuilt_in_models=true
+        execute ninja -C build -j "$MJOBS"
+        execute ninja -C build install
+
+        # libvmaf bundles libsvm (src/libsvm/svm.cpp) and compiles it into libvmaf.a, so the archive
+        # references operator new, __cxa_throw and friends. meson never links the static library, so
+        # it does not notice and generates a libvmaf.pc without a C++ runtime; ffmpeg links with $CC
+        # and those symbols would go unresolved in require_pkg_config's link step (configure line
+        # 7458), which reports only the misleading "libvmaf not found using pkg-config". Appended to
+        # the end of Libs, not prepended: GNU ld is one-pass, so the runtime has to sit to the right
+        # of the -lvmaf that needs it. Same fixup as build_libplacebo and openh264.pc.
+        LIBVMAF_CXX_LIB="-lstdc++"
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            LIBVMAF_CXX_LIB="-lc++"
+        fi
+        apply_inline_patch "${WORKSPACE}/lib/pkgconfig/libvmaf.pc" "s|^\(Libs:.*\)|\1 ${LIBVMAF_CXX_LIB}|"
+
+        build_done "libvmaf" "$CURRENT_PACKAGE_VERSION"
+    fi
+    CONFIGURE_OPTIONS+=("--enable-libvmaf")
+
+    # NOTE: deliberately not gated on --full-static, for the same reason as libplacebo. The generated
+    # libvmaf.pc never mentions -lgcc_s, and the models are inside the archive rather than dlopen()ed
+    # or read from disk, so a fully static link has nothing to work around.
+}
+
 ##
 ## audio library
 ##
@@ -1572,6 +1697,41 @@ build_libwebp() {
         build_done "libwebp" "$CURRENT_PACKAGE_VERSION"
     fi
     CONFIGURE_OPTIONS+=("--enable-libwebp")
+}
+
+# Last in the image section: openjpeg is another still-image codec, and it is placed after libtiff,
+# libpng and lcms2 because its BUILD_CODEC executables would link all three. Those are turned off
+# here, so the position is only about keeping the section readable.
+#
+# Deliberately not behind $NONFREE_AND_GPL: ffmpeg 9.0 lists libopenjpeg in the plain
+# EXTERNAL_LIBRARY_LIST (configure line 2110) and in none of the GPL/nonfree/version3 lists -
+# openjpeg is BSD-2-Clause. It is the only JPEG 2000 *encoder* available: ffmpeg has a native j2k
+# decoder but its native encoder is far weaker, so gating this would cost real functionality.
+build_openjpeg() {
+    if build "openjpeg" "${VER_OPENJPEG[0]}"; then
+        download "https://github.com/uclouvain/openjpeg/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "openjpeg-$CURRENT_PACKAGE_VERSION.tar.gz"
+        make_dir build
+        cd build || exit
+
+        # BUILD_CODEC builds opj_compress/opj_decompress and their png/tiff/lcms2 dependencies;
+        # nothing here needs the command line tools. BUILD_SHARED_LIBS=OFF plus BUILD_STATIC_LIBS=ON
+        # leaves just libopenjp2.a, and also decides which target the generated libopenjp2.pc
+        # describes.
+        execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DBUILD_STATIC_LIBS=ON -DBUILD_CODEC=OFF -DBUILD_DOC=OFF -DBUILD_TESTING=OFF ../
+        execute make -j "$MJOBS"
+        execute make install
+
+        build_done "openjpeg" "$CURRENT_PACKAGE_VERSION"
+    fi
+
+    # The pkg-config module is "libopenjp2", not "libopenjpeg" - that is the name ffmpeg's configure
+    # asks for (line 7411), and the .pc file installed above matches it. No fixup is needed for the
+    # header either: openjpeg installs it into include/openjpeg-2.5/, but libopenjp2.pc sets
+    # "Cflags: -I${includedir}" with includedir already pointing at that versioned directory, so
+    # ffmpeg's plain "#include <openjpeg.h>" resolves. The generated Libs is "-L${libdir} -lopenjp2"
+    # with "Libs.private: -lm" - no absolute archive paths, and openjpeg is pure C, so no C++
+    # runtime has to be spliced in the way libvmaf and libplacebo need.
+    CONFIGURE_OPTIONS+=("--enable-libopenjpeg")
 }
 
 ##
@@ -2162,6 +2322,7 @@ PACKAGE_BUILD_ORDER=(
     frei0r
     av1
     zimg
+    libvmaf
 
     ## audio library
     lv2
@@ -2188,6 +2349,7 @@ PACKAGE_BUILD_ORDER=(
     lcms2
     libjxl
     libwebp
+    openjpeg
 
     ## other library
     libsdl
