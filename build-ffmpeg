@@ -146,6 +146,9 @@ VER_NV_CODEC=("13.1.15.0" "52532ceade3d5c1af62624986f13cf01b63c910576b08c0c27875
 # vaapi is a marker package: nothing is downloaded, so it has no checksum.
 VER_VAAPI=("1" "")
 VER_AMF=("1.5.2" "8a70b6dc85261e6e6e57769bd81ac1e09c0a4c96bbd5e358ffbc2dee51e8e50a")
+# The oneVPL dispatcher, renamed from oneVPL to libvpl upstream (github.com/intel/oneVPL
+# now 301s to intel/libvpl). ffmpeg 9.0 wants "vpl >= 2.6"; this is 2.17.
+VER_LIBVPL=("2.17.0" "4de3e2faf1e8307fb282e4a43f443191810f6a6b0a484fffa7995ba1c814c6ec")
 VER_OPENCL_HEADERS=("2026.05.29" "d9e6c48357de5002da11ce45de600e0c3ffe6ab4f628a3b9fe2b38603161658a")
 VER_OPENCL_ICD_LOADER=("2026.05.29" "48fd0c5181db7cd046f4f731d5955694892e10998d49d09ee0d997e7e04fd939")
 
@@ -961,6 +964,32 @@ add_python_user_bin_to_path() {
     hash -r 2>/dev/null || true
 }
 
+# Every pip call in the bootstrap goes through here, for two reasons.
+#
+# It is never fatal. execute() exits 1 on any non-zero status, so routing pip through it
+# aborted the whole build on PEP 668 distributions (Ubuntu 23.04+, Debian 12+), where pip
+# refuses to touch the system Python with "error: externally-managed-environment". The
+# advice printed just above the call - "try to install meson using your system package
+# manager" - reads like a fallback but was unreachable, because the script had already
+# exited by the time it would have mattered. Only hit when meson is not already present,
+# which is why CI never saw it: the Dockerfiles apt-install meson first.
+#
+# And it retries with --break-system-packages, which is the flag PEP 668 added for exactly
+# this case. Probed rather than assumed: it only exists in pip 23.0 and newer, and older
+# pip errors out on the unknown option. Tried second, not first, so a virtualenv or a
+# non-managed Python takes the plain path and nothing gets overridden that did not need it.
+pip3_install() {
+    if pip3 install "$@" --quiet --upgrade --no-cache-dir --disable-pip-version-check; then
+        return 0
+    fi
+    if pip3 install --help 2>/dev/null | grep -q -- "--break-system-packages"; then
+        echo "pip3 install $* failed; retrying with --break-system-packages."
+        pip3 install "$@" --quiet --upgrade --no-cache-dir --disable-pip-version-check --break-system-packages && return 0
+    fi
+    echo "pip3 install $* failed. Continuing without it."
+    return 1
+}
+
 # Not a package of its own: this bootstraps meson and ninja, which dav1d, the lv2
 # stack and harfbuzz need. It keeps the build_ prefix so the dispatch loop below can
 # call it like every other entry in PACKAGE_BUILD_ORDER.
@@ -986,13 +1015,19 @@ build_meson_and_ninja() {
                 echo "Try to install meson and ninja using pip3."
                 echo "If you get an error (like externally-managed-environment), try to install meson using your system package manager"
                 # meson and ninja can be installed via pip3
-                execute pip3 install pip setuptools --quiet --upgrade --no-cache-dir --disable-pip-version-check
+                pip3_install pip setuptools || true
                 add_python_user_bin_to_path
                 for r in meson ninja; do
                     if ! command_exists "${r}"; then
-                        execute pip3 install "${r}" --quiet --upgrade --no-cache-dir --disable-pip-version-check
+                        pip3_install "${r}" || true
                     fi
                 done
+                hash -r 2>/dev/null || true
+                if command_exists "meson" && command_exists "ninja"; then
+                    MESON_INSTALLED=true
+                else
+                    echo "meson/ninja are still missing. Install them with your system package manager; packages that need them will be skipped."
+                fi
             else
                 echo "Try to install meson using your system package manager to be able to compile ffmpeg with dav1d."
             fi
@@ -1014,7 +1049,7 @@ build_meson_and_ninja() {
         elif command_exists "pip3"; then
             echo "Trying to install a newer meson with pip3."
             add_python_user_bin_to_path
-            pip3 install meson --quiet --upgrade --no-cache-dir --disable-pip-version-check || true
+            pip3_install meson || true
             hash -r 2>/dev/null || true
         fi
         if meson_is_current; then
@@ -2361,6 +2396,69 @@ build_amf() {
     CONFIGURE_OPTIONS+=("--enable-amf")
 }
 
+# Intel Quick Sync Video. Placed after build_vaapi because that is the child device
+# hwcontext_qsv.c picks on Linux - see the runtime note at the end of this function.
+build_libvpl() {
+    if [[ ! "$OSTYPE" == "linux-gnu" ]]; then return; fi
+
+    # QSV is Intel-iGPU-only and upstream ships no Apple or ARM support: the dispatcher's
+    # platform branch is _WIN32/__linux__ with nothing else, and the sources do not compile
+    # on macOS at all. x86_64 is the only combination that means anything here.
+    if [[ "$(uname -m)" != "x86_64" ]]; then return; fi
+
+    # Not built under --full-static. The dispatcher does not implement any codec itself; it
+    # dlopen()s a separately installed runtime (libmfx-gen.so, from intel/vpl-gpu-rt) at
+    # MFXLoad() time - three call sites in mfx_dispatcher_vpl_loader.cpp and mfxloader.cpp,
+    # with no link-time alternative. A fully static glibc binary cannot dlopen reliably, so
+    # enabling it there would register every *_qsv codec and then fail at device init. Same
+    # reasoning as build_vaapi above, which skips itself on the same condition.
+    if [ -n "$LDEXEFLAGS" ]; then return; fi
+
+    if build "libvpl" "${VER_LIBVPL[0]}"; then
+        download "https://github.com/intel/libvpl/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "libvpl-$CURRENT_PACKAGE_VERSION.tar.gz"
+        # INSTALL_DEV stays at its default ON - it is what installs vpl.pc, and ffmpeg's
+        # check is pkg-config-only with no fallback, so turning it off would break the
+        # detection outright. INSTALL_EXAMPLES defaults to ON and only copies example
+        # *source* into share/vpl, so it is switched off. There is no dispatcher-only
+        # toggle to set: the runtime lives in a different repository, and the command line
+        # tools moved out to intel/libvpl-tools, so this tree is dispatcher plus headers.
+        #
+        # MFX_MODULES_DIR is the runtime search directory compiled into the dispatcher. It
+        # defaults to this build's own libdir, i.e. the throwaway workspace, where no
+        # runtime will ever be installed. Pointed at the distribution's multiarch libdir
+        # instead so a system libmfx-gen is found without the user setting
+        # ONEVPL_SEARCH_PATH or LD_LIBRARY_PATH.
+        execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DBUILD_TESTS=OFF -DBUILD_EXAMPLES=OFF -DINSTALL_EXAMPLES=OFF -DMFX_MODULES_DIR=/usr/lib/x86_64-linux-gnu -B build/
+        execute cmake --build build --target install -j "$MJOBS"
+
+        # The dispatcher is entirely C++, but the generated vpl.pc lists neither -lstdc++
+        # nor anything in Libs.private: libvpl/CMakeLists.txt builds its dependent-libs
+        # string from a CXX_LIB variable that is never defined anywhere in the tree, so it
+        # expands to nothing. Without this the very first thing to notice is ffmpeg's own
+        # configure, which link-tests MFXLoad and dies with "libvpl >= 2.6 not found" on a
+        # wall of undefined operator new / __cxa_* symbols. Appended to Libs rather than
+        # Libs.private because the .pc has no Libs.private line to append to.
+        apply_inline_patch "${WORKSPACE}/lib/pkgconfig/vpl.pc" "s|^\(Libs:.*\)|\1 -lstdc++|"
+
+        build_done "libvpl" "$CURRENT_PACKAGE_VERSION"
+    fi
+    CONFIGURE_OPTIONS+=("--enable-libvpl")
+
+    # NOTE: deliberately not paired with --enable-libmfx. ffmpeg 9.0 refuses both at once
+    # ("ERROR: can not use libmfx and libvpl together"), and libmfx is the deprecated path -
+    # its check is pinned to "libmfx >= 1.28 libmfx < 2.0" and it cannot do av1_qsv encode.
+    # Passing --enable-libvpl sets ffmpeg's internal libmfx switch anyway, which is what the
+    # h264_qsv/hevc_qsv/vpp_qsv components hang off, so nothing is lost.
+    #
+    # NOTE: nothing else is required at configure time - qsv_deps is just libmfx. At runtime
+    # it is not standalone: hwcontext_qsv.c chooses its child device purely from compile-time
+    # config and on a non-Windows build only CONFIG_VAAPI is left, so an actual QSV session
+    # additionally needs the vaapi that build_vaapi enables (which in turn needs the libva
+    # development headers present when this script runs) plus Intel's iHD driver installed on
+    # the machine that runs the binary. Without those the codecs are registered but
+    # av_hwdevice_ctx_create(QSV) returns ENOSYS.
+}
+
 build_opencl_headers() {
     if [[ ! "$OSTYPE" == "linux-gnu" ]]; then return; fi
 
@@ -2485,6 +2583,7 @@ PACKAGE_BUILD_ORDER=(
     libplacebo
     nv_codec
     vaapi
+    libvpl
     amf
     opencl_headers
     opencl_icd_loader

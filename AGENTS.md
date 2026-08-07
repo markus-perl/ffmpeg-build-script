@@ -13,11 +13,11 @@ own — the script *is* the project.
 
 | Path | What it is |
 | --- | --- |
-| `build-ffmpeg` | **The script.** ~2,200 lines. Almost every change goes here. |
+| `build-ffmpeg` | **The script.** Almost every change goes here. |
 | `web-install.sh`, `web-install-gpl-and-non-free.sh` | One-liner installers that curl and run `build-ffmpeg`. |
 | `Dockerfile`, `cuda-ubuntu.dockerfile`, `full-static.dockerfile`, `export.dockerfile` | Container builds, all exercised by CI. |
-| `.github/workflows/build.yml` | Lint + five full builds (Linux, macOS, Docker, CUDA Docker, full-static). |
-| `README.md` | 70 KB of end-user documentation. Not contributor docs. |
+| `.github/workflows/build.yml` | `lint`, then five full builds: `build-linux`, `build-macos`, `build-docker`, `build-cuda-ubuntu-docker`, `build-full-static`. |
+| `README.md` | End-user documentation. Not contributor docs. |
 | `.editorconfig` | shfmt reads its indent keys from here. |
 | `packages/`, `workspace/`, `build/` | **Build output. Gitignored. Never read or edit these.** `packages/` holds ~70 extracted upstream source trees; grepping it will bury you in unrelated code. |
 | `docs/`, `plans/` | Gitignored scratch notes. Not part of the project. |
