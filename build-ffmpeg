@@ -209,10 +209,10 @@ download() {
 
     echo "Extracted $DOWNLOAD_FILE"
 
-    cd "$DOWNLOAD_PATH/$TARGETDIR" || (
-        echo "Error has occurred."
+    cd "$DOWNLOAD_PATH/$TARGETDIR" || {
+        echo "Failed to cd into $DOWNLOAD_PATH/$TARGETDIR"
         exit 1
-    )
+    }
 }
 
 print_flags() {
@@ -269,11 +269,7 @@ build() {
 }
 
 library_exists() {
-    if ! [[ -x $(pkg-config --exists --print-errors "$1" 2>&1 >/dev/null) ]]; then
-        return 1
-    fi
-
-    return 0
+    pkg-config --exists "$1"
 }
 
 build_done() {
@@ -337,60 +333,72 @@ while (($# > 0)); do
         echo "$SCRIPT_VERSION"
         exit 0
         ;;
-    -*)
-        if [[ "$1" == "--build" || "$1" =~ '-b' ]]; then
-            bflag='-b'
+    -b | --build)
+        bflag='-b'
+        shift
+        ;;
+    --enable-gpl-and-non-free)
+        CONFIGURE_OPTIONS+=("--enable-nonfree")
+        CONFIGURE_OPTIONS+=("--enable-gpl")
+        NONFREE_AND_GPL=true
+        shift
+        ;;
+    --disable-lv2)
+        DISABLE_LV2=true
+        shift
+        ;;
+    -c | --cleanup)
+        cflag='-c'
+        shift
+        ;;
+    --full-static)
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            echo "Error: A full static binary can only be build on Linux."
+            exit 1
         fi
-        if [[ "$1" == "--enable-gpl-and-non-free" ]]; then
-            CONFIGURE_OPTIONS+=("--enable-nonfree")
-            CONFIGURE_OPTIONS+=("--enable-gpl")
-            NONFREE_AND_GPL=true
+        LDEXEFLAGS="-static -fPIC"
+        CFLAGS+=" -fPIC"
+        CXXFLAGS+=" -fPIC"
+        shift
+        ;;
+    --latest)
+        LATEST=true
+        shift
+        ;;
+    --small)
+        CONFIGURE_OPTIONS+=("--enable-small" "--disable-doc")
+        MANPAGES=0
+        shift
+        ;;
+    --skip-install)
+        SKIPINSTALL=yes
+        if [[ "$AUTOINSTALL" == "yes" ]]; then
+            echo "Error: The option --skip-install cannot be used with --auto-install"
+            exit 1
         fi
-        if [[ "$1" == "--disable-lv2" ]]; then
-            DISABLE_LV2=true
-        fi
-        if [[ "$1" == "--cleanup" || "$1" =~ '-c' && ! "$1" =~ '--' ]]; then
-            cflag='-c'
-            cleanup
-        fi
-        if [[ "$1" == "--full-static" ]]; then
-            if [[ "$OSTYPE" == "darwin"* ]]; then
-                echo "Error: A full static binary can only be build on Linux."
-                exit 1
-            fi
-            LDEXEFLAGS="-static -fPIC"
-            CFLAGS+=" -fPIC"
-            CXXFLAGS+=" -fPIC"
-        fi
-        if [[ "$1" == "--latest" ]]; then
-            LATEST=true
-        fi
-        if [[ "$1" == "--small" ]]; then
-            CONFIGURE_OPTIONS+=("--enable-small" "--disable-doc")
-            MANPAGES=0
-        fi
-        if [[ "$1" == "--skip-install" ]]; then
-            SKIPINSTALL=yes
-            if [[ "$AUTOINSTALL" == "yes" ]]; then
-                echo "Error: The option --skip-install cannot be used with --auto-install"
-                exit 1
-            fi
-        fi
-        if [[ "$1" == "--auto-install" ]]; then
-            AUTOINSTALL=yes
-            if [[ "$SKIPINSTALL" == "yes" ]]; then
-                echo "Error: The option --auto-install cannot be used with --skip-install"
-                exit 1
-            fi
+        shift
+        ;;
+    --auto-install)
+        AUTOINSTALL=yes
+        if [[ "$SKIPINSTALL" == "yes" ]]; then
+            echo "Error: The option --auto-install cannot be used with --skip-install"
+            exit 1
         fi
         shift
         ;;
     *)
+        echo "Unknown option: $1"
         usage
         exit 1
         ;;
     esac
 done
+
+# The cleanup is deferred until the whole command line has been parsed and
+# validated, so a typo cannot trigger destructive work.
+if [ -n "$cflag" ]; then
+    cleanup
+fi
 
 if [ -z "$bflag" ]; then
     if [ -z "$cflag" ]; then
@@ -668,7 +676,6 @@ if command_exists "cargo"; then
             echo "if you get the message 'cannot be built because it requires rustc x.xx or newer, try to run 'rustup update'"
             execute cargo install cargo-c
             download "https://github.com/xiph/rav1e/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz"
-            export RUSTFLAGS="-C target-cpu=native"
             execute cargo cinstall --prefix="${WORKSPACE}" --libdir=lib --library-type=staticlib --crt-static --release
             build_done "rav1e" $CURRENT_PACKAGE_VERSION
         fi
@@ -893,7 +900,7 @@ if ! $DISABLE_LV2; then
                 download "https://gitlab.com/drobilla/zix/-/archive/v$CURRENT_PACKAGE_VERSION/zix-v$CURRENT_PACKAGE_VERSION.tar.gz" "zix-v$CURRENT_PACKAGE_VERSION.tar.gz"
                 execute meson setup build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
                 cd build || exit
-                execute meson configure -Dc_args="-march=native" -Dprefix="${WORKSPACE}" -Dlibdir="${WORKSPACE}"/lib
+                execute meson configure -Dprefix="${WORKSPACE}" -Dlibdir="${WORKSPACE}"/lib
                 execute meson compile
                 execute meson install
                 build_done "zix" $CURRENT_PACKAGE_VERSION
@@ -1367,10 +1374,14 @@ fi
 if [ -d "$CWD/.git" ]; then
     echo -e "\nTemporarily moving .git dir to .git.bak to workaround ffmpeg build bug" #causing ffmpeg version number to be wrong
     mv "$CWD/.git" "$CWD/.git.bak"
-    # if build fails below, .git will remain in the wrong place...
+    # Restore .git even if the build fails and exits early.
+    trap 'if [ -d "$CWD/.git.bak" ]; then mv "$CWD/.git.bak" "$CWD/.git"; fi' EXIT
 fi
 
-build "ffmpeg" "$FFMPEG_VERSION"
+# ffmpeg is intentionally rebuilt on every run because CONFIGURE_OPTIONS vary with the flags used.
+echo ""
+echo "building ffmpeg - version $FFMPEG_VERSION"
+echo "======================="
 download "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n$FFMPEG_VERSION.tar.gz" "FFmpeg-release-$FFMPEG_VERSION.tar.gz"
 # shellcheck disable=SC2086
 
@@ -1413,7 +1424,11 @@ echo ""
 echo "Building done. The following binaries can be found here:"
 echo "- ffmpeg: $WORKSPACE/bin/ffmpeg"
 echo "- ffprobe: $WORKSPACE/bin/ffprobe"
-echo "- ffplay: $WORKSPACE/bin/ffplay"
+if [ -f "$WORKSPACE/bin/ffplay" ]; then
+    echo "- ffplay: $WORKSPACE/bin/ffplay"
+else
+    echo "- ffplay: not built (SDL2 was not available at configure time)"
+fi
 echo ""
 
 INSTALL_NOW=0
@@ -1435,14 +1450,34 @@ if [ "$INSTALL_NOW" = 1 ]; then
     if command_exists "sudo" && [[ $INSTALL_FOLDER == /usr* ]]; then
         SUDO=sudo
     fi
-    $SUDO cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/bin/ffmpeg"
-    $SUDO cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/bin/ffprobe"
-    $SUDO cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/bin/ffplay"
+    if ! $SUDO cp "$WORKSPACE/bin/ffmpeg" "$INSTALL_FOLDER/bin/ffmpeg"; then
+        echo "Error: Failed to install ffmpeg to $INSTALL_FOLDER/bin/ffmpeg" >&2
+        exit 1
+    fi
+    if ! $SUDO cp "$WORKSPACE/bin/ffprobe" "$INSTALL_FOLDER/bin/ffprobe"; then
+        echo "Error: Failed to install ffprobe to $INSTALL_FOLDER/bin/ffprobe" >&2
+        exit 1
+    fi
+    if [ -f "$WORKSPACE/bin/ffplay" ]; then
+        if ! $SUDO cp "$WORKSPACE/bin/ffplay" "$INSTALL_FOLDER/bin/ffplay"; then
+            echo "Error: Failed to install ffplay to $INSTALL_FOLDER/bin/ffplay" >&2
+            exit 1
+        fi
+    else
+        echo "ffplay was not built (SDL2 missing at configure time), skipping its install."
+    fi
     if [ $MANPAGES = 1 ]; then
-        $SUDO mkdir -p "$INSTALL_FOLDER/share/man/man1"
-        $SUDO cp "$WORKSPACE/share/man/man1"/ff* "$INSTALL_FOLDER/share/man/man1"
-        if command_exists "mandb"; then
-            $SUDO mandb -q
+        if [ -d "$WORKSPACE/share/man/man1" ] && compgen -G "$WORKSPACE/share/man/man1/ff*" >/dev/null; then
+            $SUDO mkdir -p "$INSTALL_FOLDER/share/man/man1"
+            if ! $SUDO cp "$WORKSPACE/share/man/man1"/ff* "$INSTALL_FOLDER/share/man/man1"; then
+                echo "Error: Failed to install the manpages to $INSTALL_FOLDER/share/man/man1" >&2
+                exit 1
+            fi
+            if command_exists "mandb"; then
+                $SUDO mandb -q
+            fi
+        else
+            echo "No manpages were built, skipping their install."
         fi
     fi
     echo "Done. FFmpeg is now installed to your system."
