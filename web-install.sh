@@ -2,8 +2,8 @@
 # Helper script to download and run the build-ffmpeg script.
 
 make_dir() {
-    if [ ! -d $1 ]; then
-        if ! mkdir $1; then
+    if [ ! -d "$1" ]; then
+        if ! mkdir "$1"; then
             printf "\n Failed to create dir %s" "$1"
             exit 1
         fi
@@ -30,8 +30,8 @@ echo "========================================="
 echo ""
 
 echo "First we create the ffmpeg build directory $TARGET"
-make_dir $TARGET
-cd $TARGET
+make_dir "$TARGET"
+cd "$TARGET" || exit 1
 
 echo "Now we download and execute the build script"
 echo ""

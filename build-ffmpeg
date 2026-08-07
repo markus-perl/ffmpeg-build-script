@@ -3,6 +3,11 @@
 # HOMEPAGE: https://github.com/markus-perl/ffmpeg-build-script
 # LICENSE: https://github.com/markus-perl/ffmpeg-build-script/blob/master/LICENSE
 
+# Every build_<package> function is invoked indirectly through the
+# PACKAGE_BUILD_ORDER dispatch loop at the bottom of this file, and the helpers
+# they use are therefore unreachable to ShellCheck's call graph as well.
+# shellcheck disable=SC2329
+
 PROGNAME=$(basename "$0")
 FFMPEG_VERSION=9.0
 SCRIPT_VERSION=1.60
@@ -21,6 +26,7 @@ SCRIPT_VERSION=1.60
 ## download. Deliberately no associative arrays here: /bin/bash on macOS is
 ## still 3.2, where "declare -A" is a fatal error - indexed arrays are fine.
 ##
+# shellcheck disable=SC2034 # read indirectly by download(), see the note above
 VER_FFMPEG=("$FFMPEG_VERSION" "d97647ace36a307f17ba2bca052d68937487bed8682e1eb9b6737076a9c442b7")
 
 ## build tools
@@ -203,7 +209,8 @@ if [[ ("$(uname -m)" == "arm64") && ("$OSTYPE" == "darwin"*) ]]; then
     # If arm64 AND darwin (macOS)
     export ARCH=arm64
     export MACOSX_DEPLOYMENT_TARGET=11.0
-    export CXX=$(which clang++)
+    CXX=$(which clang++)
+    export CXX
     MACOS_SILICON=true
     echo "Apple Silicon detected."
 
@@ -647,16 +654,17 @@ fi
 build_giflib() {
     if build "giflib" "${VER_GIFLIB[0]}"; then
         download "https://sf-eu-introserv-1.dl.sourceforge.net/project/giflib/giflib-6.x/giflib-$CURRENT_PACKAGE_VERSION.tar.gz"
-        cd "${PACKAGES}"/giflib-$CURRENT_PACKAGE_VERSION || exit
+        cd "${PACKAGES}/giflib-$CURRENT_PACKAGE_VERSION" || exit
         # giflib 6.1.3's Darwin rule builds libutil.dylib without libgif.dylib,
         # although qprintf.c references GifErrorString from libgif.
+        # shellcheck disable=SC2016 # $(CC) etc. are make variables, not shell expansions
         apply_inline_patch Makefile 's/$(CC) $(CFLAGS) -dynamiclib -current_version $(LIBVER) $(UOBJECTS) -o $(LIBUTILSO)/$(CC) $(CFLAGS) -dynamiclib -current_version $(LIBVER) $(UOBJECTS) $(LIBGIFSO) -o $(LIBUTILSO)/'
         #multicore build disabled for this library
         execute make
         # the default install target pulls in install-man and install-doc, and building
         # the docs fails if the tools needed are not installed. only install what ffmpeg needs.
         execute make PREFIX="${WORKSPACE}" install-bin install-include install-lib
-        build_done "giflib" $CURRENT_PACKAGE_VERSION
+        build_done "giflib" "$CURRENT_PACKAGE_VERSION"
     fi
 }
 
@@ -679,7 +687,7 @@ build_pkg_config() {
         execute ./configure --silent --prefix="${WORKSPACE}" --with-pc-path="${WORKSPACE}"/lib/pkgconfig --with-internal-glib CFLAGS="${CFLAGS}${PKG_CONFIG_STD_FLAG}"
         execute make -j "$MJOBS"
         execute make install
-        build_done "pkg-config" $CURRENT_PACKAGE_VERSION
+        build_done "pkg-config" "$CURRENT_PACKAGE_VERSION"
     fi
 }
 
@@ -689,7 +697,7 @@ build_yasm() {
         execute ./configure --prefix="${WORKSPACE}"
         execute make -j "$MJOBS"
         execute make install
-        build_done "yasm" $CURRENT_PACKAGE_VERSION
+        build_done "yasm" "$CURRENT_PACKAGE_VERSION"
     fi
 }
 
@@ -699,7 +707,7 @@ build_nasm() {
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
         execute make -j "$MJOBS"
         execute make install
-        build_done "nasm" $CURRENT_PACKAGE_VERSION
+        build_done "nasm" "$CURRENT_PACKAGE_VERSION"
     fi
 }
 
@@ -709,7 +717,7 @@ build_zlib() {
         execute ./configure --static --prefix="${WORKSPACE}"
         execute make -j "$MJOBS"
         execute make install
-        build_done "zlib" $CURRENT_PACKAGE_VERSION
+        build_done "zlib" "$CURRENT_PACKAGE_VERSION"
     fi
 }
 
@@ -719,7 +727,7 @@ build_m4() {
         execute ./configure --prefix="${WORKSPACE}"
         execute make -j "$MJOBS"
         execute make install
-        build_done "m4" $CURRENT_PACKAGE_VERSION
+        build_done "m4" "$CURRENT_PACKAGE_VERSION"
     fi
 }
 
@@ -729,7 +737,7 @@ build_autoconf() {
         execute ./configure --prefix="${WORKSPACE}"
         execute make -j "$MJOBS"
         execute make install
-        build_done "autoconf" $CURRENT_PACKAGE_VERSION
+        build_done "autoconf" "$CURRENT_PACKAGE_VERSION"
     fi
 }
 
@@ -739,7 +747,7 @@ build_automake() {
         execute ./configure --prefix="${WORKSPACE}"
         execute make -j "$MJOBS"
         execute make install
-        build_done "automake" $CURRENT_PACKAGE_VERSION
+        build_done "automake" "$CURRENT_PACKAGE_VERSION"
     fi
 }
 
@@ -749,10 +757,34 @@ build_libtool() {
         execute ./configure --prefix="${WORKSPACE}" --enable-static --disable-shared
         execute make -j "$MJOBS"
         execute make install
-        build_done "libtool" $CURRENT_PACKAGE_VERSION
+        build_done "libtool" "$CURRENT_PACKAGE_VERSION"
     fi
 }
 
+##
+## TLS/crypto stack
+##
+## ffmpeg's configure refuses to enable GnuTLS and OpenSSL at the same time
+## ("GnuTLS and OpenSSL must not be enabled at the same time"), so exactly one
+## crypto stack is built per license mode. That is why the next five functions
+## come in two mirror-image groups, each gated on $NONFREE_AND_GPL:
+##
+##   --enable-gpl-and-non-free  ->  gettext, openssl
+##   default (LGPL)             ->  gmp, nettle, gnutls
+##
+## OpenSSL is on the non-free side because its license has long been treated as
+## GPL-incompatible, so a GPL ffmpeg linked against it is not redistributable --
+## a build that already accepts --enable-gpl-and-non-free has given that up
+## anyway. libsrt, also non-free-gated here, needs OpenSSL as its crypto
+## backend. GnuTLS is LGPL and is therefore the default path, though see the
+## caveat in build_gnutls: it is currently built but never enabled.
+
+# gettext is only needed on the non-free path, and not for OpenSSL itself: zvbi
+# is the one package built from a plain GitHub archive with no pre-generated
+# configure, so it runs ./autogen.sh, and its configure.ac calls
+# AM_GNU_GETTEXT([external]) -- which requires autopoint from gettext. zvbi is
+# non-free-gated, so gettext inherits the same gate. (Both were added together
+# in 9c89658.)
 build_gettext() {
     if ! $NONFREE_AND_GPL; then return; fi
 
@@ -761,7 +793,7 @@ build_gettext() {
         execute ./configure --prefix="${WORKSPACE}" --enable-static --disable-shared
         execute make -j "$MJOBS"
         execute make install
-        build_done "gettext" $CURRENT_PACKAGE_VERSION
+        build_done "gettext" "$CURRENT_PACKAGE_VERSION"
     fi
 }
 
@@ -773,11 +805,13 @@ build_openssl() {
         execute ./Configure --prefix="${WORKSPACE}" --openssldir="${WORKSPACE}" --libdir="lib" --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib no-shared zlib
         execute make -j "$MJOBS"
         execute make install_sw
-        build_done "openssl" $CURRENT_PACKAGE_VERSION
+        build_done "openssl" "$CURRENT_PACKAGE_VERSION"
     fi
     CONFIGURE_OPTIONS+=("--enable-openssl")
 }
 
+# gmp and nettle exist only as GnuTLS dependencies, so they carry the inverse
+# gate of build_openssl above: skipped whenever OpenSSL is the chosen backend.
 build_gmp() {
     if $NONFREE_AND_GPL; then return; fi
 
@@ -786,7 +820,7 @@ build_gmp() {
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
         execute make -j "$MJOBS"
         execute make install
-        build_done "gmp" $CURRENT_PACKAGE_VERSION
+        build_done "gmp" "$CURRENT_PACKAGE_VERSION"
     fi
 }
 
@@ -798,10 +832,25 @@ build_nettle() {
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-openssl --disable-documentation --libdir="${WORKSPACE}"/lib CPPFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}"
         execute make -j "$MJOBS"
         execute make install
-        build_done "nettle" $CURRENT_PACKAGE_VERSION
+        build_done "nettle" "$CURRENT_PACKAGE_VERSION"
     fi
 }
 
+# Two oddities here, both dating from Nov 2022 and neither explained in the
+# commits that introduced them (aea1ed7 "update", 3f61d36 "ubuntu update"):
+#
+#   1. The arm64 skip. GnuTLS was added without it (d7f9078) and the guard
+#      appeared later as `if ! $MACOS_M1`, i.e. GnuTLS 3.6.16 would not build on
+#      Apple Silicon. 3f61d36 rewrote the test in terms of $ARCH, which widened
+#      the skip from "macOS on M1" to "any arm64 host", Linux/aarch64 included.
+#      Worth revisiting: the pinned version is now 3.8.x, not 3.6.16.
+#   2. The commented-out CONFIGURE_OPTIONS below. Because of it, an LGPL build
+#      compiles the whole gmp/nettle/gnutls chain and then does not pass
+#      --enable-gnutls to ffmpeg, so the default build ends up with no TLS
+#      backend at all (no https support) unless ffmpeg's configure autodetects
+#      a system one. Re-enabling the flag means the arm64 skip above turns into
+#      a hard difference in features between architectures, which is presumably
+#      why it was commented out rather than fixed.
 build_gnutls() {
     if $NONFREE_AND_GPL; then return; fi
     if [[ $ARCH == 'arm64' ]]; then return; fi
@@ -813,7 +862,7 @@ build_gnutls() {
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-doc --disable-tools --disable-cxx --disable-tests --disable-gtk-doc-html --disable-libdane --disable-nls --enable-local-libopts --disable-guile --with-included-libtasn1 --with-included-unistring --without-p11-kit CPPFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}"
         execute make -j "$MJOBS"
         execute make install
-        build_done "gnutls" $CURRENT_PACKAGE_VERSION
+        build_done "gnutls" "$CURRENT_PACKAGE_VERSION"
     fi
     # CONFIGURE_OPTIONS+=("--enable-gmp" "--enable-gnutls")
 }
@@ -826,7 +875,7 @@ build_cmake() {
         execute ./configure --prefix="${WORKSPACE}" --parallel="${MJOBS}" -- -DCMAKE_USE_OPENSSL=OFF
         execute make -j "$MJOBS"
         execute make install
-        build_done "cmake" $CURRENT_PACKAGE_VERSION
+        build_done "cmake" "$CURRENT_PACKAGE_VERSION"
         export CXXFLAGS=$CXXFLAGS_BACKUP
     fi
 }
@@ -874,8 +923,8 @@ build_meson_and_ninja() {
                     export PATH="$PATH:$HOME/.local/bin"
                 fi
                 for r in meson ninja; do
-                    if ! command_exists ${r}; then
-                        execute pip3 install ${r} --quiet --upgrade --no-cache-dir --disable-pip-version-check
+                    if ! command_exists "${r}"; then
+                        execute pip3 install "${r}" --quiet --upgrade --no-cache-dir --disable-pip-version-check
                     fi
                 done
             else
@@ -906,7 +955,7 @@ build_dav1d() {
             export CFLAGS=$CFLAGSBACKUP
         fi
 
-        build_done "dav1d" $CURRENT_PACKAGE_VERSION
+        build_done "dav1d" "$CURRENT_PACKAGE_VERSION"
     fi
     CONFIGURE_OPTIONS+=("--enable-libdav1d")
 }
@@ -915,12 +964,12 @@ build_svtav1() {
     if build "svtav1" "${VER_SVTAV1[0]}"; then
         # Last known working commit which passed CI Tests from HEAD branch
         download "https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/v$CURRENT_PACKAGE_VERSION/SVT-AV1-v$CURRENT_PACKAGE_VERSION.tar.gz" "svtav1-$CURRENT_PACKAGE_VERSION.tar.gz"
-        cd "${PACKAGES}"/svtav1-$CURRENT_PACKAGE_VERSION/Build/linux || exit
+        cd "${PACKAGES}/svtav1-$CURRENT_PACKAGE_VERSION/Build/linux" || exit
         execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=off -DBUILD_SHARED_LIBS=OFF ../.. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
         execute make -j "$MJOBS"
         execute make install
         execute cp SvtAv1Enc.pc "${WORKSPACE}/lib/pkgconfig/"
-        build_done "svtav1" $CURRENT_PACKAGE_VERSION
+        build_done "svtav1" "$CURRENT_PACKAGE_VERSION"
     fi
     CONFIGURE_OPTIONS+=("--enable-libsvtav1")
 }
@@ -934,7 +983,7 @@ build_rav1e() {
         execute cargo install cargo-c
         download "https://github.com/xiph/rav1e/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz"
         execute cargo cinstall --prefix="${WORKSPACE}" --libdir=lib --library-type=staticlib --crt-static --release
-        build_done "rav1e" $CURRENT_PACKAGE_VERSION
+        build_done "rav1e" "$CURRENT_PACKAGE_VERSION"
     fi
     CONFIGURE_OPTIONS+=("--enable-librav1e")
 }
@@ -944,7 +993,7 @@ build_x264() {
 
     if build "x264" "${VER_X264[0]}"; then
         download "https://code.videolan.org/videolan/x264/-/archive/$CURRENT_PACKAGE_VERSION/x264-$CURRENT_PACKAGE_VERSION.tar.gz" "x264-$CURRENT_PACKAGE_VERSION.tar.gz"
-        cd "${PACKAGES}"/x264-$CURRENT_PACKAGE_VERSION || exit
+        cd "${PACKAGES}/x264-$CURRENT_PACKAGE_VERSION" || exit
 
         if [[ "$OSTYPE" == "linux-gnu" ]]; then
             execute ./configure --prefix="${WORKSPACE}" --enable-static --enable-pic CXXFLAGS="-fPIC ${CXXFLAGS}"
@@ -956,7 +1005,7 @@ build_x264() {
         execute make install
         execute make install-lib-static
 
-        build_done "x264" $CURRENT_PACKAGE_VERSION
+        build_done "x264" "$CURRENT_PACKAGE_VERSION"
     fi
     CONFIGURE_OPTIONS+=("--enable-libx264")
 }
@@ -1007,7 +1056,7 @@ EOF
             sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "${WORKSPACE}/lib/pkgconfig/x265.pc" # The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
         fi
 
-        build_done "x265" $CURRENT_PACKAGE_VERSION
+        build_done "x265" "$CURRENT_PACKAGE_VERSION"
     fi
     CONFIGURE_OPTIONS+=("--enable-libx265")
 }
@@ -1026,7 +1075,7 @@ build_libvpx() {
         execute make -j "$MJOBS"
         execute make install
 
-        build_done "libvpx" $CURRENT_PACKAGE_VERSION
+        build_done "libvpx" "$CURRENT_PACKAGE_VERSION"
     fi
     CONFIGURE_OPTIONS+=("--enable-libvpx")
 }
@@ -1049,7 +1098,7 @@ build_xvidcore() {
             execute rm "${WORKSPACE}"/lib/libxvidcore.so*
         fi
 
-        build_done "xvidcore" $CURRENT_PACKAGE_VERSION
+        build_done "xvidcore" "$CURRENT_PACKAGE_VERSION"
     fi
     CONFIGURE_OPTIONS+=("--enable-libxvid")
 }
@@ -1076,7 +1125,7 @@ build_vid_stab() {
         execute make
         execute make install
 
-        build_done "vid_stab" $CURRENT_PACKAGE_VERSION
+        build_done "vid_stab" "$CURRENT_PACKAGE_VERSION"
     fi
     CONFIGURE_OPTIONS+=("--enable-libvidstab")
 }
@@ -1094,7 +1143,7 @@ build_av1() {
         execute make -j "$MJOBS"
         execute make install
 
-        build_done "av1" $CURRENT_PACKAGE_VERSION
+        build_done "av1" "$CURRENT_PACKAGE_VERSION"
     fi
     CONFIGURE_OPTIONS+=("--enable-libaom")
 }
@@ -1102,13 +1151,13 @@ build_av1() {
 build_zimg() {
     if build "zimg" "${VER_ZIMG[0]}"; then
         download "https://github.com/sekrit-twc/zimg/archive/refs/tags/release-$CURRENT_PACKAGE_VERSION.tar.gz" "zimg-$CURRENT_PACKAGE_VERSION.tar.gz" "zimg"
-        cd zimg-release-$CURRENT_PACKAGE_VERSION || exit
+        cd "zimg-release-$CURRENT_PACKAGE_VERSION" || exit
         execute "${WORKSPACE}/bin/libtoolize" -i -f -q
         execute ./autogen.sh --prefix="${WORKSPACE}"
         execute ./configure --prefix="${WORKSPACE}" --enable-static --disable-shared
         execute make -j "$MJOBS"
         execute make install
-        build_done "zimg" $CURRENT_PACKAGE_VERSION
+        build_done "zimg" "$CURRENT_PACKAGE_VERSION"
     fi
     CONFIGURE_OPTIONS+=("--enable-libzimg")
 }
@@ -1127,7 +1176,7 @@ build_lv2() {
         execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
         execute ninja -C build
         execute ninja -C build install
-        build_done "lv2" $CURRENT_PACKAGE_VERSION
+        build_done "lv2" "$CURRENT_PACKAGE_VERSION"
     fi
 }
 
@@ -1138,7 +1187,7 @@ build_waflib() {
 
     if build "waflib" "${VER_WAFLIB[0]}"; then
         download "https://gitlab.com/drobilla/autowaf/-/archive/$CURRENT_PACKAGE_VERSION/autowaf-$CURRENT_PACKAGE_VERSION.tar.gz" "autowaf.tar.gz"
-        build_done "waflib" $CURRENT_PACKAGE_VERSION
+        build_done "waflib" "$CURRENT_PACKAGE_VERSION"
     fi
 }
 
@@ -1152,7 +1201,7 @@ build_serd() {
         execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
         execute ninja -C build
         execute ninja -C build install
-        build_done "serd" $CURRENT_PACKAGE_VERSION
+        build_done "serd" "$CURRENT_PACKAGE_VERSION"
     fi
 }
 
@@ -1166,7 +1215,7 @@ build_pcre() {
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
         execute make -j "$MJOBS"
         execute make install
-        build_done "pcre" $CURRENT_PACKAGE_VERSION
+        build_done "pcre" "$CURRENT_PACKAGE_VERSION"
     fi
 }
 
@@ -1182,7 +1231,7 @@ build_zix() {
         execute meson configure -Dprefix="${WORKSPACE}" -Dlibdir="${WORKSPACE}"/lib
         execute meson compile
         execute meson install
-        build_done "zix" $CURRENT_PACKAGE_VERSION
+        build_done "zix" "$CURRENT_PACKAGE_VERSION"
     fi
 }
 
@@ -1196,7 +1245,7 @@ build_sord() {
         execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
         execute ninja -C build
         execute ninja -C build install
-        build_done "sord" $CURRENT_PACKAGE_VERSION
+        build_done "sord" "$CURRENT_PACKAGE_VERSION"
     fi
 }
 
@@ -1210,7 +1259,7 @@ build_sratom() {
         execute meson build --prefix="${WORKSPACE}" -Ddocs=disabled --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
         execute ninja -C build
         execute ninja -C build install
-        build_done "sratom" $CURRENT_PACKAGE_VERSION
+        build_done "sratom" "$CURRENT_PACKAGE_VERSION"
     fi
 }
 
@@ -1224,7 +1273,7 @@ build_lilv() {
         execute meson build --prefix="${WORKSPACE}" -Ddocs=disabled --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib -Dcpp_std=c++11
         execute ninja -C build
         execute ninja -C build install
-        build_done "lilv" $CURRENT_PACKAGE_VERSION
+        build_done "lilv" "$CURRENT_PACKAGE_VERSION"
     fi
     CFLAGS+=" -I$WORKSPACE/include/lilv-0"
 
@@ -1238,7 +1287,7 @@ build_opencore() {
         execute make -j "$MJOBS"
         execute make install
 
-        build_done "opencore" $CURRENT_PACKAGE_VERSION
+        build_done "opencore" "$CURRENT_PACKAGE_VERSION"
     fi
     CONFIGURE_OPTIONS+=("--enable-libopencore_amrnb" "--enable-libopencore_amrwb")
 }
@@ -1252,7 +1301,7 @@ build_lame() {
         execute make -j "$MJOBS"
         execute make install
 
-        build_done "lame" $CURRENT_PACKAGE_VERSION
+        build_done "lame" "$CURRENT_PACKAGE_VERSION"
     fi
     CONFIGURE_OPTIONS+=("--enable-libmp3lame")
 }
@@ -1264,7 +1313,7 @@ build_opus() {
         execute make -j "$MJOBS"
         execute make install
 
-        build_done "opus" $CURRENT_PACKAGE_VERSION
+        build_done "opus" "$CURRENT_PACKAGE_VERSION"
     fi
     CONFIGURE_OPTIONS+=("--enable-libopus")
 }
@@ -1275,7 +1324,7 @@ build_libogg() {
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
         execute make -j "$MJOBS"
         execute make install
-        build_done "libogg" $CURRENT_PACKAGE_VERSION
+        build_done "libogg" "$CURRENT_PACKAGE_VERSION"
     fi
 }
 
@@ -1288,7 +1337,7 @@ build_libvorbis() {
         execute make -j "$MJOBS"
         execute make install
 
-        build_done "libvorbis" $CURRENT_PACKAGE_VERSION
+        build_done "libvorbis" "$CURRENT_PACKAGE_VERSION"
     fi
     CONFIGURE_OPTIONS+=("--enable-libvorbis")
 }
@@ -1300,7 +1349,7 @@ build_libtheora() {
         execute make -j "$MJOBS"
         execute make install
 
-        build_done "libtheora" $CURRENT_PACKAGE_VERSION
+        build_done "libtheora" "$CURRENT_PACKAGE_VERSION"
     fi
     CONFIGURE_OPTIONS+=("--enable-libtheora")
 }
@@ -1314,7 +1363,7 @@ build_fdk_aac() {
         execute make -j "$MJOBS"
         execute make install
 
-        build_done "fdk_aac" $CURRENT_PACKAGE_VERSION
+        build_done "fdk_aac" "$CURRENT_PACKAGE_VERSION"
     fi
     CONFIGURE_OPTIONS+=("--enable-libfdk-aac")
 }
@@ -1323,12 +1372,13 @@ build_soxr() {
     if build "soxr" "${VER_SOXR[0]}"; then
         download "https://sourceforge.net/projects/soxr/files/soxr-$CURRENT_PACKAGE_VERSION-Source.tar.xz/download?use_mirror=gigenet" "soxr-$CURRENT_PACKAGE_VERSION.tar.xz"
 
-        mkdir build && cd build
+        mkdir build || exit
+        cd build || exit
         execute cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DBUILD_SHARED_LIBS:bool=off -DWITH_OPENMP:bool=off -DBUILD_TESTS:bool=off -Wno-dev ..
         execute make -j "$MJOBS"
         execute make install
 
-        build_done "soxr" $CURRENT_PACKAGE_VERSION
+        build_done "soxr" "$CURRENT_PACKAGE_VERSION"
     fi
     CONFIGURE_OPTIONS+=("--enable-libsoxr")
 }
@@ -1343,7 +1393,7 @@ build_libtiff() {
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-dependency-tracking --disable-lzma --disable-webp --disable-zstd --without-x
         execute make -j "$MJOBS"
         execute make install
-        build_done "libtiff" $CURRENT_PACKAGE_VERSION
+        build_done "libtiff" "$CURRENT_PACKAGE_VERSION"
     fi
 }
 
@@ -1355,7 +1405,7 @@ build_libpng() {
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
         execute make -j "$MJOBS"
         execute make install
-        build_done "libpng" $CURRENT_PACKAGE_VERSION
+        build_done "libpng" "$CURRENT_PACKAGE_VERSION"
     fi
 }
 
@@ -1365,7 +1415,7 @@ build_lcms2() {
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
         execute make -j "$MJOBS"
         execute make install
-        build_done "lcms2" $CURRENT_PACKAGE_VERSION
+        build_done "lcms2" "$CURRENT_PACKAGE_VERSION"
     fi
     # lcms2 is a libjxl dependency, but ffmpeg also uses it for ICC profile support
     # in the image decoders and for the iccdetect and iccgen filters.
@@ -1377,12 +1427,13 @@ build_libjxl() {
         download "https://github.com/libjxl/libjxl/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "libjxl-$CURRENT_PACKAGE_VERSION.tar.gz"
         # currently needed to fix linking of static builds in non-C++ applications
         apply_inline_patch lib/threads/libjxl_threads.pc.in "s/-ljxl_threads/-ljxl_threads @JPEGXL_THREADS_PUBLIC_LIBS@/g"
+        # shellcheck disable=SC1003,SC2016 # the $'\n' splice and ${PKGCONFIG_CXX_LIB} are for sed/cmake, not the shell
         apply_inline_patch lib/jxl_threads.cmake 's/set(JPEGXL_REQUIRES_TYPE "Requires")/set(JPEGXL_REQUIRES_TYPE "Requires")\'$'\n''  set(JPEGXL_THREADS_PUBLIC_LIBS "-lm ${PKGCONFIG_CXX_LIB}")/g'
         execute ./deps.sh
         execute cmake -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=off -DENABLE_STATIC=ON -DCMAKE_BUILD_TYPE=Release -DJPEGXL_ENABLE_BENCHMARK=OFF -DJPEGXL_ENABLE_DOXYGEN=OFF -DJPEGXL_ENABLE_MANPAGES=OFF -DJPEGXL_ENABLE_JPEGLI_LIBJPEG=OFF -DJPEGXL_ENABLE_JPEGLI=ON -DJPEGXL_TEST_TOOLS=OFF -DJPEGXL_ENABLE_JNI=OFF -DBUILD_TESTING=OFF -DJPEGXL_ENABLE_SKCMS=OFF .
         execute make -j "$MJOBS"
         execute make install
-        build_done "libjxl" $CURRENT_PACKAGE_VERSION
+        build_done "libjxl" "$CURRENT_PACKAGE_VERSION"
     fi
     CONFIGURE_OPTIONS+=("--enable-libjxl")
     EXTRALIBS="${EXTRALIBS} -llcms2"
@@ -1399,7 +1450,7 @@ build_libwebp() {
         execute make -j "$MJOBS"
         execute make install
 
-        build_done "libwebp" $CURRENT_PACKAGE_VERSION
+        build_done "libwebp" "$CURRENT_PACKAGE_VERSION"
     fi
     CONFIGURE_OPTIONS+=("--enable-libwebp")
 }
@@ -1421,7 +1472,7 @@ build_libsdl() {
         execute make -j "$MJOBS"
         execute make install
 
-        build_done "libsdl" $CURRENT_PACKAGE_VERSION
+        build_done "libsdl" "$CURRENT_PACKAGE_VERSION"
     fi
 }
 
@@ -1431,7 +1482,7 @@ build_freetype2() {
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
         execute make -j "$MJOBS"
         execute make install
-        build_done "FreeType2" $CURRENT_PACKAGE_VERSION
+        build_done "FreeType2" "$CURRENT_PACKAGE_VERSION"
     fi
 
     CONFIGURE_OPTIONS+=("--enable-libfreetype")
@@ -1450,7 +1501,7 @@ build_libxml2() {
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --without-python --without-debug --without-docs
         execute make -j "$MJOBS"
         execute make install
-        build_done "libxml2" $CURRENT_PACKAGE_VERSION
+        build_done "libxml2" "$CURRENT_PACKAGE_VERSION"
     fi
     CONFIGURE_OPTIONS+=("--enable-libxml2")
 }
@@ -1461,7 +1512,7 @@ build_fribidi() {
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-debug --disable-deprecated
         execute make -j "$MJOBS"
         execute make install
-        build_done "fribidi" $CURRENT_PACKAGE_VERSION
+        build_done "fribidi" "$CURRENT_PACKAGE_VERSION"
     fi
     CONFIGURE_OPTIONS+=("--enable-libfribidi")
 }
@@ -1478,7 +1529,7 @@ build_harfbuzz() {
             -Dtests=disabled -Ddocs=disabled -Dbenchmark=disabled -Dutilities=disabled -Dintrospection=disabled
         execute ninja -C build
         execute ninja -C build install
-        build_done "harfbuzz" $CURRENT_PACKAGE_VERSION
+        build_done "harfbuzz" "$CURRENT_PACKAGE_VERSION"
     fi
     CONFIGURE_OPTIONS+=("--enable-libharfbuzz")
 }
@@ -1491,7 +1542,7 @@ build_gperf() {
         execute ./configure --prefix="${WORKSPACE}"
         execute make -j "$MJOBS"
         execute make install
-        build_done "gperf" $CURRENT_PACKAGE_VERSION
+        build_done "gperf" "$CURRENT_PACKAGE_VERSION"
     fi
 }
 
@@ -1506,7 +1557,7 @@ build_fontconfig() {
         execute ./configure PKG_CONFIG="pkg-config --static" --prefix="${WORKSPACE}" --disable-shared --enable-static --enable-libxml2 --disable-docs --disable-nls --disable-cache-build
         execute make -j "$MJOBS"
         execute make install
-        build_done "fontconfig" $CURRENT_PACKAGE_VERSION
+        build_done "fontconfig" "$CURRENT_PACKAGE_VERSION"
     fi
     CONFIGURE_OPTIONS+=("--enable-libfontconfig")
 }
@@ -1519,7 +1570,7 @@ build_libunibreak() {
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
         execute make -j "$MJOBS"
         execute make install
-        build_done "libunibreak" $CURRENT_PACKAGE_VERSION
+        build_done "libunibreak" "$CURRENT_PACKAGE_VERSION"
     fi
 }
 
@@ -1529,7 +1580,7 @@ build_libass() {
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --enable-fontconfig --enable-libunibreak --disable-test --disable-profile --disable-fuzz
         execute make -j "$MJOBS"
         execute make install
-        build_done "libass" $CURRENT_PACKAGE_VERSION
+        build_done "libass" "$CURRENT_PACKAGE_VERSION"
     fi
     CONFIGURE_OPTIONS+=("--enable-libass")
 }
@@ -1541,7 +1592,7 @@ build_vapoursynth() {
         download "https://github.com/vapoursynth/vapoursynth/archive/R$CURRENT_PACKAGE_VERSION.tar.gz"
         execute mkdir -p "${WORKSPACE}/include/vapoursynth"
         execute cp -r "include/." "${WORKSPACE}/include/vapoursynth/"
-        build_done "VapourSynth" $CURRENT_PACKAGE_VERSION
+        build_done "VapourSynth" "$CURRENT_PACKAGE_VERSION"
     fi
 
     CONFIGURE_OPTIONS+=("--enable-vapoursynth")
@@ -1560,7 +1611,7 @@ build_avisynth() {
         # expects but which are not part of the default target.
         execute cmake --build build/ --target VersionGen
         execute cmake --build build/ --target install
-        build_done "avisynth" $CURRENT_PACKAGE_VERSION
+        build_done "avisynth" "$CURRENT_PACKAGE_VERSION"
     fi
     CONFIGURE_OPTIONS+=("--enable-avisynth")
 }
@@ -1581,7 +1632,7 @@ build_srt() {
             sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "${WORKSPACE}"/lib/pkgconfig/srt.pc # The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
         fi
 
-        build_done "srt" $CURRENT_PACKAGE_VERSION
+        build_done "srt" "$CURRENT_PACKAGE_VERSION"
     fi
     CONFIGURE_OPTIONS+=("--enable-libsrt")
 }
@@ -1595,7 +1646,7 @@ build_zvbi() {
         execute ./configure CFLAGS="-I${WORKSPACE}/include/libpng16 ${CFLAGS}" --prefix="${WORKSPACE}" --enable-static --disable-shared
         execute make -j "$MJOBS"
         execute make install
-        build_done "zvbi" $CURRENT_PACKAGE_VERSION
+        build_done "zvbi" "$CURRENT_PACKAGE_VERSION"
     fi
     CONFIGURE_OPTIONS+=("--enable-libzvbi")
 }
@@ -1614,7 +1665,7 @@ build_libzmq() {
         apply_inline_patch src/proxy.cpp "s/stats_proxy stats = {0}/stats_proxy stats = {{{0, 0}, {0, 0}}, {{0, 0}, {0, 0}}}/g"
         execute make -j "$MJOBS"
         execute make install
-        build_done "libzmq" $CURRENT_PACKAGE_VERSION
+        build_done "libzmq" "$CURRENT_PACKAGE_VERSION"
     fi
     CONFIGURE_OPTIONS+=("--enable-libzmq")
 }
@@ -1629,7 +1680,7 @@ build_vulkan_headers() {
         execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -B build/
         cd build/ || exit
         execute make install
-        build_done "vulkan-headers" $CURRENT_PACKAGE_VERSION
+        build_done "vulkan-headers" "$CURRENT_PACKAGE_VERSION"
     fi
     CONFIGURE_OPTIONS+=("--enable-vulkan")
 
@@ -1646,7 +1697,7 @@ build_nv_codec() {
             download "https://github.com/FFmpeg/nv-codec-headers/releases/download/n$CURRENT_PACKAGE_VERSION/nv-codec-headers-$CURRENT_PACKAGE_VERSION.tar.gz"
             execute make PREFIX="${WORKSPACE}"
             execute make PREFIX="${WORKSPACE}" install
-            build_done "nv-codec" $CURRENT_PACKAGE_VERSION
+            build_done "nv-codec" "$CURRENT_PACKAGE_VERSION"
         fi
         CFLAGS+=" -I/usr/local/cuda/include"
         LDFLAGS+=" -L/usr/local/cuda/lib64"
@@ -1697,8 +1748,8 @@ build_amf() {
         download "https://github.com/GPUOpen-LibrariesAndSDKs/AMF/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "AMF-$CURRENT_PACKAGE_VERSION.tar.gz" "AMF-$CURRENT_PACKAGE_VERSION"
         execute rm -rf "${WORKSPACE}/include/AMF"
         execute mkdir -p "${WORKSPACE}/include/AMF"
-        execute cp -r "${PACKAGES}"/AMF-$CURRENT_PACKAGE_VERSION/AMF-$CURRENT_PACKAGE_VERSION/amf/public/include/* "${WORKSPACE}/include/AMF/"
-        build_done "amf" $CURRENT_PACKAGE_VERSION
+        execute cp -r "${PACKAGES}/AMF-$CURRENT_PACKAGE_VERSION/AMF-$CURRENT_PACKAGE_VERSION/amf/public/include/"* "${WORKSPACE}/include/AMF/"
+        build_done "amf" "$CURRENT_PACKAGE_VERSION"
     fi
     CONFIGURE_OPTIONS+=("--enable-amf")
 }
@@ -1710,7 +1761,7 @@ build_opencl_headers() {
         download "https://github.com/KhronosGroup/OpenCL-Headers/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "OpenCL-Headers-$CURRENT_PACKAGE_VERSION.tar.gz"
         execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -B build/
         execute cmake --build build --target install
-        build_done "opencl-headers" $CURRENT_PACKAGE_VERSION
+        build_done "opencl-headers" "$CURRENT_PACKAGE_VERSION"
     fi
 }
 
@@ -1723,7 +1774,7 @@ build_opencl_icd_loader() {
         # to relocate. ffmpeg only needs the library, so do not build the tests at all.
         execute cmake -DCMAKE_PREFIX_PATH="${WORKSPACE}" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DENABLE_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DBUILD_TESTING=OFF -DOPENCL_ICD_LOADER_BUILD_TESTING=OFF -B build/
         execute cmake --build build --target install
-        build_done "opencl-icd-loader" $CURRENT_PACKAGE_VERSION
+        build_done "opencl-icd-loader" "$CURRENT_PACKAGE_VERSION"
     fi
     CONFIGURE_OPTIONS+=("--enable-opencl")
 }
@@ -1831,6 +1882,13 @@ done
 ## FFmpeg
 ##
 
+# --extra-version is appended to whatever version string ffmpeg derives for
+# itself, and it used to be passed unconditionally. e24c341 ("version display
+# fix") restricted it to macOS because on Linux the result was a doubled/wrong
+# version in `ffmpeg -version`; on macOS it is what makes the version show up at
+# all. Linux builds therefore intentionally carry no extra version tag. See also
+# the .git -> .git.bak dance below, which keeps ffmpeg from describing *this*
+# repository instead of its own tree.
 EXTRA_VERSION=""
 if [[ "$OSTYPE" == "darwin"* ]]; then
     EXTRA_VERSION="${FFMPEG_VERSION}"
@@ -1843,7 +1901,13 @@ if [ -d "$CWD/.git" ]; then
     trap 'if [ -d "$CWD/.git.bak" ]; then mv "$CWD/.git.bak" "$CWD/.git"; fi' EXIT
 fi
 
-# ffmpeg is intentionally rebuilt on every run because CONFIGURE_OPTIONS vary with the flags used.
+# Unlike every dependency above, ffmpeg deliberately takes part in none of the
+# .done bookkeeping: no build() guard, no build_done(). CONFIGURE_OPTIONS is
+# assembled from the command-line flags and from which dependencies actually got
+# built, so a cached ffmpeg from a previous run would not correspond to the
+# options requested this time. It is rebuilt unconditionally, and the banner
+# below is a plain echo rather than build() so the "already built, remove the
+# lockfile" message can never appear for it.
 echo ""
 echo "building ffmpeg - version $FFMPEG_VERSION"
 echo "======================="

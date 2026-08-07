@@ -22,9 +22,16 @@ jobs:
           chmod +x /tmp/shfmt
           /tmp/shfmt -d build-ffmpeg web-install.sh web-install-gpl-and-non-free.sh
 
+      # The runner image ships its own shellcheck, but its version moves without
+      # notice - pin one so a new release cannot turn a green branch red.
+      # The scripts are clean at --severity=style, the strictest of the four
+      # levels, so anything ShellCheck reports here is a regression.
       - name: shellcheck
         run: |
-          shellcheck --severity=error build-ffmpeg web-install.sh web-install-gpl-and-non-free.sh
+          curl -sSfL https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.xz |
+            tar -xJf - -C /tmp --strip-components=1 shellcheck-v0.11.0/shellcheck
+          /tmp/shellcheck --version
+          /tmp/shellcheck --severity=style --color=always build-ffmpeg web-install.sh web-install-gpl-and-non-free.sh
 
   build-linux:
     name: build in native linux
@@ -59,6 +66,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
+
+      # The runner image ships aws/tap, which Homebrew now flags as untrusted
+      # and warns about on every invocation. We do not use it, so remove it.
+      - name: remove untrusted homebrew taps
+        run: |
+          brew untap aws/tap || true
 
       - name: build ffmpeg
         run: |
