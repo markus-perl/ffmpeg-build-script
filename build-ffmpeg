@@ -1070,6 +1070,9 @@ if build "lcms2" "2.19.1"; then
     execute make install
     build_done "lcms2" $CURRENT_PACKAGE_VERSION
 fi
+# lcms2 is a libjxl dependency, but ffmpeg also uses it for ICC profile support
+# in the image decoders and for the iccdetect and iccgen filters.
+CONFIGURE_OPTIONS+=("--enable-lcms2")
 
 if build "libjxl" "0.12.0"; then
     download "https://github.com/libjxl/libjxl/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "libjxl-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -1107,35 +1110,17 @@ CONFIGURE_OPTIONS+=("--enable-libwebp")
 ## other library
 ##
 
-if build "libsdl" "3.4.14"; then
-    download "https://github.com/libsdl-org/SDL/releases/download/release-$CURRENT_PACKAGE_VERSION/SDL3-$CURRENT_PACKAGE_VERSION.tar.gz"
-    SDL_CMAKE_OPTIONS=(
-        "-DCMAKE_INSTALL_PREFIX=${WORKSPACE}"
-        "-DCMAKE_INSTALL_LIBDIR=lib"
-        "-DCMAKE_INSTALL_BINDIR=bin"
-        "-DCMAKE_INSTALL_INCLUDEDIR=include"
-        "-DCMAKE_BUILD_TYPE=Release"
-        "-DSDL_SHARED=OFF"
-        "-DSDL_STATIC=ON"
-        "-DSDL_TEST_LIBRARY=OFF"
-        "-DSDL_TESTS=OFF"
-        "-DSDL_DISABLE_INSTALL_DOCS=ON"
-    )
-    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-        # SDL3 aborts configuration if neither X11 nor Wayland headers are present, while SDL2
-        # only warned and fell back to the dummy video driver. ffmpeg links SDL for ffplay only,
-        # and the build host is not required to have a desktop, so keep the old behaviour.
-        SDL_CMAKE_OPTIONS+=("-DSDL_UNIX_CONSOLE_BUILD=ON")
-    fi
-    if [[ "$MACOS_SILICON" == true ]]; then
-        SDL_CMAKE_OPTIONS+=(
-            "-DCMAKE_OSX_ARCHITECTURES=${ARCH}"
-            "-DCMAKE_OSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET}"
-        )
-    fi
-    execute cmake -S . -B build "${SDL_CMAKE_OPTIONS[@]}"
-    execute cmake --build build --parallel "$MJOBS"
-    execute cmake --build build --target install
+# Keep this on SDL 2.x. ffplay is the only thing that links SDL, and ffmpeg 9.0 accepts
+# SDL2 only: ffplay_deps lists sdl2, and configure tests for "sdl2 >= 2.0.1 sdl2 < 3.0.0",
+# so an SDL3 build is ignored and no sdl2.pc is produced. ffplay is then silently skipped,
+# because configure just drops it from the program list instead of failing. The build still
+# reports success, but the docker images fail later when they copy the missing binary, and
+# a build host that happens to have its own SDL2 installed hides the problem entirely.
+if build "libsdl" "2.32.10"; then
+    download "https://github.com/libsdl-org/SDL/releases/download/release-$CURRENT_PACKAGE_VERSION/SDL2-$CURRENT_PACKAGE_VERSION.tar.gz"
+    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+    execute make -j "$MJOBS"
+    execute make install
 
     build_done "libsdl" $CURRENT_PACKAGE_VERSION
 fi
@@ -1213,9 +1198,19 @@ if build "fontconfig" "2.18.3"; then
 fi
 CONFIGURE_OPTIONS+=("--enable-libfontconfig")
 
+# libass uses libunibreak for Unicode line breaking. Without it libass logs a warning on every
+# render and falls back to a simpler algorithm, which breaks CJK and Thai subtitles badly.
+if build "libunibreak" "7.0"; then
+    download "https://github.com/adah1972/libunibreak/releases/download/libunibreak_${CURRENT_PACKAGE_VERSION//./_}/libunibreak-$CURRENT_PACKAGE_VERSION.tar.gz"
+    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+    execute make -j "$MJOBS"
+    execute make install
+    build_done "libunibreak" $CURRENT_PACKAGE_VERSION
+fi
+
 if build "libass" "0.17.5"; then
     download "https://github.com/libass/libass/releases/download/$CURRENT_PACKAGE_VERSION/libass-$CURRENT_PACKAGE_VERSION.tar.xz"
-    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --enable-fontconfig --disable-test --disable-profile --disable-fuzz
+    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --enable-fontconfig --enable-libunibreak --disable-test --disable-profile --disable-fuzz
     execute make -j "$MJOBS"
     execute make install
     build_done "libass" $CURRENT_PACKAGE_VERSION
@@ -1292,8 +1287,8 @@ if build "libzmq" "4.3.5"; then
     execute make -j "$MJOBS"
     execute make install
     build_done "libzmq" $CURRENT_PACKAGE_VERSION
-    CONFIGURE_OPTIONS+=("--enable-libzmq")
 fi
+CONFIGURE_OPTIONS+=("--enable-libzmq")
 
 ##
 ## HWaccel library

@@ -85,12 +85,25 @@ $ ./build-ffmpeg --enable-gpl-and-non-free --build
 * `vorbis`: Lossy audio compression format
 * `theora`: Free lossy video compression format
 * `opus`: Lossy audio coding format
+* `opencore-amr`: AMR-NB and AMR-WB speech codecs
 * `srt`: Secure Reliable Transport
 * `webp`: Image format both lossless and lossy
+* `libjxl`: JPEG XL image format
+* `lcms2`: ICC profile support in the image decoders and the `iccdetect` and `iccgen` filters
 * `libsoxr`: SoX Resampler Library
+* `libzimg`: Scaling and colorspace conversion for the `zscale` filter
+* `vid.stab`: Video stabilization for the `vidstabdetect` and `vidstabtransform` filters
+  (only with `--enable-gpl-and-non-free`)
+* `zvbi`: Teletext decoding (only with `--enable-gpl-and-non-free`)
+* `libzmq`: The `zmq` and `azmq` filters, for changing filter options of a running ffmpeg via ZeroMQ
+* `lv2`: LV2 audio plugin hosting, see [LV2 Plugin Support](#lv2-plugin-support)
+* `vapoursynth`: Reading of VapourSynth script files. Only the headers are built; the VapourSynth
+  library itself is loaded at runtime and has to be installed separately.
+* `openssl`: TLS for the `https` and `tls` protocols
 * `libass`: Subtitle renderer for the `subtitles` and `ass` filters, so SRT and ASS subtitles can be burned into video.
-  Built together with `fribidi` (bidirectional text), `harfbuzz` (text shaping) and `fontconfig` (font lookup by name),
-  which also make `drawtext` accept `font=Helvetica` instead of only an explicit `fontfile=` path.
+  Built together with `fribidi` (bidirectional text), `harfbuzz` (text shaping), `libunibreak` (Unicode line
+  breaking for CJK and Thai) and `fontconfig` (font lookup by name). The latter three also make `drawtext`
+  accept `font=Helvetica` instead of only an explicit `fontfile=` path.
 * `libxml2`: XML parser required for the DASH and IMF demuxers
 * `avisynth`: Reading of [AviSynth+](http://avs-plus.net/) script files (only with `--enable-gpl-and-non-free`).
   Only the headers are built; the AviSynth+ library itself is loaded at runtime and has to be installed separately.
