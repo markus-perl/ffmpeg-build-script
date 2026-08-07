@@ -14,8 +14,13 @@ ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
 # Update package lists
 RUN apt-get update
 # Install required packages
+# python3-pip is here for meson: this image is Ubuntu 22.04, whose packaged meson is
+# 0.61.2, and libplacebo requires >=0.63. build-ffmpeg detects that and pip-installs a
+# current meson over it, which it cannot do without pip. Jammy's pip predates PEP 668,
+# so the install works against the system Python. The apt meson stays as the fallback -
+# if the upgrade ever fails, only libplacebo is skipped instead of every meson package.
 RUN apt-get -y --no-install-recommends install build-essential curl ca-certificates libva-dev libva-drm2 cmake \
-    python3 python-is-python3 ninja-build meson git curl
+    python3 python3-pip python-is-python3 ninja-build meson git curl
 # Clean up package cache and temporary files
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/* && find /var/log -type f -delete
 # Update CA certificates

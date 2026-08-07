@@ -919,6 +919,40 @@ build_cmake() {
 ## video library
 ##
 
+# The oldest meson that every package built here accepts. It is set by libplacebo,
+# whose meson.build asks for >=0.63 - it uses the prefer_static built-in option, which
+# is exactly the release that introduced it. Nothing else comes close: dav1d wants
+# 0.54.0 and libvmaf 0.56.1. That gap matters because Ubuntu 22.04 - the base of
+# cuda-ubuntu.dockerfile - packages meson 0.61.2, so "meson is installed" was not on
+# its own a sufficient check and the CUDA build died in libplacebo's meson setup.
+MESON_MIN_VERSION="0.63"
+
+meson_version() {
+    meson --version 2>/dev/null | head -n 1
+}
+
+meson_is_current() {
+    if ! command_exists "meson"; then return 1; fi
+    version_gte "$(meson_version)" "$MESON_MIN_VERSION"
+}
+
+# pip installs console scripts into the Python user base, which is ~/.local/bin on
+# Linux and is not on PATH in a minimal image. Prepended rather than appended: when the
+# distribution's own meson is the thing being replaced, /usr/bin/meson still exists, and
+# a pip install that loses the PATH race would have been pointless.
+add_python_user_bin_to_path() {
+    local python_user_bin
+    python_user_bin="$(python3 -m site --user-base 2>/dev/null)"
+    if [ -n "$python_user_bin" ]; then
+        export PATH="${python_user_bin}/bin:$PATH"
+    else
+        export PATH="$HOME/.local/bin:$PATH"
+    fi
+    # bash caches command lookups, so a newly shadowed meson would otherwise keep
+    # resolving to the old path for the rest of the run.
+    hash -r 2>/dev/null || true
+}
+
 # Not a package of its own: this bootstraps meson and ninja, which dav1d, the lv2
 # stack and harfbuzz need. It keeps the build_ prefix so the dispatch loop below can
 # call it like every other entry in PACKAGE_BUILD_ORDER.
@@ -945,14 +979,7 @@ build_meson_and_ninja() {
                 echo "If you get an error (like externally-managed-environment), try to install meson using your system package manager"
                 # meson and ninja can be installed via pip3
                 execute pip3 install pip setuptools --quiet --upgrade --no-cache-dir --disable-pip-version-check
-                # pip installs console scripts into the Python user base, which is
-                # ~/.local/bin on Linux and is not on PATH in a minimal image.
-                PYTHON_USER_BIN="$(python3 -m site --user-base 2>/dev/null)"
-                if [ -n "$PYTHON_USER_BIN" ]; then
-                    export PATH="$PATH:${PYTHON_USER_BIN}/bin"
-                else
-                    export PATH="$PATH:$HOME/.local/bin"
-                fi
+                add_python_user_bin_to_path
                 for r in meson ninja; do
                     if ! command_exists "${r}"; then
                         execute pip3 install "${r}" --quiet --upgrade --no-cache-dir --disable-pip-version-check
@@ -961,6 +988,31 @@ build_meson_and_ninja() {
             else
                 echo "Try to install meson using your system package manager to be able to compile ffmpeg with dav1d."
             fi
+        fi
+    fi
+
+    # A second, separate question from the block above: that one only asks whether meson
+    # exists at all, and a distribution meson that is too old passes it. Everything here
+    # is deliberately non-fatal. The build already has a working meson, most packages are
+    # happy with it, and the one that is not (build_libplacebo) checks the version itself
+    # and skips - so a failed upgrade must cost libplacebo, not the whole run. That is not
+    # hypothetical: pip refuses to touch the system Python on PEP 668 distributions
+    # (externally-managed-environment), and the CUDA image has no pip3 at all.
+    if command_exists "meson" && ! meson_is_current; then
+        echo "meson $(meson_version) is older than ${MESON_MIN_VERSION}, which libplacebo requires."
+        if [[ "$OSTYPE" == "darwin"* ]] && command_exists "brew"; then
+            brew upgrade meson || true
+            hash -r 2>/dev/null || true
+        elif command_exists "pip3"; then
+            echo "Trying to install a newer meson with pip3."
+            add_python_user_bin_to_path
+            pip3 install meson --quiet --upgrade --no-cache-dir --disable-pip-version-check || true
+            hash -r 2>/dev/null || true
+        fi
+        if meson_is_current; then
+            echo "Now using meson $(meson_version)."
+        else
+            echo "Continuing with meson $(meson_version). Packages that need ${MESON_MIN_VERSION} or newer will be skipped."
         fi
     fi
 }
@@ -2059,6 +2111,15 @@ build_libplacebo() {
     # meson is the only build system libplacebo has, and glsl_preproc (see below) needs python3.
     if ! command_exists "python3"; then return; fi
     if ! command_exists "meson"; then return; fi
+    # Unlike every other meson package here, libplacebo needs a specific meson version -
+    # see MESON_MIN_VERSION. build_meson_and_ninja has already tried to get one. Checked
+    # here rather than left to meson so the outcome is a skipped optional filter with an
+    # explanation, not "ERROR: Meson version is 0.61.2 but project requires >=0.63" three
+    # quarters of the way through a forty minute build.
+    if ! meson_is_current; then
+        echo "Skipping libplacebo: it needs meson ${MESON_MIN_VERSION} or newer, and this is meson $(meson_version)."
+        return
+    fi
 
     if build "libplacebo" "${VER_LIBPLACEBO[0]}"; then
         download "https://github.com/haasn/libplacebo/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "libplacebo-$CURRENT_PACKAGE_VERSION.tar.gz"
