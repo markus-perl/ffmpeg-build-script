@@ -1,2 +1,11 @@
+# Build output and downloaded sources — rebuilt inside the image
 packages/
 workspace/
+
+# Repository metadata and docs that never affect the build
+.git/
+.github/
+.gitignore
+*.md
+*.png
+LICENSE
