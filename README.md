@@ -1721,9 +1721,9 @@ Done. FFmpeg is now installed to your system.
 
 ### Tested on
 
-* MacOS 15.1
-* Debian 12
-* Ubuntu 22.04
+* MacOS 26
+* Debian 13
+* Ubuntu 24.04
 
 ### Continuous Integration
 
