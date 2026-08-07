@@ -12,10 +12,16 @@ report those privately.
 
 ## Before you open an issue
 
-**Supported systems.** Bug reports are only accepted for **macOS**, **Debian** and **Ubuntu**.
-Fedora, RHEL and its clones, openSUSE, Arch and Alpine generally work and the README lists
-install commands for them, but I have no way to reproduce or maintain fixes there. Reports for
-other systems will most likely be closed unless they come with a patch.
+**Supported systems.** Bug reports are only accepted for **macOS**, **Ubuntu >= 24.04** and
+**Debian >= 13**. Ubuntu 24.04 is what runs in CI. Fedora, RHEL and its clones, openSUSE, Arch
+and Alpine generally work and the README lists install commands for them, but I have no way to
+reproduce or maintain fixes there. Reports for other systems will most likely be closed unless
+they come with a patch.
+
+Older releases are not tested, and parts of the build quietly fall away on them rather than
+failing. Ubuntu 22.04 is the clearest example: its meson is 0.61.2, below the 0.63 that
+libplacebo requires, so that filter is skipped. The script says what it skipped and why, which is
+easy to miss in a long log — check for that before reporting a missing feature.
 
 **Rebuild from scratch first.** A large share of reported failures are stale build state. Run
 
