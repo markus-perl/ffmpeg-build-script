@@ -6,3 +6,5 @@ linux
 build
 full-static-test.dockerfile
 .DS_Store
+docs
+plans
