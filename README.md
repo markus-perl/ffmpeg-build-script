@@ -97,9 +97,14 @@ Hardware acceleration on macOS comes from [Video Toolbox](#video-toolbox-macos) 
 
 # Build on Linux
 
-**Supported:** Debian >= Buster, Ubuntu >= Focal Fossa and Rocky Linux 8 — these are the ones I can
-maintain and that run in CI. Other distributions (openSUSE, Arch, Alpine, …) generally work too;
-install commands for them are below, but please do not file bug reports for them.
+**Supported:** Ubuntu >= 24.04 and Debian >= 13 — these are the ones I can maintain, and Ubuntu
+24.04 is what runs in CI. Other distributions (Fedora, RHEL and its clones, openSUSE, Arch,
+Alpine, …) generally work too; install commands for them are below, but please do not file bug
+reports for them.
+
+Older releases are not tested and parts of the build quietly fall away on them. Ubuntu 22.04 is
+the clearest example: its meson is 0.61.2, below the 0.63 that libplacebo requires, so that filter
+is skipped. The script reports what it skips and why, and keeps going.
 
 ### 1. Install the prerequisites
 
