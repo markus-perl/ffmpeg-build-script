@@ -7,6 +7,111 @@ PROGNAME=$(basename "$0")
 FFMPEG_VERSION=9.0
 SCRIPT_VERSION=1.60
 
+##
+## Package versions and tarball SHA-256 checksums.
+##
+## One VER_<PACKAGE>=("<version>" "<sha256>") array per entry in
+## PACKAGE_BUILD_ORDER, in the same order. <PACKAGE> is the name passed to
+## build(), uppercased, with every non-alphanumeric character replaced by an
+## underscore - download() derives the array name from it mechanically, so the
+## two must stay in sync. Element 0 is the version, element 1 the checksum.
+##
+## The checksum is the one of the downloaded archive, not of its contents. An
+## empty checksum means "not pinned yet" and skips verification for that
+## download. Deliberately no associative arrays here: /bin/bash on macOS is
+## still 3.2, where "declare -A" is a fatal error - indexed arrays are fine.
+##
+VER_FFMPEG=("$FFMPEG_VERSION" "d97647ace36a307f17ba2bca052d68937487bed8682e1eb9b6737076a9c442b7")
+
+## build tools
+VER_GIFLIB=("6.1.3" "b65b66b99f0424b93525f987386f22fc5efb9da2bfc92ad4a532249aaffbab0e")
+VER_PKG_CONFIG=("0.29.2" "6fc69c01688c9458a57eb9a1664c9aba372ccda420a02bf4429fe610e7e7d591")
+VER_YASM=("1.3.0" "3dce6601b495f5b3d45b59f7d2492a340ee7e84b5beca17e48f862502bd5603f")
+VER_NASM=("3.02" "87336eba53b4acfe917424ab5d500d2b0054d9f5148d35c2273ccf2cfb712f0d")
+VER_ZLIB=("1.3.2" "bb329a0a2cd0274d05519d61c667c062e06990d72e125ee2dfa8de64f0119d16")
+VER_M4=("1.4.21" "38ae59f7a30bf9c108193cc5c25fbb06014f21e230c7ede2eff614f7b7c37ed8")
+VER_AUTOCONF=("2.73" "259ddfa3bddc799cfb81489cc0f17dfdf1bd6d1505dda53c0f45ff60d6a4f9a7")
+VER_AUTOMAKE=("1.18.1" "63e585246d0fc8772dffdee0724f2f988146d1a3f1c756a3dc5cfbefa3c01915")
+VER_LIBTOOL=("2.6.2" "24adb3aa9ae035c70faba344af57d73215eb89281045af6c7ccd307751f8b0bf")
+VER_GETTEXT=("1.0" "85d99b79c981a404874c02e0342176cf75c7698e2b51fe41031cf6526d974f1a")
+VER_OPENSSL=("4.0.1" "d8dee4712f66b113ab2060ca693febcfbf81edb08c323c1a87e7526364d0fef8")
+VER_GMP=("6.3.0" "a3c2b80201b89e68616f4ad30bc66aee4927c3ce50e33929ca819d5c43538898")
+VER_NETTLE=("4.0" "3addbc00da01846b232fb3bc453538ea5468da43033f21bb345cb1e9073f5094")
+VER_GNUTLS=("3.8.13" "ffed8ec1bf09c2426d4f14aae377de4753b53e537d685e604e99a8b16ca9c97e")
+VER_CMAKE=("4.4.2" "1db9e61e60b6e0874c86386340b910382f3c5e75b9fbfb44d122063129a2789d")
+
+## video library
+VER_DAV1D=("1.5.4" "a1d5b63d2d38ec9bd03acf643caa51fa22edd1e89c5a109c4807717216bbec07")
+VER_SVTAV1=("4.2.0" "c7b13c4a84bd3751aa35fcc72be13e6875467e7c2216879251a486e5b1e4e740")
+VER_RAV1E=("0.8.1" "06d1523955fb6ed9cf9992eace772121067cca7e8926988a1ee16492febbe01e")
+VER_X264=("0480cb05" "b336cdb04eeca5d15a53db323bc716fd7a1dae7bf19df0a8a41379d2d65e05d0")
+VER_X265=("b81f650" "540de59b5004274f70a4fe229e86c7602d49b5b1a96112fd95a9dcdb5c9f1dc9")
+# The bitbucket archive URL needs the full commit hash, VER_X265 is its short form.
+X265_COMMIT=b81f650e21e8aacbe6a9ad04ce14aefc05b932c0
+VER_LIBVPX=("1.16.0" "7a479a3c66b9f5d5542a4c6a1b7d3768a983b1e5c14c60a9396edc9b649e015c")
+VER_XVIDCORE=("1.3.7" "abbdcbd39555691dd1c9b4d08f0a031376a3b211652c0d8b3b8aa9be1303ce2d")
+VER_VID_STAB=("1.1.2" "96db34d48a9e3aa13736a48744b56dfb76731ac9bb5193c716de8534c9fd709d")
+# Homebrew patch that vid_stab needs on Apple Silicon, pinned by URL to a commit.
+VER_VID_STAB_PATCH=("" "45c16a2b64ba67f7ca5335c2f602d8d5186c29b38188b3cc7aff5df60aecaf60")
+# av1 cannot be pinned: googlesource.com's +archive endpoint regenerates the
+# tarball on every request with different bytes, so no hash is ever stable.
+VER_AV1=("3.14.1" "")
+VER_ZIMG=("3.0.6" "be89390f13a5c9b2388ce0f44a5e89364a20c1c57ce46d382b1fcc3967057577")
+
+## audio library
+VER_LV2=("1.18.10" "78c51bcf21b54e58bb6329accbb4dae03b2ed79b520f9a01e734bd9de530953f")
+VER_WAFLIB=("aeef9f5f" "5d3c1da4bf509c025c242e3482859692b3b6ae4e325dc1c9d413d01e2d13fcfc")
+VER_SERD=("0.32.10" "d17b99ef250e4dffcdd08c8eaad2459a1519c1ff2553fa91176ce71ac0dd0739")
+VER_PCRE=("8.45" "4e6ce03e0336e8b4a3d6c2b70b1c5e18590a5673a98186da90d4f33c23defc09")
+VER_ZIX=("0.8.2" "a2464cdc11fa359b5e713b3c82bf0b476952efe397a02374ddbc1b62eee04f13")
+VER_SORD=("0.16.22" "040fb3f369dd49a7717eb28ca0a66766352e25e760729903fc8a01e117122901")
+VER_SRATOM=("0.6.22" "4a88bde345370584b279895c2cb8f7f8341d2b31b6ca50e128faea02f02d3e76")
+VER_LILV=("0.28.0" "006065dcb59ccaad5463e6bb4598160e41dd6474a959838e74820f60a849bfdb")
+VER_OPENCORE=("0.1.6" "483eb4061088e2b34b358e47540b5d495a96cd468e361050fae615b1809dc4a1")
+VER_LAME=("4.0" "3df5124d5ad3a98312ffd7ba6a9b36230e4f8a3e66d3ce0f425e336c32d216eb")
+VER_OPUS=("1.6.1" "6ffcb593207be92584df15b32466ed64bbec99109f007c82205f0194572411a1")
+VER_LIBOGG=("1.3.6" "5c8253428e181840cd20d41f3ca16557a9cc04bad4a3d04cce84808677fa1061")
+VER_LIBVORBIS=("1.3.7" "0e982409a9c3fc82ee06e08205b1355e5c6aa4c36bca58146ef399621b0ce5ab")
+VER_LIBTHEORA=("1.2.0" "279327339903b544c28a92aeada7d0dcfd0397b59c2f368cc698ac56f515906e")
+VER_FDK_AAC=("2.0.3" "829b6b89eef382409cda6857fd82af84fabb63417b08ede9ea7a553f811cb79e")
+VER_SOXR=("0.1.3" "b111c15fdc8c029989330ff559184198c161100a59312f5dc19ddeb9b5a15889")
+
+## image library
+VER_LIBTIFF=("4.7.2" "4996f0c4f93094719b1ca5c6279b20e588773ba8a247533e486416fb662ddb88")
+VER_LIBPNG=("1.6.58" "8c9b05b675ca7301a458df2c2e46f26e1d41ff36b8863f8c33530bc58c2e6225")
+VER_LCMS2=("2.19.1" "bfc54f7bab59fbc921012014a8032e4cba4abd46db47d46b76416a8c0b2815c8")
+VER_LIBJXL=("0.12.0" "03e9be69a30be4011f559da75328b6d7cea8ad921fabfbd551ce10bf45cdc992")
+VER_LIBWEBP=("1.6.0" "e4ab7009bf0629fd11982d4c2aa83964cf244cffba7347ecd39019a9e38c4564")
+
+## other library
+VER_LIBSDL=("2.32.10" "5f5993c530f084535c65a6879e9b26ad441169b3e25d789d83287040a9ca5165")
+VER_FREETYPE2=("2.14.3" "36bc4f1cc413335368ee656c42afca65c5a3987e8768cc28cf11ba775e785a5f")
+
+## text shaping and subtitle library
+VER_LIBXML2=("2.15.3" "78262a6e7ac170d6528ebfe2efccdf220191a5af6a6cd61ea4a9a9a5042c7a07")
+VER_FRIBIDI=("1.0.16" "1b1cde5b235d40479e91be2f0e88a309e3214c8ab470ec8a2744d82a5a9ea05c")
+VER_HARFBUZZ=("14.3.0" "16070d77cfc4ba1f1e7327e83bf9b3f55898081cabdb94e56a33e04fc8874eae")
+VER_GPERF=("3.3" "fd87e0aba7e43ae054837afd6cd4db03a3f2693deb3619085e6ed9d8d9604ad8")
+VER_FONTCONFIG=("2.18.3" "4f7b554a38cdf78c033f666c8871f3749e14a094f65a07f630c91ed0b43d35e3")
+VER_LIBUNIBREAK=("7.0" "8c9a6e121736cd0d5c890ae3ae96f3f4010a19aa040f1dbded833a62a87717d3")
+VER_LIBASS=("0.17.5" "2dca25c0e0c837ddf00b52011b3f82cac1e4ddd3ad018227806b0c2288864acc")
+VER_VAPOURSYNTH=("78" "cbd5aa49d43a9e5061c5ea4b03a682322065f3d9b8870c36bfb8afa0f635e066")
+VER_AVISYNTH=("3.7.5" "2533fafe5b5a8eb9f14d84d89541252a5efd0839ef62b8ae98f40b9f34b3f3d5")
+VER_SRT=("1.5.6" "2c4980c2c4cfd142d21b829d939dc51db9c6628af5967fff62fd7290769569c7")
+VER_ZVBI=("0.2.44" "bca620ab670328ad732d161e4ce8d9d9fc832533cb7440e98c50e112b805ac5e")
+
+## zmq library
+VER_LIBZMQ=("4.3.5" "6653ef5910f17954861fe72332e68b03ca6e4d9c7160eb3a8de5a5a913bfab43")
+
+## HWaccel library
+VER_VULKAN_HEADERS=("1.4.358" "a4a92dcd138cece5722d87e26419442a432a819eb0a07b2e93d89d8b7628761f")
+VER_NV_CODEC=("13.1.15.0" "52532ceade3d5c1af62624986f13cf01b63c910576b08c0c278756c5e4b41ad0")
+# vaapi is a marker package: nothing is downloaded, so it has no checksum.
+VER_VAAPI=("1" "")
+VER_AMF=("1.5.2" "8a70b6dc85261e6e6e57769bd81ac1e09c0a4c96bbd5e358ffbc2dee51e8e50a")
+VER_OPENCL_HEADERS=("2026.05.29" "d9e6c48357de5002da11ce45de600e0c3ffe6ab4f628a3b9fe2b38603161658a")
+VER_OPENCL_ICD_LOADER=("2026.05.29" "48fd0c5181db7cd046f4f731d5955694892e10998d49d09ee0d997e7e04fd939")
+
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
 WORKSPACE="$CWD/workspace"
@@ -20,7 +125,9 @@ NONFREE_AND_GPL=false
 DISABLE_LV2=false
 LATEST=false
 MANPAGES=1
+CURRENT_PACKAGE_NAME=""
 CURRENT_PACKAGE_VERSION=0
+DOWNLOAD_MAX_RETRIES=2
 
 # Version comparison function
 # Returns: 0 if v1 >= v2, 1 otherwise
@@ -141,6 +248,93 @@ remove_dir() {
     fi
 }
 
+package_sha_var() {
+    # package_sha_var <package-name>
+    # Maps a build() package name onto a reference to the checksum element of its
+    # VER_ array in the table at the top of this script: uppercase,
+    # non-alphanumerics become underscores, element 1 is the SHA-256.
+    PACKAGE_SHA_VAR_NAME=$(printf '%s' "$1" | tr '[:lower:]' '[:upper:]')
+    printf 'VER_%s[1]' "${PACKAGE_SHA_VAR_NAME//[^A-Z0-9]/_}"
+}
+
+verify_checksum() {
+    # verify_checksum <file> <expected-sha256>
+    # An empty expectation means the package is not pinned yet, so verification
+    # is skipped and this is a no-op.
+    if [ -z "$2" ]; then
+        return 0
+    fi
+
+    if command_exists "sha256sum"; then
+        ACTUAL_SHA=$(sha256sum "$1" | awk '{print $1}')
+    elif command_exists "shasum"; then
+        ACTUAL_SHA=$(shasum -a 256 "$1" | awk '{print $1}')
+    else
+        echo "Neither sha256sum nor shasum is available, cannot verify $1" >&2
+        return 1
+    fi
+
+    if [ "$ACTUAL_SHA" != "$2" ]; then
+        echo "Checksum mismatch for $1" >&2
+        echo "  expected: $2" >&2
+        echo "  actual:   $ACTUAL_SHA" >&2
+        return 1
+    fi
+
+    return 0
+}
+
+download_with_retries() {
+    # download_with_retries <url> <output-path> [expected-sha256]
+    # --fail makes curl report an HTTP error instead of saving the error page as
+    # if it were the requested file. A checksum mismatch counts as a failed
+    # attempt, so a truncated or tampered mirror response is retried.
+    RETRY_COUNT=0
+
+    while [ $RETRY_COUNT -le $DOWNLOAD_MAX_RETRIES ]; do
+        if [ $RETRY_COUNT -gt 0 ]; then
+            echo "Retrying download (attempt $((RETRY_COUNT + 1))/$((DOWNLOAD_MAX_RETRIES + 1))) in 10 seconds..."
+            sleep 10
+        fi
+
+        curl -L --fail --silent -o "$2" "$1"
+        EXITCODE=$?
+
+        if [ $EXITCODE -eq 0 ] && [ -s "$2" ]; then
+            if verify_checksum "$2" "$3"; then
+                return 0
+            fi
+            echo "Discarding $2 because it does not match its expected checksum."
+            rm -f "$2"
+        else
+            echo "Failed to download $1 (Exitcode $EXITCODE or empty file)"
+        fi
+
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+    done
+
+    return 1
+}
+
+apply_inline_patch() {
+    # apply_inline_patch <file> <sed-expression>
+    # In-place sed without -i, whose argument handling differs between GNU and
+    # BSD sed. The expression is passed through untouched.
+    if [ ! -f "$1" ]; then
+        echo "Failed to patch $1: file not found" >&2
+        exit 1
+    fi
+
+    if ! sed "$2" "$1" >"$1.patched"; then
+        echo "Failed to patch $1 with sed expression: $2" >&2
+        rm -f "$1.patched"
+        exit 1
+    fi
+
+    rm -f "$1"
+    mv "$1.patched" "$1"
+}
+
 download() {
     # download url [filename[dirname]]
 
@@ -154,39 +348,30 @@ download() {
         TARGETDIR="${3:-"${DOWNLOAD_FILE%.*}"}"
     fi
 
+    # The expected checksum is keyed off the package currently being built, which
+    # build() records in CURRENT_PACKAGE_NAME. An unset or empty checksum element
+    # means the package is not pinned yet and verification is skipped.
+    DOWNLOAD_SHA_VAR=$(package_sha_var "$CURRENT_PACKAGE_NAME")
+    DOWNLOAD_SHA="${!DOWNLOAD_SHA_VAR}"
+
     if [ ! -f "$DOWNLOAD_PATH/$DOWNLOAD_FILE" ] || [ ! -s "$DOWNLOAD_PATH/$DOWNLOAD_FILE" ]; then
         echo "Downloading $1 as $DOWNLOAD_FILE"
 
-        MAX_RETRIES=2
-        RETRY_COUNT=0
-        SUCCESS=false
-
-        while [ $RETRY_COUNT -le $MAX_RETRIES ]; do
-            if [ $RETRY_COUNT -gt 0 ]; then
-                echo "Retrying download (attempt $((RETRY_COUNT + 1))/$((MAX_RETRIES + 1))) in 10 seconds..."
-                sleep 10
-            fi
-
-            curl -L --silent -o "$DOWNLOAD_PATH/$DOWNLOAD_FILE" "$1"
-            EXITCODE=$?
-
-            if [ $EXITCODE -eq 0 ] && [ -s "$DOWNLOAD_PATH/$DOWNLOAD_FILE" ]; then
-                SUCCESS=true
-                break
-            fi
-
-            echo "Failed to download $1 (Exitcode $EXITCODE or empty file)"
-            RETRY_COUNT=$((RETRY_COUNT + 1))
-        done
-
-        if [ "$SUCCESS" = false ]; then
-            echo "Failed to download $1 after $((MAX_RETRIES + 1)) attempts."
+        if ! download_with_retries "$1" "$DOWNLOAD_PATH/$DOWNLOAD_FILE" "$DOWNLOAD_SHA"; then
+            echo "Failed to download $1 after $((DOWNLOAD_MAX_RETRIES + 1)) attempts."
             exit 1
         fi
 
         echo "... Done"
     else
         echo "$DOWNLOAD_FILE has already been downloaded and is not empty."
+        # A cached file is never deleted automatically: it may be a deliberately
+        # placed local copy, and removing it would also destroy the evidence.
+        if ! verify_checksum "$DOWNLOAD_PATH/$DOWNLOAD_FILE" "$DOWNLOAD_SHA"; then
+            echo "The cached file $DOWNLOAD_PATH/$DOWNLOAD_FILE is corrupt or does not match the pinned version." >&2
+            echo "Delete it and run the build again to download it anew." >&2
+            exit 1
+        fi
     fi
 
     make_dir "$DOWNLOAD_PATH/$TARGETDIR"
@@ -250,6 +435,7 @@ build() {
     echo ""
     echo "building $1 - version $2"
     echo "======================="
+    CURRENT_PACKAGE_NAME=$1
     CURRENT_PACKAGE_VERSION=$2
 
     if [ -f "$PACKAGES/$1.done" ]; then
@@ -459,13 +645,12 @@ fi
 ##
 
 build_giflib() {
-    if build "giflib" "6.1.3"; then
+    if build "giflib" "${VER_GIFLIB[0]}"; then
         download "https://sf-eu-introserv-1.dl.sourceforge.net/project/giflib/giflib-6.x/giflib-$CURRENT_PACKAGE_VERSION.tar.gz"
         cd "${PACKAGES}"/giflib-$CURRENT_PACKAGE_VERSION || exit
         # giflib 6.1.3's Darwin rule builds libutil.dylib without libgif.dylib,
         # although qprintf.c references GifErrorString from libgif.
-        sed 's/$(CC) $(CFLAGS) -dynamiclib -current_version $(LIBVER) $(UOBJECTS) -o $(LIBUTILSO)/$(CC) $(CFLAGS) -dynamiclib -current_version $(LIBVER) $(UOBJECTS) $(LIBGIFSO) -o $(LIBUTILSO)/' Makefile >Makefile.patched
-        mv Makefile.patched Makefile
+        apply_inline_patch Makefile 's/$(CC) $(CFLAGS) -dynamiclib -current_version $(LIBVER) $(UOBJECTS) -o $(LIBUTILSO)/$(CC) $(CFLAGS) -dynamiclib -current_version $(LIBVER) $(UOBJECTS) $(LIBGIFSO) -o $(LIBUTILSO)/'
         #multicore build disabled for this library
         execute make
         # the default install target pulls in install-man and install-doc, and building
@@ -476,7 +661,7 @@ build_giflib() {
 }
 
 build_pkg_config() {
-    if build "pkg-config" "0.29.2"; then
+    if build "pkg-config" "${VER_PKG_CONFIG[0]}"; then
         download "https://pkgconfig.freedesktop.org/releases/pkg-config-$CURRENT_PACKAGE_VERSION.tar.gz"
         if [[ "$OSTYPE" == "darwin"* ]]; then
             CFLAGS+=" -Wno-int-conversion" # pkg-config 0.29.2 has a warning that is treated as an error
@@ -499,7 +684,7 @@ build_pkg_config() {
 }
 
 build_yasm() {
-    if build "yasm" "1.3.0"; then
+    if build "yasm" "${VER_YASM[0]}"; then
         download "https://github.com/yasm/yasm/releases/download/v$CURRENT_PACKAGE_VERSION/yasm-$CURRENT_PACKAGE_VERSION.tar.gz"
         execute ./configure --prefix="${WORKSPACE}"
         execute make -j "$MJOBS"
@@ -509,7 +694,7 @@ build_yasm() {
 }
 
 build_nasm() {
-    if build "nasm" "3.02"; then
+    if build "nasm" "${VER_NASM[0]}"; then
         download "https://www.nasm.us/pub/nasm/releasebuilds/$CURRENT_PACKAGE_VERSION/nasm-$CURRENT_PACKAGE_VERSION.tar.xz"
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
         execute make -j "$MJOBS"
@@ -519,7 +704,7 @@ build_nasm() {
 }
 
 build_zlib() {
-    if build "zlib" "1.3.2"; then
+    if build "zlib" "${VER_ZLIB[0]}"; then
         download "https://github.com/madler/zlib/releases/download/v$CURRENT_PACKAGE_VERSION/zlib-$CURRENT_PACKAGE_VERSION.tar.gz"
         execute ./configure --static --prefix="${WORKSPACE}"
         execute make -j "$MJOBS"
@@ -529,7 +714,7 @@ build_zlib() {
 }
 
 build_m4() {
-    if build "m4" "1.4.21"; then
+    if build "m4" "${VER_M4[0]}"; then
         download "https://ftp.gnu.org/gnu/m4/m4-$CURRENT_PACKAGE_VERSION.tar.gz"
         execute ./configure --prefix="${WORKSPACE}"
         execute make -j "$MJOBS"
@@ -539,7 +724,7 @@ build_m4() {
 }
 
 build_autoconf() {
-    if build "autoconf" "2.73"; then
+    if build "autoconf" "${VER_AUTOCONF[0]}"; then
         download "https://ftp.gnu.org/gnu/autoconf/autoconf-$CURRENT_PACKAGE_VERSION.tar.gz"
         execute ./configure --prefix="${WORKSPACE}"
         execute make -j "$MJOBS"
@@ -549,7 +734,7 @@ build_autoconf() {
 }
 
 build_automake() {
-    if build "automake" "1.18.1"; then
+    if build "automake" "${VER_AUTOMAKE[0]}"; then
         download "https://ftp.gnu.org/gnu/automake/automake-$CURRENT_PACKAGE_VERSION.tar.gz"
         execute ./configure --prefix="${WORKSPACE}"
         execute make -j "$MJOBS"
@@ -559,7 +744,7 @@ build_automake() {
 }
 
 build_libtool() {
-    if build "libtool" "2.6.2"; then
+    if build "libtool" "${VER_LIBTOOL[0]}"; then
         download "https://ftp.gnu.org/gnu/libtool/libtool-$CURRENT_PACKAGE_VERSION.tar.gz"
         execute ./configure --prefix="${WORKSPACE}" --enable-static --disable-shared
         execute make -j "$MJOBS"
@@ -571,7 +756,7 @@ build_libtool() {
 build_gettext() {
     if ! $NONFREE_AND_GPL; then return; fi
 
-    if build "gettext" "1.0"; then
+    if build "gettext" "${VER_GETTEXT[0]}"; then
         download "https://ftp.gnu.org/gnu/gettext/gettext-$CURRENT_PACKAGE_VERSION.tar.gz"
         execute ./configure --prefix="${WORKSPACE}" --enable-static --disable-shared
         execute make -j "$MJOBS"
@@ -583,7 +768,7 @@ build_gettext() {
 build_openssl() {
     if ! $NONFREE_AND_GPL; then return; fi
 
-    if build "openssl" "4.0.1"; then
+    if build "openssl" "${VER_OPENSSL[0]}"; then
         download "https://github.com/openssl/openssl/archive/refs/tags/openssl-$CURRENT_PACKAGE_VERSION.tar.gz" "openssl-$CURRENT_PACKAGE_VERSION.tar.gz"
         execute ./Configure --prefix="${WORKSPACE}" --openssldir="${WORKSPACE}" --libdir="lib" --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib no-shared zlib
         execute make -j "$MJOBS"
@@ -596,7 +781,7 @@ build_openssl() {
 build_gmp() {
     if $NONFREE_AND_GPL; then return; fi
 
-    if build "gmp" "6.3.0"; then
+    if build "gmp" "${VER_GMP[0]}"; then
         download "https://ftp.gnu.org/gnu/gmp/gmp-$CURRENT_PACKAGE_VERSION.tar.xz"
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
         execute make -j "$MJOBS"
@@ -608,7 +793,7 @@ build_gmp() {
 build_nettle() {
     if $NONFREE_AND_GPL; then return; fi
 
-    if build "nettle" "4.0"; then
+    if build "nettle" "${VER_NETTLE[0]}"; then
         download "https://ftp.gnu.org/gnu/nettle/nettle-$CURRENT_PACKAGE_VERSION.tar.gz"
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-openssl --disable-documentation --libdir="${WORKSPACE}"/lib CPPFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}"
         execute make -j "$MJOBS"
@@ -621,8 +806,10 @@ build_gnutls() {
     if $NONFREE_AND_GPL; then return; fi
     if [[ $ARCH == 'arm64' ]]; then return; fi
 
-    if build "gnutls" "3.8.13"; then
-        download "https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-$CURRENT_PACKAGE_VERSION.tar.xz"
+    if build "gnutls" "${VER_GNUTLS[0]}"; then
+        # Upstream files the tarballs under a major.minor series directory, so that
+        # part of the path is derived from the pinned version rather than repeated.
+        download "https://www.gnupg.org/ftp/gcrypt/gnutls/v${CURRENT_PACKAGE_VERSION%.*}/gnutls-$CURRENT_PACKAGE_VERSION.tar.xz"
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-doc --disable-tools --disable-cxx --disable-tests --disable-gtk-doc-html --disable-libdane --disable-nls --enable-local-libopts --disable-guile --with-included-libtasn1 --with-included-unistring --without-p11-kit CPPFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}"
         execute make -j "$MJOBS"
         execute make install
@@ -632,7 +819,7 @@ build_gnutls() {
 }
 
 build_cmake() {
-    if build "cmake" "4.4.2"; then
+    if build "cmake" "${VER_CMAKE[0]}"; then
         CXXFLAGS_BACKUP=$CXXFLAGS
         export CXXFLAGS+=" -std=c++11"
         download "https://github.com/Kitware/CMake/releases/download/v$CURRENT_PACKAGE_VERSION/cmake-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -702,7 +889,7 @@ build_dav1d() {
     if ! command_exists "python3"; then return; fi
     if ! command_exists "meson"; then return; fi
 
-    if build "dav1d" "1.5.4"; then
+    if build "dav1d" "${VER_DAV1D[0]}"; then
         download "https://code.videolan.org/videolan/dav1d/-/archive/$CURRENT_PACKAGE_VERSION/dav1d-$CURRENT_PACKAGE_VERSION.tar.gz"
         make_dir build
 
@@ -725,7 +912,7 @@ build_dav1d() {
 }
 
 build_svtav1() {
-    if build "svtav1" "4.2.0"; then
+    if build "svtav1" "${VER_SVTAV1[0]}"; then
         # Last known working commit which passed CI Tests from HEAD branch
         download "https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/v$CURRENT_PACKAGE_VERSION/SVT-AV1-v$CURRENT_PACKAGE_VERSION.tar.gz" "svtav1-$CURRENT_PACKAGE_VERSION.tar.gz"
         cd "${PACKAGES}"/svtav1-$CURRENT_PACKAGE_VERSION/Build/linux || exit
@@ -742,7 +929,7 @@ build_rav1e() {
     if ! command_exists "cargo"; then return; fi
     if [[ "$SKIPRAV1E" == "yes" ]]; then return; fi
 
-    if build "rav1e" "0.8.1"; then
+    if build "rav1e" "${VER_RAV1E[0]}"; then
         echo "if you get the message 'cannot be built because it requires rustc x.xx or newer, try to run 'rustup update'"
         execute cargo install cargo-c
         download "https://github.com/xiph/rav1e/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -755,7 +942,7 @@ build_rav1e() {
 build_x264() {
     if ! $NONFREE_AND_GPL; then return; fi
 
-    if build "x264" "0480cb05"; then
+    if build "x264" "${VER_X264[0]}"; then
         download "https://code.videolan.org/videolan/x264/-/archive/$CURRENT_PACKAGE_VERSION/x264-$CURRENT_PACKAGE_VERSION.tar.gz" "x264-$CURRENT_PACKAGE_VERSION.tar.gz"
         cd "${PACKAGES}"/x264-$CURRENT_PACKAGE_VERSION || exit
 
@@ -777,8 +964,8 @@ build_x264() {
 build_x265() {
     if ! $NONFREE_AND_GPL; then return; fi
 
-    if build "x265" "b81f650"; then
-        download "https://bitbucket.org/multicoreware/x265_git/get/b81f650e21e8aacbe6a9ad04ce14aefc05b932c0.tar.gz" "x265-b81f650.tar.gz"
+    if build "x265" "${VER_X265[0]}"; then
+        download "https://bitbucket.org/multicoreware/x265_git/get/$X265_COMMIT.tar.gz" "x265-$CURRENT_PACKAGE_VERSION.tar.gz"
 
         if $MACOS_SILICON; then
             export CXXFLAGS="-DHAVE_NEON=1 ${CXXFLAGS}"
@@ -826,13 +1013,13 @@ EOF
 }
 
 build_libvpx() {
-    if build "libvpx" "1.16.0"; then
+    if build "libvpx" "${VER_LIBVPX[0]}"; then
         download "https://github.com/webmproject/libvpx/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "libvpx-$CURRENT_PACKAGE_VERSION.tar.gz"
 
         if [[ "$OSTYPE" == "darwin"* ]]; then
             echo "Applying Darwin patch"
-            sed "s/,--version-script//g" build/make/Makefile >build/make/Makefile.patched
-            sed "s/-Wl,--no-undefined -Wl,-soname/-Wl,-undefined,error -Wl,-install_name/g" build/make/Makefile.patched >build/make/Makefile
+            apply_inline_patch build/make/Makefile "s/,--version-script//g"
+            apply_inline_patch build/make/Makefile "s/-Wl,--no-undefined -Wl,-soname/-Wl,-undefined,error -Wl,-install_name/g"
         fi
 
         execute ./configure --prefix="${WORKSPACE}" --disable-unit-tests --disable-shared --disable-examples --as=yasm --enable-vp9-highbitdepth
@@ -847,7 +1034,7 @@ build_libvpx() {
 build_xvidcore() {
     if ! $NONFREE_AND_GPL; then return; fi
 
-    if build "xvidcore" "1.3.7"; then
+    if build "xvidcore" "${VER_XVIDCORE[0]}"; then
         download "https://downloads.xvid.com/downloads/xvidcore-$CURRENT_PACKAGE_VERSION.tar.gz"
         cd build/generic || exit
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
@@ -870,32 +1057,14 @@ build_xvidcore() {
 build_vid_stab() {
     if ! $NONFREE_AND_GPL; then return; fi
 
-    if build "vid_stab" "1.1.2"; then
+    if build "vid_stab" "${VER_VID_STAB[0]}"; then
         download "https://github.com/georgmartius/vid.stab/archive/v$CURRENT_PACKAGE_VERSION.tar.gz" "vid.stab-$CURRENT_PACKAGE_VERSION.tar.gz"
 
         if $MACOS_SILICON; then
             PATCH_URL="https://raw.githubusercontent.com/Homebrew/formula-patches/5bf1a0e0cfe666ee410305cece9c9c755641bfdf/libvidstab/fix_cmake_quoting.patch"
             PATCH_FILE="$PACKAGES/vid.stab-$CURRENT_PACKAGE_VERSION/fix_cmake_quoting.patch"
 
-            MAX_RETRIES=2
-            RETRY_COUNT=0
-            SUCCESS=false
-
-            while [ $RETRY_COUNT -le $MAX_RETRIES ]; do
-                if [ $RETRY_COUNT -gt 0 ]; then
-                    echo "Retrying patch download (attempt $((RETRY_COUNT + 1))/$((MAX_RETRIES + 1))) in 10 seconds..."
-                    sleep 10
-                fi
-
-                curl -L --silent -o "$PATCH_FILE" "$PATCH_URL"
-                if [ $? -eq 0 ] && [ -s "$PATCH_FILE" ]; then
-                    SUCCESS=true
-                    break
-                fi
-                RETRY_COUNT=$((RETRY_COUNT + 1))
-            done
-
-            if [ "$SUCCESS" = false ]; then
+            if ! download_with_retries "$PATCH_URL" "$PATCH_FILE" "${VER_VID_STAB_PATCH[1]}"; then
                 echo "Failed to download patch from $PATCH_URL"
                 exit 1
             fi
@@ -913,7 +1082,7 @@ build_vid_stab() {
 }
 
 build_av1() {
-    if build "av1" "3.14.1"; then
+    if build "av1" "${VER_AV1[0]}"; then
         download "https://aomedia.googlesource.com/aom/+archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "av1-$CURRENT_PACKAGE_VERSION.tar.gz" "av1"
         make_dir "$PACKAGES"/aom_build
         cd "$PACKAGES"/aom_build || exit
@@ -931,7 +1100,7 @@ build_av1() {
 }
 
 build_zimg() {
-    if build "zimg" "3.0.6"; then
+    if build "zimg" "${VER_ZIMG[0]}"; then
         download "https://github.com/sekrit-twc/zimg/archive/refs/tags/release-$CURRENT_PACKAGE_VERSION.tar.gz" "zimg-$CURRENT_PACKAGE_VERSION.tar.gz" "zimg"
         cd zimg-release-$CURRENT_PACKAGE_VERSION || exit
         execute "${WORKSPACE}/bin/libtoolize" -i -f -q
@@ -953,7 +1122,7 @@ build_lv2() {
     if ! command_exists "python3"; then return; fi
     if ! command_exists "meson"; then return; fi
 
-    if build "lv2" "1.18.10"; then
+    if build "lv2" "${VER_LV2[0]}"; then
         download "https://lv2plug.in/spec/lv2-$CURRENT_PACKAGE_VERSION.tar.xz" "lv2-$CURRENT_PACKAGE_VERSION.tar.xz"
         execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
         execute ninja -C build
@@ -967,7 +1136,7 @@ build_waflib() {
     if ! command_exists "python3"; then return; fi
     if ! command_exists "meson"; then return; fi
 
-    if build "waflib" "aeef9f5f"; then
+    if build "waflib" "${VER_WAFLIB[0]}"; then
         download "https://gitlab.com/drobilla/autowaf/-/archive/$CURRENT_PACKAGE_VERSION/autowaf-$CURRENT_PACKAGE_VERSION.tar.gz" "autowaf.tar.gz"
         build_done "waflib" $CURRENT_PACKAGE_VERSION
     fi
@@ -978,7 +1147,7 @@ build_serd() {
     if ! command_exists "python3"; then return; fi
     if ! command_exists "meson"; then return; fi
 
-    if build "serd" "0.32.10"; then
+    if build "serd" "${VER_SERD[0]}"; then
         download "https://gitlab.com/drobilla/serd/-/archive/v$CURRENT_PACKAGE_VERSION/serd-v$CURRENT_PACKAGE_VERSION.tar.gz" "serd-v$CURRENT_PACKAGE_VERSION.tar.gz"
         execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
         execute ninja -C build
@@ -992,7 +1161,7 @@ build_pcre() {
     if ! command_exists "python3"; then return; fi
     if ! command_exists "meson"; then return; fi
 
-    if build "pcre" "8.45"; then
+    if build "pcre" "${VER_PCRE[0]}"; then
         download "https://altushost-swe.dl.sourceforge.net/project/pcre/pcre/$CURRENT_PACKAGE_VERSION/pcre-$CURRENT_PACKAGE_VERSION.tar.gz" "pcre-$CURRENT_PACKAGE_VERSION.tar.gz"
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
         execute make -j "$MJOBS"
@@ -1006,7 +1175,7 @@ build_zix() {
     if ! command_exists "python3"; then return; fi
     if ! command_exists "meson"; then return; fi
 
-    if build "zix" "0.8.2"; then
+    if build "zix" "${VER_ZIX[0]}"; then
         download "https://gitlab.com/drobilla/zix/-/archive/v$CURRENT_PACKAGE_VERSION/zix-v$CURRENT_PACKAGE_VERSION.tar.gz" "zix-v$CURRENT_PACKAGE_VERSION.tar.gz"
         execute meson setup build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
         cd build || exit
@@ -1022,7 +1191,7 @@ build_sord() {
     if ! command_exists "python3"; then return; fi
     if ! command_exists "meson"; then return; fi
 
-    if build "sord" "0.16.22"; then
+    if build "sord" "${VER_SORD[0]}"; then
         download "https://gitlab.com/drobilla/sord/-/archive/v$CURRENT_PACKAGE_VERSION/sord-v$CURRENT_PACKAGE_VERSION.tar.gz" "sord-v$CURRENT_PACKAGE_VERSION.tar.gz"
         execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
         execute ninja -C build
@@ -1036,7 +1205,7 @@ build_sratom() {
     if ! command_exists "python3"; then return; fi
     if ! command_exists "meson"; then return; fi
 
-    if build "sratom" "0.6.22"; then
+    if build "sratom" "${VER_SRATOM[0]}"; then
         download "https://gitlab.com/lv2/sratom/-/archive/v$CURRENT_PACKAGE_VERSION/sratom-v$CURRENT_PACKAGE_VERSION.tar.gz" "sratom-v$CURRENT_PACKAGE_VERSION.tar.gz"
         execute meson build --prefix="${WORKSPACE}" -Ddocs=disabled --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
         execute ninja -C build
@@ -1050,7 +1219,7 @@ build_lilv() {
     if ! command_exists "python3"; then return; fi
     if ! command_exists "meson"; then return; fi
 
-    if build "lilv" "0.28.0"; then
+    if build "lilv" "${VER_LILV[0]}"; then
         download "https://gitlab.com/lv2/lilv/-/archive/v$CURRENT_PACKAGE_VERSION/lilv-v$CURRENT_PACKAGE_VERSION.tar.gz" "lilv-v$CURRENT_PACKAGE_VERSION.tar.gz"
         execute meson build --prefix="${WORKSPACE}" -Ddocs=disabled --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib -Dcpp_std=c++11
         execute ninja -C build
@@ -1063,7 +1232,7 @@ build_lilv() {
 }
 
 build_opencore() {
-    if build "opencore" "0.1.6"; then
+    if build "opencore" "${VER_OPENCORE[0]}"; then
         download "https://deac-ams.dl.sourceforge.net/project/opencore-amr/opencore-amr/opencore-amr-$CURRENT_PACKAGE_VERSION.tar.gz" "opencore-amr-$CURRENT_PACKAGE_VERSION.tar.gz"
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
         execute make -j "$MJOBS"
@@ -1075,7 +1244,7 @@ build_opencore() {
 }
 
 build_lame() {
-    if build "lame" "4.0"; then
+    if build "lame" "${VER_LAME[0]}"; then
         download "https://sourceforge.net/projects/lame/files/lame/$CURRENT_PACKAGE_VERSION/lame-$CURRENT_PACKAGE_VERSION.tar.gz/download?use_mirror=gigenet" "lame-$CURRENT_PACKAGE_VERSION.tar.gz"
         # FFmpeg only needs libmp3lame. LAME 4.0 enables an external mpg123
         # decoder and its command-line frontend by default; neither is needed.
@@ -1089,7 +1258,7 @@ build_lame() {
 }
 
 build_opus() {
-    if build "opus" "1.6.1"; then
+    if build "opus" "${VER_OPUS[0]}"; then
         download "https://downloads.xiph.org/releases/opus/opus-$CURRENT_PACKAGE_VERSION.tar.gz"
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
         execute make -j "$MJOBS"
@@ -1101,7 +1270,7 @@ build_opus() {
 }
 
 build_libogg() {
-    if build "libogg" "1.3.6"; then
+    if build "libogg" "${VER_LIBOGG[0]}"; then
         download "https://ftp.osuosl.org/pub/xiph/releases/ogg/libogg-$CURRENT_PACKAGE_VERSION.tar.xz"
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
         execute make -j "$MJOBS"
@@ -1111,11 +1280,9 @@ build_libogg() {
 }
 
 build_libvorbis() {
-    if build "libvorbis" "1.3.7"; then
+    if build "libvorbis" "${VER_LIBVORBIS[0]}"; then
         download "https://ftp.osuosl.org/pub/xiph/releases/vorbis/libvorbis-$CURRENT_PACKAGE_VERSION.tar.gz"
-        sed 's/-force_cpusubtype_ALL//g' configure.ac >configure.ac.patched
-        rm configure.ac
-        mv configure.ac.patched configure.ac
+        apply_inline_patch configure.ac 's/-force_cpusubtype_ALL//g'
         execute ./autogen.sh --prefix="${WORKSPACE}"
         execute ./configure --prefix="${WORKSPACE}" --with-ogg-libraries="${WORKSPACE}"/lib --with-ogg-includes="${WORKSPACE}"/include/ --enable-static --disable-shared --disable-oggtest
         execute make -j "$MJOBS"
@@ -1127,7 +1294,7 @@ build_libvorbis() {
 }
 
 build_libtheora() {
-    if build "libtheora" "1.2.0"; then
+    if build "libtheora" "${VER_LIBTHEORA[0]}"; then
         download "https://ftp.osuosl.org/pub/xiph/releases/theora/libtheora-$CURRENT_PACKAGE_VERSION.tar.gz"
         execute ./configure --prefix="${WORKSPACE}" --with-ogg-libraries="${WORKSPACE}"/lib --with-ogg-includes="${WORKSPACE}"/include/ --with-vorbis-libraries="${WORKSPACE}"/lib --with-vorbis-includes="${WORKSPACE}"/include/ --enable-static --disable-shared --disable-oggtest --disable-vorbistest --disable-examples --disable-spec
         execute make -j "$MJOBS"
@@ -1141,7 +1308,7 @@ build_libtheora() {
 build_fdk_aac() {
     if ! $NONFREE_AND_GPL; then return; fi
 
-    if build "fdk_aac" "2.0.3"; then
+    if build "fdk_aac" "${VER_FDK_AAC[0]}"; then
         download "https://sourceforge.net/projects/opencore-amr/files/fdk-aac/fdk-aac-$CURRENT_PACKAGE_VERSION.tar.gz/download?use_mirror=gigenet" "fdk-aac-$CURRENT_PACKAGE_VERSION.tar.gz"
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --enable-pic
         execute make -j "$MJOBS"
@@ -1153,7 +1320,7 @@ build_fdk_aac() {
 }
 
 build_soxr() {
-    if build "soxr" "0.1.3"; then
+    if build "soxr" "${VER_SOXR[0]}"; then
         download "https://sourceforge.net/projects/soxr/files/soxr-$CURRENT_PACKAGE_VERSION-Source.tar.xz/download?use_mirror=gigenet" "soxr-$CURRENT_PACKAGE_VERSION.tar.xz"
 
         mkdir build && cd build
@@ -1171,7 +1338,7 @@ build_soxr() {
 ##
 
 build_libtiff() {
-    if build "libtiff" "4.7.2"; then
+    if build "libtiff" "${VER_LIBTIFF[0]}"; then
         download "https://download.osgeo.org/libtiff/tiff-$CURRENT_PACKAGE_VERSION.tar.xz"
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-dependency-tracking --disable-lzma --disable-webp --disable-zstd --without-x
         execute make -j "$MJOBS"
@@ -1181,7 +1348,7 @@ build_libtiff() {
 }
 
 build_libpng() {
-    if build "libpng" "1.6.58"; then
+    if build "libpng" "${VER_LIBPNG[0]}"; then
         download "https://sourceforge.net/projects/libpng/files/libpng16/$CURRENT_PACKAGE_VERSION/libpng-$CURRENT_PACKAGE_VERSION.tar.gz" "libpng-$CURRENT_PACKAGE_VERSION.tar.gz"
         export LDFLAGS="${LDFLAGS}"
         export CPPFLAGS="${CFLAGS}"
@@ -1193,7 +1360,7 @@ build_libpng() {
 }
 
 build_lcms2() {
-    if build "lcms2" "2.19.1"; then
+    if build "lcms2" "${VER_LCMS2[0]}"; then
         download "https://github.com/mm2/Little-CMS/releases/download/lcms$CURRENT_PACKAGE_VERSION/lcms2-$CURRENT_PACKAGE_VERSION.tar.gz"
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
         execute make -j "$MJOBS"
@@ -1206,15 +1373,11 @@ build_lcms2() {
 }
 
 build_libjxl() {
-    if build "libjxl" "0.12.0"; then
+    if build "libjxl" "${VER_LIBJXL[0]}"; then
         download "https://github.com/libjxl/libjxl/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "libjxl-$CURRENT_PACKAGE_VERSION.tar.gz"
         # currently needed to fix linking of static builds in non-C++ applications
-        sed "s/-ljxl_threads/-ljxl_threads @JPEGXL_THREADS_PUBLIC_LIBS@/g" lib/threads/libjxl_threads.pc.in >lib/threads/libjxl_threads.pc.in.patched
-        rm lib/threads/libjxl_threads.pc.in
-        mv lib/threads/libjxl_threads.pc.in.patched lib/threads/libjxl_threads.pc.in
-        sed 's/set(JPEGXL_REQUIRES_TYPE "Requires")/set(JPEGXL_REQUIRES_TYPE "Requires")\'$'\n''  set(JPEGXL_THREADS_PUBLIC_LIBS "-lm ${PKGCONFIG_CXX_LIB}")/g' lib/jxl_threads.cmake >lib/jxl_threads.cmake.patched
-        rm lib/jxl_threads.cmake
-        mv lib/jxl_threads.cmake.patched lib/jxl_threads.cmake
+        apply_inline_patch lib/threads/libjxl_threads.pc.in "s/-ljxl_threads/-ljxl_threads @JPEGXL_THREADS_PUBLIC_LIBS@/g"
+        apply_inline_patch lib/jxl_threads.cmake 's/set(JPEGXL_REQUIRES_TYPE "Requires")/set(JPEGXL_REQUIRES_TYPE "Requires")\'$'\n''  set(JPEGXL_THREADS_PUBLIC_LIBS "-lm ${PKGCONFIG_CXX_LIB}")/g'
         execute ./deps.sh
         execute cmake -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=off -DENABLE_STATIC=ON -DCMAKE_BUILD_TYPE=Release -DJPEGXL_ENABLE_BENCHMARK=OFF -DJPEGXL_ENABLE_DOXYGEN=OFF -DJPEGXL_ENABLE_MANPAGES=OFF -DJPEGXL_ENABLE_JPEGLI_LIBJPEG=OFF -DJPEGXL_ENABLE_JPEGLI=ON -DJPEGXL_TEST_TOOLS=OFF -DJPEGXL_ENABLE_JNI=OFF -DBUILD_TESTING=OFF -DJPEGXL_ENABLE_SKCMS=OFF .
         execute make -j "$MJOBS"
@@ -1226,7 +1389,7 @@ build_libjxl() {
 }
 
 build_libwebp() {
-    if build "libwebp" "1.6.0"; then
+    if build "libwebp" "${VER_LIBWEBP[0]}"; then
         # libwebp can fail to compile on Ubuntu if these flags were left set to CFLAGS
         CPPFLAGS=
         download "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-$CURRENT_PACKAGE_VERSION.tar.gz" "libwebp-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -1252,7 +1415,7 @@ build_libsdl() {
     # because configure just drops it from the program list instead of failing. The build still
     # reports success, but the docker images fail later when they copy the missing binary, and
     # a build host that happens to have its own SDL2 installed hides the problem entirely.
-    if build "libsdl" "2.32.10"; then
+    if build "libsdl" "${VER_LIBSDL[0]}"; then
         download "https://github.com/libsdl-org/SDL/releases/download/release-$CURRENT_PACKAGE_VERSION/SDL2-$CURRENT_PACKAGE_VERSION.tar.gz"
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
         execute make -j "$MJOBS"
@@ -1263,7 +1426,7 @@ build_libsdl() {
 }
 
 build_freetype2() {
-    if build "FreeType2" "2.14.3"; then
+    if build "FreeType2" "${VER_FREETYPE2[0]}"; then
         download "https://downloads.sourceforge.net/freetype/freetype-$CURRENT_PACKAGE_VERSION.tar.xz"
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
         execute make -j "$MJOBS"
@@ -1281,8 +1444,9 @@ build_freetype2() {
 build_libxml2() {
     # libxml2 is required by ffmpeg for the DASH and IMF demuxers, and is used here as
     # fontconfig's XML parser so that expat is not needed as well.
-    if build "libxml2" "2.15.3"; then
-        download "https://download.gnome.org/sources/libxml2/2.15/libxml2-$CURRENT_PACKAGE_VERSION.tar.xz"
+    if build "libxml2" "${VER_LIBXML2[0]}"; then
+        # As with gnutls, the series directory is derived from the pinned version.
+        download "https://download.gnome.org/sources/libxml2/${CURRENT_PACKAGE_VERSION%.*}/libxml2-$CURRENT_PACKAGE_VERSION.tar.xz"
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --without-python --without-debug --without-docs
         execute make -j "$MJOBS"
         execute make install
@@ -1292,7 +1456,7 @@ build_libxml2() {
 }
 
 build_fribidi() {
-    if build "fribidi" "1.0.16"; then
+    if build "fribidi" "${VER_FRIBIDI[0]}"; then
         download "https://github.com/fribidi/fribidi/releases/download/v$CURRENT_PACKAGE_VERSION/fribidi-$CURRENT_PACKAGE_VERSION.tar.xz"
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-debug --disable-deprecated
         execute make -j "$MJOBS"
@@ -1307,7 +1471,7 @@ build_fribidi() {
 build_harfbuzz() {
     if ! command_exists "meson"; then return; fi
 
-    if build "harfbuzz" "14.3.0"; then
+    if build "harfbuzz" "${VER_HARFBUZZ[0]}"; then
         download "https://github.com/harfbuzz/harfbuzz/releases/download/$CURRENT_PACKAGE_VERSION/harfbuzz-$CURRENT_PACKAGE_VERSION.tar.xz"
         execute meson setup build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib \
             -Dfreetype=enabled -Dglib=disabled -Dgobject=disabled -Dcairo=disabled -Dchafa=disabled -Dicu=disabled \
@@ -1322,7 +1486,7 @@ build_harfbuzz() {
 build_gperf() {
     # fontconfig generates fcgenericfamily.h with gperf, which is not shipped in the tarball.
     # macOS has gperf in /usr/bin, but a minimal Linux install usually does not, so build it here.
-    if build "gperf" "3.3"; then
+    if build "gperf" "${VER_GPERF[0]}"; then
         download "https://ftp.gnu.org/gnu/gperf/gperf-$CURRENT_PACKAGE_VERSION.tar.gz"
         execute ./configure --prefix="${WORKSPACE}"
         execute make -j "$MJOBS"
@@ -1337,7 +1501,7 @@ build_fontconfig() {
     #
     # The fc-* tools are linked statically, so pkg-config has to resolve private dependencies
     # as well: freetype2.pc requires libbrotlidec, which in turn needs libbrotlicommon.
-    if build "fontconfig" "2.18.3"; then
+    if build "fontconfig" "${VER_FONTCONFIG[0]}"; then
         download "https://gitlab.freedesktop.org/api/v4/projects/890/packages/generic/fontconfig/$CURRENT_PACKAGE_VERSION/fontconfig-$CURRENT_PACKAGE_VERSION.tar.xz"
         execute ./configure PKG_CONFIG="pkg-config --static" --prefix="${WORKSPACE}" --disable-shared --enable-static --enable-libxml2 --disable-docs --disable-nls --disable-cache-build
         execute make -j "$MJOBS"
@@ -1350,7 +1514,7 @@ build_fontconfig() {
 build_libunibreak() {
     # libass uses libunibreak for Unicode line breaking. Without it libass logs a warning on every
     # render and falls back to a simpler algorithm, which breaks CJK and Thai subtitles badly.
-    if build "libunibreak" "7.0"; then
+    if build "libunibreak" "${VER_LIBUNIBREAK[0]}"; then
         download "https://github.com/adah1972/libunibreak/releases/download/libunibreak_${CURRENT_PACKAGE_VERSION//./_}/libunibreak-$CURRENT_PACKAGE_VERSION.tar.gz"
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
         execute make -j "$MJOBS"
@@ -1360,7 +1524,7 @@ build_libunibreak() {
 }
 
 build_libass() {
-    if build "libass" "0.17.5"; then
+    if build "libass" "${VER_LIBASS[0]}"; then
         download "https://github.com/libass/libass/releases/download/$CURRENT_PACKAGE_VERSION/libass-$CURRENT_PACKAGE_VERSION.tar.xz"
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --enable-fontconfig --enable-libunibreak --disable-test --disable-profile --disable-fuzz
         execute make -j "$MJOBS"
@@ -1371,7 +1535,7 @@ build_libass() {
 }
 
 build_vapoursynth() {
-    if build "VapourSynth" "78"; then
+    if build "VapourSynth" "${VER_VAPOURSYNTH[0]}"; then
         # VapourSynth library is loaded dynamically by ffmpeg if a VapourSynth script is opened
         # no need to build it at compile team, only headers need to be installed
         download "https://github.com/vapoursynth/vapoursynth/archive/R$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -1389,7 +1553,7 @@ build_avisynth() {
     # AviSynth+ is loaded dynamically by ffmpeg if an AviSynth script is opened,
     # so only the headers need to be installed. ffmpeg requires 3.7.3 or newer and
     # looks for avisynth/avisynth_c.h and avisynth/avs/version.h.
-    if build "avisynth" "3.7.5"; then
+    if build "avisynth" "${VER_AVISYNTH[0]}"; then
         download "https://github.com/AviSynth/AviSynthPlus/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "AviSynthPlus-$CURRENT_PACKAGE_VERSION.tar.gz"
         execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DHEADERS_ONLY=ON -B build/
         # VersionGen generates avs/version.h and avs/arch.h, which the install step
@@ -1404,7 +1568,7 @@ build_avisynth() {
 build_srt() {
     if ! $NONFREE_AND_GPL; then return; fi
 
-    if build "srt" "1.5.6"; then
+    if build "srt" "${VER_SRT[0]}"; then
         download "https://github.com/Haivision/srt/archive/v$CURRENT_PACKAGE_VERSION.tar.gz" "srt-$CURRENT_PACKAGE_VERSION.tar.gz"
         export OPENSSL_ROOT_DIR="${WORKSPACE}"
         export OPENSSL_LIB_DIR="${WORKSPACE}"/lib
@@ -1425,7 +1589,7 @@ build_srt() {
 build_zvbi() {
     if ! $NONFREE_AND_GPL; then return; fi
 
-    if build "zvbi" "0.2.44"; then
+    if build "zvbi" "${VER_ZVBI[0]}"; then
         download "https://github.com/zapping-vbi/zvbi/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "zvbi-$CURRENT_PACKAGE_VERSION.tar.gz"
         execute ./autogen.sh --prefix="${WORKSPACE}"
         execute ./configure CFLAGS="-I${WORKSPACE}/include/libpng16 ${CFLAGS}" --prefix="${WORKSPACE}" --enable-static --disable-shared
@@ -1441,15 +1605,13 @@ build_zvbi() {
 ##
 
 build_libzmq() {
-    if build "libzmq" "4.3.5"; then
+    if build "libzmq" "${VER_LIBZMQ[0]}"; then
         download "https://github.com/zeromq/libzmq/releases/download/v$CURRENT_PACKAGE_VERSION/zeromq-$CURRENT_PACKAGE_VERSION.tar.gz"
         if [[ "$OSTYPE" == "darwin"* ]]; then
             export XML_CATALOG_FILES=/usr/local/etc/xml/catalog
         fi
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
-        sed "s/stats_proxy stats = {0}/stats_proxy stats = {{{0, 0}, {0, 0}}, {{0, 0}, {0, 0}}}/g" src/proxy.cpp >src/proxy.cpp.patched
-        rm src/proxy.cpp
-        mv src/proxy.cpp.patched src/proxy.cpp
+        apply_inline_patch src/proxy.cpp "s/stats_proxy stats = {0}/stats_proxy stats = {{{0, 0}, {0, 0}}, {{0, 0}, {0, 0}}}/g"
         execute make -j "$MJOBS"
         execute make install
         build_done "libzmq" $CURRENT_PACKAGE_VERSION
@@ -1462,7 +1624,7 @@ build_libzmq() {
 ##
 
 build_vulkan_headers() {
-    if build "vulkan-headers" "1.4.358"; then
+    if build "vulkan-headers" "${VER_VULKAN_HEADERS[0]}"; then
         download "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "Vulkan-Headers-$CURRENT_PACKAGE_VERSION.tar.gz"
         execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -B build/
         cd build/ || exit
@@ -1480,7 +1642,7 @@ build_nv_codec() {
     if [[ ! "$OSTYPE" == "linux-gnu" ]]; then return; fi
 
     if command_exists "nvcc"; then
-        if build "nv-codec" "13.1.15.0"; then
+        if build "nv-codec" "${VER_NV_CODEC[0]}"; then
             download "https://github.com/FFmpeg/nv-codec-headers/releases/download/n$CURRENT_PACKAGE_VERSION/nv-codec-headers-$CURRENT_PACKAGE_VERSION.tar.gz"
             execute make PREFIX="${WORKSPACE}"
             execute make PREFIX="${WORKSPACE}" install
@@ -1520,8 +1682,8 @@ build_vaapi() {
     if [ -z "$LDEXEFLAGS" ]; then
         # If the libva development SDK is installed, enable vaapi.
         if library_exists "libva"; then
-            if build "vaapi" "1"; then
-                build_done "vaapi" "1"
+            if build "vaapi" "${VER_VAAPI[0]}"; then
+                build_done "vaapi" "${VER_VAAPI[0]}"
             fi
             CONFIGURE_OPTIONS+=("--enable-vaapi")
         fi
@@ -1531,7 +1693,7 @@ build_vaapi() {
 build_amf() {
     if [[ ! "$OSTYPE" == "linux-gnu" ]]; then return; fi
 
-    if build "amf" "1.5.2"; then
+    if build "amf" "${VER_AMF[0]}"; then
         download "https://github.com/GPUOpen-LibrariesAndSDKs/AMF/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "AMF-$CURRENT_PACKAGE_VERSION.tar.gz" "AMF-$CURRENT_PACKAGE_VERSION"
         execute rm -rf "${WORKSPACE}/include/AMF"
         execute mkdir -p "${WORKSPACE}/include/AMF"
@@ -1544,7 +1706,7 @@ build_amf() {
 build_opencl_headers() {
     if [[ ! "$OSTYPE" == "linux-gnu" ]]; then return; fi
 
-    if build "opencl-headers" "2026.05.29"; then
+    if build "opencl-headers" "${VER_OPENCL_HEADERS[0]}"; then
         download "https://github.com/KhronosGroup/OpenCL-Headers/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "OpenCL-Headers-$CURRENT_PACKAGE_VERSION.tar.gz"
         execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -B build/
         execute cmake --build build --target install
@@ -1555,7 +1717,7 @@ build_opencl_headers() {
 build_opencl_icd_loader() {
     if [[ ! "$OSTYPE" == "linux-gnu" ]]; then return; fi
 
-    if build "opencl-icd-loader" "2026.05.29"; then
+    if build "opencl-icd-loader" "${VER_OPENCL_ICD_LOADER[0]}"; then
         download "https://github.com/KhronosGroup/OpenCL-ICD-Loader/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "OpenCL-ICD-Loader-$CURRENT_PACKAGE_VERSION.tar.gz"
         # the test suite links the static, non-PIC libOpenCL.a into a shared module, which fails
         # to relocate. ffmpeg only needs the library, so do not build the tests at all.
@@ -1685,6 +1847,9 @@ fi
 echo ""
 echo "building ffmpeg - version $FFMPEG_VERSION"
 echo "======================="
+# ffmpeg is downloaded outside of build(), so tell download() which SHA_ entry to
+# use for the integrity check.
+CURRENT_PACKAGE_NAME="ffmpeg"
 download "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n$FFMPEG_VERSION.tar.gz" "FFmpeg-release-$FFMPEG_VERSION.tar.gz"
 # shellcheck disable=SC2086
 
