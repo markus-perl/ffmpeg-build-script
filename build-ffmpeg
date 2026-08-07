@@ -59,6 +59,7 @@ VER_XVIDCORE=("1.3.7" "abbdcbd39555691dd1c9b4d08f0a031376a3b211652c0d8b3b8aa9be1
 VER_VID_STAB=("1.1.2" "96db34d48a9e3aa13736a48744b56dfb76731ac9bb5193c716de8534c9fd709d")
 # Homebrew patch that vid_stab needs on Apple Silicon, pinned by URL to a commit.
 VER_VID_STAB_PATCH=("" "45c16a2b64ba67f7ca5335c2f602d8d5186c29b38188b3cc7aff5df60aecaf60")
+VER_FREI0R=("3.2.3" "898f80e5fdae6108a2d9b2317649af576a4b5e636c73429ee11b64397a596e12")
 # av1 cannot be pinned: googlesource.com's +archive endpoint regenerates the
 # tarball on every request with different bytes, so no hash is ever stable.
 VER_AV1=("3.14.1" "")
@@ -73,6 +74,14 @@ VER_ZIX=("0.8.2" "a2464cdc11fa359b5e713b3c82bf0b476952efe397a02374ddbc1b62eee04f
 VER_SORD=("0.16.22" "040fb3f369dd49a7717eb28ca0a66766352e25e760729903fc8a01e117122901")
 VER_SRATOM=("0.6.22" "4a88bde345370584b279895c2cb8f7f8341d2b31b6ca50e128faea02f02d3e76")
 VER_LILV=("0.28.0" "006065dcb59ccaad5463e6bb4598160e41dd6474a959838e74820f60a849bfdb")
+# The LADSPA SDK has no upstream git repository and no release tags; ladspa.org
+# only ever publishes a versioned tarball, which is why this URL does not follow
+# the GitHub-tag pattern used everywhere else. The filename carries the version,
+# so the bytes are stable and hashable (verified by downloading it twice), and
+# the ladspa.h inside is byte-identical to the one in Debian's ladspa-sdk
+# 1.17 orig tarball. The GitHub copies that turn up in a search are all distro
+# packaging forks or vendored snapshots, none of them authoritative.
+VER_LADSPA=("1.17" "27d24f279e4b81bd17ecbdcc38e4c42991bb388826c0b200067ce0eb59d3da5b")
 VER_OPENCORE=("0.1.6" "483eb4061088e2b34b358e47540b5d495a96cd468e361050fae615b1809dc4a1")
 VER_LAME=("4.0" "3df5124d5ad3a98312ffd7ba6a9b36230e4f8a3e66d3ce0f425e336c32d216eb")
 VER_OPUS=("1.6.1" "6ffcb593207be92584df15b32466ed64bbec99109f007c82205f0194572411a1")
@@ -111,6 +120,11 @@ VER_LIBZMQ=("4.3.5" "6653ef5910f17954861fe72332e68b03ca6e4d9c7160eb3a8de5a5a913b
 
 ## HWaccel library
 VER_VULKAN_HEADERS=("1.4.358" "a4a92dcd138cece5722d87e26419442a432a819eb0a07b2e93d89d8b7628761f")
+# SPIRV-Headers is tagged "vulkan-sdk-<version>", so the version here carries no
+# "v" prefix and build_spirv_headers prepends the tag prefix instead.
+VER_SPIRV_HEADERS=("1.4.357.0" "4d703067a7e06331ccb37bdfed3f9b7879cc61969a2689ae95c95db34a47ff07")
+VER_SPIRV_TOOLS=("1.4.357.0" "d31e7109b6ef3559067e53e520870eafed7c9534d00db9728814b6df03fa4a5e")
+VER_GLSLANG=("16.5.0" "01af17195fbeb59e39e31e9506de35bb39dfd35807ea0c9a1a99d7d1183ddd45")
 VER_NV_CODEC=("13.1.15.0" "52532ceade3d5c1af62624986f13cf01b63c910576b08c0c278756c5e4b41ad0")
 # vaapi is a marker package: nothing is downloaded, so it has no checksum.
 VER_VAAPI=("1" "")
@@ -1130,6 +1144,36 @@ build_vid_stab() {
     CONFIGURE_OPTIONS+=("--enable-libvidstab")
 }
 
+build_frei0r() {
+    # frei0r is in ffmpeg 9.0's EXTERNAL_LIBRARY_GPL_LIST (configure line 2031), so
+    # --enable-frei0r implies --enable-gpl and must stay behind this script's flag.
+    if ! $NONFREE_AND_GPL; then return; fi
+
+    # frei0r plugins are shared objects that the frei0r filters dlopen() at runtime
+    # from ~/.frei0r-1/lib and the system frei0r-1 directories. A --full-static
+    # ffmpeg cannot do that, and configure would drop the filters anyway: the
+    # frei0r_filter/frei0r_src_filter both carry frei0r_deps_any="libdl LoadLibrary"
+    # and neither resolves in a fully static link. Enabling it there would only add
+    # a header requirement in exchange for filters that are never registered, so the
+    # whole package is skipped instead.
+    if [ -n "$LDEXEFLAGS" ]; then return; fi
+
+    if build "frei0r" "${VER_FREI0R[0]}"; then
+        download "https://github.com/dyne/frei0r/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "frei0r-$CURRENT_PACKAGE_VERSION.tar.gz"
+        # Header-only on purpose: ffmpeg 9.0's configure does nothing but
+        # `require_headers "frei0r.h"` (line 7315) - there is no frei0r library to
+        # link, the plugins are loaded at runtime. So the upstream cmake build, which
+        # would compile the entire GPL plugin collection, is skipped and only the API
+        # header is installed. Note that frei0r.h itself carries no copyright or
+        # license banner - upstream treats it purely as the API specification so that
+        # hosts can include it - but that does not affect the gate above, since the
+        # GPL classification is ffmpeg's, not the header's.
+        execute cp -f include/frei0r.h "${WORKSPACE}"/include/frei0r.h
+        build_done "frei0r" "$CURRENT_PACKAGE_VERSION"
+    fi
+    CONFIGURE_OPTIONS+=("--enable-frei0r")
+}
+
 build_av1() {
     if build "av1" "${VER_AV1[0]}"; then
         download "https://aomedia.googlesource.com/aom/+archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "av1-$CURRENT_PACKAGE_VERSION.tar.gz" "av1"
@@ -1278,6 +1322,34 @@ build_lilv() {
     CFLAGS+=" -I$WORKSPACE/include/lilv-0"
 
     CONFIGURE_OPTIONS+=("--enable-lv2")
+}
+
+build_ladspa() {
+    # Unlike frei0r, ladspa is in the plain EXTERNAL_LIBRARY_LIST (configure line
+    # 2076) with no license entry, so it is available in the default LGPL build and
+    # is deliberately not gated on NONFREE_AND_GPL.
+
+    # Same runtime story as frei0r: the ladspa filter dlopen()s plugin .so files
+    # found via the LADSPA_PATH environment variable, and its dependency line is
+    # ladspa_filter_deps="ladspa libdl". A fully static ffmpeg cannot dlopen, and
+    # configure would register no ladspa filter at all, so skip the package rather
+    # than ship a flag that buys nothing.
+    if [ -n "$LDEXEFLAGS" ]; then return; fi
+
+    if build "ladspa" "${VER_LADSPA[0]}"; then
+        # ffmpeg 9.0's configure only does `require_headers "ladspa.h dlfcn.h"` (line
+        # 7319), so as with frei0r nothing gets compiled or linked - the SDK's example
+        # plugins and command line tools are of no use here and the header is enough.
+        # dlfcn.h comes from the platform. No extra link flags are needed either:
+        # there is no ladspa_extralibs in configure, only the generic
+        # `check_lib libdl dlfcn.h "dlopen dlsym" || ... -ldl` probe at line 7290,
+        # which on macOS is satisfied by libc alone, and this script's EXTRALIBS
+        # already passes -ldl for the glibc case.
+        download "https://www.ladspa.org/download/ladspa_sdk_$CURRENT_PACKAGE_VERSION.tgz" "ladspa_sdk-$CURRENT_PACKAGE_VERSION.tar.gz"
+        execute cp -f src/ladspa.h "${WORKSPACE}"/include/ladspa.h
+        build_done "ladspa" "$CURRENT_PACKAGE_VERSION"
+    fi
+    CONFIGURE_OPTIONS+=("--enable-ladspa")
 }
 
 build_opencore() {
@@ -1684,9 +1756,77 @@ build_vulkan_headers() {
     fi
     CONFIGURE_OPTIONS+=("--enable-vulkan")
 
-    # NOTE: vulkan filters and some encoders/decoders are implemented using shaders and need a
-    # shader compiler. ffmpeg 9.0 dropped --enable-libglslang, so glslang is no longer built here.
-    # libshaderc is the remaining option if shader compilation is wanted back.
+    # NOTE: the ~25 *_vulkan filters, the ffv1_vulkan/prores_ks_vulkan encoders and the *_vulkan
+    # hwaccels all carry "_deps=vulkan spirv_compiler", so they need a GLSL compiler on top of the
+    # headers. There is no configure flag for it: with vulkan enabled, ffmpeg 9.0's configure walks
+    # "for program in $glslc glslc glslang glslangValidator" and enables the internal
+    # spirv_compiler feature for the first one it finds on PATH. The shaders are then translated to
+    # SPIR-V at build time (.glsl -> .spv -> .spv.gz -> .spv.c -> .spv.o) and linked in, which is
+    # why build_glslang below installs a host executable and links nothing into ffmpeg.
+}
+
+build_spirv_headers() {
+    if build "spirv-headers" "${VER_SPIRV_HEADERS[0]}"; then
+        download "https://github.com/KhronosGroup/SPIRV-Headers/archive/refs/tags/vulkan-sdk-$CURRENT_PACKAGE_VERSION.tar.gz" "SPIRV-Headers-$CURRENT_PACKAGE_VERSION.tar.gz"
+        # Header-only: the install target just copies include/spirv/** into the prefix. The tests
+        # pull in a C/C++ toolchain check we have no use for, so they stay off.
+        execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DSPIRV_HEADERS_ENABLE_TESTS=OFF -B build/
+        execute cmake --build build --target install
+        build_done "spirv-headers" "$CURRENT_PACKAGE_VERSION"
+    fi
+
+    # NOTE: no --enable- flag exists for this. configure probes
+    # "spirv-headers/spirv.h" and then "spirv/unified1/spirv.h"; this install provides the latter,
+    # which is what switches on swscale's SPIR-V backend. Missing headers are only a warning
+    # ("spirv-headers not found, swscale SPIR-V backend unavailable"), so a failure here is silent
+    # in the ffmpeg configure output - hence the explicit package instead of hoping for a system copy.
+}
+
+build_spirv_tools() {
+    if build "spirv-tools" "${VER_SPIRV_TOOLS[0]}"; then
+        download "https://github.com/KhronosGroup/SPIRV-Tools/archive/refs/tags/vulkan-sdk-$CURRENT_PACKAGE_VERSION.tar.gz" "SPIRV-Tools-$CURRENT_PACKAGE_VERSION.tar.gz"
+        # Only built to give glslang its SPIR-V optimizer, which is what makes glslang's -Os/-Od
+        # work - see build_glslang. SPIRV-Tools wants the SPIRV-Headers *source* tree rather than an
+        # installed prefix, so this points at what build_spirv_headers above already extracted;
+        # both are pinned to the same vulkan-sdk tag so the grammar tables match. The command line
+        # tools and the test suite are not needed, and SPIRV_WERROR=OFF keeps a newer host compiler's
+        # fresh warnings from turning into hard errors. Needs python3 to generate its tables.
+        execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_BUILD_TYPE=Release -DSPIRV-Headers_SOURCE_DIR="$PACKAGES/SPIRV-Headers-${VER_SPIRV_HEADERS[0]}" -DSPIRV_SKIP_TESTS=ON -DSPIRV_SKIP_EXECUTABLES=ON -DSPIRV_WERROR=OFF -DBUILD_SHARED_LIBS=OFF -B build/
+        execute cmake --build build --target install -j "$MJOBS"
+        build_done "spirv-tools" "$CURRENT_PACKAGE_VERSION"
+    fi
+}
+
+build_glslang() {
+    if build "glslang" "${VER_GLSLANG[0]}"; then
+        download "https://github.com/KhronosGroup/glslang/archive/refs/tags/$CURRENT_PACKAGE_VERSION.tar.gz" "glslang-$CURRENT_PACKAGE_VERSION.tar.gz"
+        # This is a host build tool only - ffmpeg 9.0 links no glslang library, it just runs the
+        # installed glslangValidator during "make". Hence:
+        #   ENABLE_OPT=1        the SPIR-V optimizer is what implements glslang's -Os and -Od, and
+        #                       configure appends -Os to GLSLCFLAGS for an --enable-small build (so
+        #                       for this script's --small flag). Without it the probe still passes -
+        #                       check_glslc compiles its test shader before the -Os is appended - and
+        #                       the build then dies much later on the first .glsl. So the optimizer
+        #                       is not optional here, it is what keeps --small working.
+        #   ALLOW_EXTERNAL_..   without it glslang only accepts a SPIRV-Tools checkout vendored under
+        #                       External/ by its update_glslang_sources.py, which needs network access
+        #                       at build time. This makes it find_package() the copy that
+        #                       build_spirv_tools installed into WORKSPACE instead. Upstream calls the
+        #                       combination unsupported unless the commit matches known_good.json; it
+        #                       does here, both packages are pinned to the same vulkan-sdk tag.
+        #   ENABLE_HLSL=OFF     the HLSL front-end is deprecated upstream and warns during cmake;
+        #                       ffmpeg only ever feeds it GLSL.
+        #   GLSLANG_TESTS=OFF   the test suite additionally wants gtest.
+        #   BUILD_EXTERNAL=OFF  do not descend into External/, which is empty in the release tarball.
+        # The build needs python3, which the meson/ninja bootstrap already requires.
+        execute cmake -DCMAKE_PREFIX_PATH="${WORKSPACE}" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_BUILD_TYPE=Release -DENABLE_OPT=1 -DALLOW_EXTERNAL_SPIRV_TOOLS=ON -DENABLE_HLSL=OFF -DGLSLANG_TESTS=OFF -DBUILD_SHARED_LIBS=OFF -DBUILD_EXTERNAL=OFF -B build/
+        execute cmake --build build --target install -j "$MJOBS"
+        build_done "glslang" "$CURRENT_PACKAGE_VERSION"
+    fi
+
+    # NOTE: install puts "glslang" plus a "glslangValidator" symlink into $WORKSPACE/bin, which is
+    # already at the front of PATH, so ffmpeg's configure probe finds it without any flag. The
+    # static libs and headers it also installs are unused - ffmpeg 9.0 has no --enable-libglslang.
 }
 
 build_nv_codec() {
@@ -1817,6 +1957,7 @@ PACKAGE_BUILD_ORDER=(
     libvpx
     xvidcore
     vid_stab
+    frei0r
     av1
     zimg
 
@@ -1829,6 +1970,7 @@ PACKAGE_BUILD_ORDER=(
     sord
     sratom
     lilv
+    ladspa
     opencore
     lame
     opus
@@ -1867,6 +2009,9 @@ PACKAGE_BUILD_ORDER=(
 
     ## HWaccel library
     vulkan_headers
+    spirv_headers
+    spirv_tools
+    glslang
     nv_codec
     vaapi
     amf
@@ -1968,12 +2113,23 @@ if [[ "$AUTOINSTALL" == "yes" ]]; then
     INSTALL_NOW=1
     echo "Automatically installing these binaries because the --auto-install option was used or AUTOINSTALL=yes was run."
 elif [[ ! "$SKIPINSTALL" == "yes" ]]; then
-    read -r -p "Install these binaries to your $INSTALL_FOLDER folder? Existing binaries will be replaced. [Y/n] " response
-    case $response in
-    "" | [yY][eE][sS] | [yY])
-        INSTALL_NOW=1
-        ;;
-    esac
+    # The prompt defaults to yes, so an empty answer means "install". That makes a
+    # failed read dangerous rather than harmless: at EOF - a non-interactive shell,
+    # stdin from /dev/null or a pipe, CI, cron - read returns non-zero and leaves
+    # response empty, which matches the "" branch below and would overwrite the
+    # system binaries unattended. So only ask when there is a terminal to ask, and
+    # still guard the read itself in case it fails for another reason.
+    if [ -t 0 ]; then
+        read -r -p "Install these binaries to your $INSTALL_FOLDER folder? Existing binaries will be replaced. [Y/n] " response || response=n
+        case $response in
+        "" | [yY][eE][sS] | [yY])
+            INSTALL_NOW=1
+            ;;
+        esac
+    else
+        echo "Not installing these binaries: this is not an interactive shell, so the install prompt was skipped."
+        echo "Pass --auto-install (or set AUTOINSTALL=yes) to install without being asked."
+    fi
 else
     echo "Skipping install of these binaries because the --skip-install option was used or SKIPINSTALL=yes was run."
 fi
