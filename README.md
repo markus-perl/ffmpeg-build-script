@@ -1730,6 +1730,14 @@ Done. FFmpeg is now installed to your system.
 ffmpeg-build-script is very stable. Every commit runs against Linux and macOS
 with https://github.com/markus-perl/ffmpeg-build-script/actions to make sure everything works as expected.
 
+### Contributing
+
+Bug reports and pull requests are welcome — please read [CONTRIBUTING.md](CONTRIBUTING.md) first,
+it covers which systems are supported, how to run the lint checks and how to test a change
+without sitting through a full build every time.
+
+Found a security problem? Do not open a public issue — follow [SECURITY.md](SECURITY.md).
+
 ### Contact
 
 * Github: [http://www.github.com/markus-perl/](https://github.com/markus-perl/ffmpeg-build-script)
