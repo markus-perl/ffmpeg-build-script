@@ -112,7 +112,7 @@ jobs:
 
   build-cuda-ubuntu-docker:
     name: build in ubuntu docker with cuda
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Free up disk space
         run: |
@@ -124,13 +124,13 @@ jobs:
       - name: pull base image
         id: cuda_ubuntu_pull
         run: |
-          docker pull nvidia/cuda:13.3.1-devel-ubuntu22.04
-          docker pull ubuntu:22.04
+          docker pull nvidia/cuda:13.3.1-devel-ubuntu24.04
+          docker pull ubuntu:24.04
       - name: run if cuda_ubuntu_pull failed
         if: failure() && steps.cuda_ubuntu_pull.outcome == 'failure'
         run: |
-          docker pull nvidia/cuda:13.3.1-devel-ubuntu22.04
-          docker pull ubuntu:22.04
+          docker pull nvidia/cuda:13.3.1-devel-ubuntu24.04
+          docker pull ubuntu:24.04
       - name: build ffmpeg
         run: |
           docker build -t ffmpeg:cuda-ubuntu -f cuda-ubuntu.dockerfile .
@@ -140,7 +140,7 @@ jobs:
 
   build-full-static:
     name: full static build in docker
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
