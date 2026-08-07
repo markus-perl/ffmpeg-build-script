@@ -1162,6 +1162,16 @@ if command_exists "meson"; then
     CONFIGURE_OPTIONS+=("--enable-libharfbuzz")
 fi
 
+# fontconfig generates fcgenericfamily.h with gperf, which is not shipped in the tarball.
+# macOS has gperf in /usr/bin, but a minimal Linux install usually does not, so build it here.
+if build "gperf" "3.3"; then
+    download "https://ftp.gnu.org/gnu/gperf/gperf-$CURRENT_PACKAGE_VERSION.tar.gz"
+    execute ./configure --prefix="${WORKSPACE}"
+    execute make -j "$MJOBS"
+    execute make install
+    build_done "gperf" $CURRENT_PACKAGE_VERSION
+fi
+
 # The fontconfig configuration is installed inside the workspace, so a relocated binary
 # falls back to fontconfig's built-in font directories.
 #
