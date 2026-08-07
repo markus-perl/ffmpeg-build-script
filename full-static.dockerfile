@@ -6,7 +6,7 @@ ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
 
 RUN apt-get update \
     && apt-get -y --no-install-recommends install build-essential curl ca-certificates python3 \
-    python-is-python3 ninja-build meson git \
+    python-is-python3 ninja-build meson git fonts-dejavu-core \
     && apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/* \
     && update-ca-certificates
 
@@ -24,6 +24,13 @@ FROM scratch
 
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
+
+# fontconfig is compiled to look for its configuration in the build workspace, which does not
+# exist here, so point it at the copied configuration instead. Without this, drawtext cannot
+# resolve fonts by name and libass falls back to a default font.
+ENV FONTCONFIG_PATH=/etc/fonts
+COPY --from=build /app/workspace/etc/fonts /etc/fonts
+COPY --from=build /usr/share/fonts /usr/share/fonts
 
 # Copy ffmpeg
 COPY --from=build /app/workspace/bin/ffmpeg /ffmpeg
