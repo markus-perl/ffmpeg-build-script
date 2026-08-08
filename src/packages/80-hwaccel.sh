@@ -3,6 +3,7 @@
 ## HWaccel library
 ##
 
+VER_VULKAN_HEADERS=("1.4.358" "a4a92dcd138cece5722d87e26419442a432a819eb0a07b2e93d89d8b7628761f")
 build_vulkan_headers() {
     if build "vulkan-headers" "${VER_VULKAN_HEADERS[0]}"; then
         download "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "Vulkan-Headers-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -22,6 +23,9 @@ build_vulkan_headers() {
     # why build_glslang below installs a host executable and links nothing into ffmpeg.
 }
 
+# SPIRV-Headers is tagged "vulkan-sdk-<version>", so the version here carries no
+# "v" prefix and build_spirv_headers prepends the tag prefix instead.
+VER_SPIRV_HEADERS=("1.4.357.0" "4d703067a7e06331ccb37bdfed3f9b7879cc61969a2689ae95c95db34a47ff07")
 build_spirv_headers() {
     if build "spirv-headers" "${VER_SPIRV_HEADERS[0]}"; then
         download "https://github.com/KhronosGroup/SPIRV-Headers/archive/refs/tags/vulkan-sdk-$CURRENT_PACKAGE_VERSION.tar.gz" "SPIRV-Headers-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -39,6 +43,7 @@ build_spirv_headers() {
     # in the ffmpeg configure output - hence the explicit package instead of hoping for a system copy.
 }
 
+VER_SPIRV_TOOLS=("1.4.357.0" "d31e7109b6ef3559067e53e520870eafed7c9534d00db9728814b6df03fa4a5e")
 build_spirv_tools() {
     if build "spirv-tools" "${VER_SPIRV_TOOLS[0]}"; then
         download "https://github.com/KhronosGroup/SPIRV-Tools/archive/refs/tags/vulkan-sdk-$CURRENT_PACKAGE_VERSION.tar.gz" "SPIRV-Tools-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -54,6 +59,7 @@ build_spirv_tools() {
     fi
 }
 
+VER_GLSLANG=("16.5.0" "01af17195fbeb59e39e31e9506de35bb39dfd35807ea0c9a1a99d7d1183ddd45")
 build_glslang() {
     if build "glslang" "${VER_GLSLANG[0]}"; then
         download "https://github.com/KhronosGroup/glslang/archive/refs/tags/$CURRENT_PACKAGE_VERSION.tar.gz" "glslang-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -105,6 +111,17 @@ vendor_libplacebo_submodule() {
 # Placed after vulkan_headers/spirv_tools/glslang because it links all three: ffmpeg 9.0 has
 # libplacebo_filter_deps="libplacebo vulkan" (configure line 4212), and libplacebo itself needs a
 # GLSL compiler for its Vulkan backend, which is the glslang the three packages above produce.
+VER_LIBPLACEBO=("7.360.1" "d05fdf90bea2f629eaa2d115e909fd356388ac639e54f77b87a018a6d76224bd")
+# libplacebo's git submodules, which the GitHub tag archive does not contain and
+# for which upstream publishes no bundled release tarball. Pinned here as ordinary
+# downloads so nothing has to be fetched unpinned (or with pip) during the build -
+# see build_libplacebo for which of the six submodules are needed and why. The
+# versions are the exact commits the v7.360.1 gitlink points at, resolved to their
+# upstream tags: jinja 15206881 = 3.1.6, markupsafe 297fc8e3 = 3.0.3,
+# fast_float 97b54ca9 = v8.2.2.
+VER_LIBPLACEBO_JINJA=("3.1.6" "2074b22a72caa65474902234b320d73463d6d4c223ee49f4b433495758356337")
+VER_LIBPLACEBO_MARKUPSAFE=("3.0.3" "f1d9d06c34515dd3ad210ec769da613057b536d11d6c039183b87757a883a254")
+VER_LIBPLACEBO_FAST_FLOAT=("8.2.2" "e64b5fff88e04959154adbd5fb83331d91f2e04ac06454671cdfcbdff172b158")
 build_libplacebo() {
     # meson is the only build system libplacebo has, and glsl_preproc (see below) needs python3.
     if ! command_exists "python3"; then return; fi
@@ -249,6 +266,7 @@ build_libplacebo() {
     # runtime, so a fully static link has nothing to work around.
 }
 
+VER_NV_CODEC=("13.1.15.0" "52532ceade3d5c1af62624986f13cf01b63c910576b08c0c278756c5e4b41ad0")
 build_nv_codec() {
     if [[ ! "$OSTYPE" == "linux-gnu" ]]; then return; fi
 
@@ -286,6 +304,8 @@ build_nv_codec() {
     fi
 }
 
+# vaapi is a marker package: nothing is downloaded, so it has no checksum.
+VER_VAAPI=("1" "")
 build_vaapi() {
     if [[ ! "$OSTYPE" == "linux-gnu" ]]; then return; fi
 
@@ -301,6 +321,7 @@ build_vaapi() {
     fi
 }
 
+VER_AMF=("1.5.2" "8a70b6dc85261e6e6e57769bd81ac1e09c0a4c96bbd5e358ffbc2dee51e8e50a")
 build_amf() {
     if [[ ! "$OSTYPE" == "linux-gnu" ]]; then return; fi
 
@@ -316,6 +337,9 @@ build_amf() {
 
 # Intel Quick Sync Video. Placed after build_vaapi because that is the child device
 # hwcontext_qsv.c picks on Linux - see the runtime note at the end of this function.
+# The oneVPL dispatcher, renamed from oneVPL to libvpl upstream (github.com/intel/oneVPL
+# now 301s to intel/libvpl). ffmpeg 9.0 wants "vpl >= 2.6"; this is 2.17.
+VER_LIBVPL=("2.17.0" "4de3e2faf1e8307fb282e4a43f443191810f6a6b0a484fffa7995ba1c814c6ec")
 build_libvpl() {
     if [[ ! "$OSTYPE" == "linux-gnu" ]]; then return; fi
 
@@ -377,6 +401,7 @@ build_libvpl() {
     # av_hwdevice_ctx_create(QSV) returns ENOSYS.
 }
 
+VER_OPENCL_HEADERS=("2026.05.29" "d9e6c48357de5002da11ce45de600e0c3ffe6ab4f628a3b9fe2b38603161658a")
 build_opencl_headers() {
     if [[ ! "$OSTYPE" == "linux-gnu" ]]; then return; fi
 
@@ -388,6 +413,7 @@ build_opencl_headers() {
     fi
 }
 
+VER_OPENCL_ICD_LOADER=("2026.05.29" "48fd0c5181db7cd046f4f731d5955694892e10998d49d09ee0d997e7e04fd939")
 build_opencl_icd_loader() {
     if [[ ! "$OSTYPE" == "linux-gnu" ]]; then return; fi
 

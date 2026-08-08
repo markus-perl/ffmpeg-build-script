@@ -133,6 +133,7 @@ build_meson_and_ninja() {
     fi
 }
 
+VER_DAV1D=("1.5.4" "a1d5b63d2d38ec9bd03acf643caa51fa22edd1e89c5a109c4807717216bbec07")
 build_dav1d() {
     if ! command_exists "python3"; then return; fi
     if ! command_exists "meson"; then return; fi
@@ -159,6 +160,7 @@ build_dav1d() {
     CONFIGURE_OPTIONS+=("--enable-libdav1d")
 }
 
+VER_SVTAV1=("4.2.0" "c7b13c4a84bd3751aa35fcc72be13e6875467e7c2216879251a486e5b1e4e740")
 build_svtav1() {
     if build "svtav1" "${VER_SVTAV1[0]}"; then
         download "https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/v$CURRENT_PACKAGE_VERSION/SVT-AV1-v$CURRENT_PACKAGE_VERSION.tar.gz" "svtav1-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -172,6 +174,7 @@ build_svtav1() {
     CONFIGURE_OPTIONS+=("--enable-libsvtav1")
 }
 
+VER_RAV1E=("0.8.1" "06d1523955fb6ed9cf9992eace772121067cca7e8926988a1ee16492febbe01e")
 build_rav1e() {
     if ! command_exists "cargo"; then return; fi
     if [[ "$SKIPRAV1E" == "yes" ]]; then return; fi
@@ -186,6 +189,7 @@ build_rav1e() {
     CONFIGURE_OPTIONS+=("--enable-librav1e")
 }
 
+VER_X264=("0480cb05" "b336cdb04eeca5d15a53db323bc716fd7a1dae7bf19df0a8a41379d2d65e05d0")
 build_x264() {
     if ! $NONFREE_AND_GPL; then return; fi
 
@@ -208,6 +212,7 @@ build_x264() {
     CONFIGURE_OPTIONS+=("--enable-libx264")
 }
 
+VER_X265=("b81f650" "540de59b5004274f70a4fe229e86c7602d49b5b1a96112fd95a9dcdb5c9f1dc9")
 build_x265() {
     if ! $NONFREE_AND_GPL; then return; fi
 
@@ -315,6 +320,10 @@ EOF
     CONFIGURE_OPTIONS+=("--enable-libx265")
 }
 
+# openh264 tags "2.5.1" without a "v" exist as GitHub *releases* only; every git
+# tag, and therefore every archive URL, carries the "v" prefix. 2.6.0 is the
+# newest tag, 2.5.1 is a later-published patch of the older 2.5 branch.
+VER_OPENH264=("2.6.0" "558544ad358283a7ab2930d69a9ceddf913f4a51ee9bf1bfb9e377322af81a69")
 build_openh264() {
     # Deliberately not behind $NONFREE_AND_GPL, unlike x264/x265 right above:
     # ffmpeg 9.0 lists libopenh264 in the plain EXTERNAL_LIBRARY_LIST (configure
@@ -348,6 +357,7 @@ build_openh264() {
     CONFIGURE_OPTIONS+=("--enable-libopenh264")
 }
 
+VER_LIBVPX=("1.16.0" "7a479a3c66b9f5d5542a4c6a1b7d3768a983b1e5c14c60a9396edc9b649e015c")
 build_libvpx() {
     if build "libvpx" "${VER_LIBVPX[0]}"; then
         download "https://github.com/webmproject/libvpx/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "libvpx-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -367,6 +377,7 @@ build_libvpx() {
     CONFIGURE_OPTIONS+=("--enable-libvpx")
 }
 
+VER_XVIDCORE=("1.3.7" "abbdcbd39555691dd1c9b4d08f0a031376a3b211652c0d8b3b8aa9be1303ce2d")
 build_xvidcore() {
     if ! $NONFREE_AND_GPL; then return; fi
 
@@ -396,6 +407,9 @@ build_xvidcore() {
     CONFIGURE_OPTIONS+=("--enable-libxvid")
 }
 
+VER_VID_STAB=("1.1.2" "96db34d48a9e3aa13736a48744b56dfb76731ac9bb5193c716de8534c9fd709d")
+# Homebrew patch that vid_stab needs on Apple Silicon, pinned by URL to a commit.
+VER_VID_STAB_PATCH=("" "45c16a2b64ba67f7ca5335c2f602d8d5186c29b38188b3cc7aff5df60aecaf60")
 build_vid_stab() {
     if ! $NONFREE_AND_GPL; then return; fi
 
@@ -423,6 +437,7 @@ build_vid_stab() {
     CONFIGURE_OPTIONS+=("--enable-libvidstab")
 }
 
+VER_FREI0R=("3.2.3" "898f80e5fdae6108a2d9b2317649af576a4b5e636c73429ee11b64397a596e12")
 build_frei0r() {
     # frei0r is in ffmpeg 9.0's EXTERNAL_LIBRARY_GPL_LIST (configure line 2031), so
     # --enable-frei0r implies --enable-gpl and must stay behind this script's flag.
@@ -453,6 +468,9 @@ build_frei0r() {
     CONFIGURE_OPTIONS+=("--enable-frei0r")
 }
 
+# av1 cannot be pinned: googlesource.com's +archive endpoint regenerates the
+# tarball on every request with different bytes, so no hash is ever stable.
+VER_AV1=("3.14.1" "")
 build_av1() {
     if build "av1" "${VER_AV1[0]}"; then
         download "https://aomedia.googlesource.com/aom/+archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "av1-$CURRENT_PACKAGE_VERSION.tar.gz" "av1"
@@ -471,6 +489,7 @@ build_av1() {
     CONFIGURE_OPTIONS+=("--enable-libaom")
 }
 
+VER_ZIMG=("3.0.6" "be89390f13a5c9b2388ce0f44a5e89364a20c1c57ce46d382b1fcc3967057577")
 build_zimg() {
     if build "zimg" "${VER_ZIMG[0]}"; then
         download "https://github.com/sekrit-twc/zimg/archive/refs/tags/release-$CURRENT_PACKAGE_VERSION.tar.gz" "zimg-$CURRENT_PACKAGE_VERSION.tar.gz" "zimg"
@@ -493,6 +512,7 @@ build_zimg() {
 # Deliberately not behind $NONFREE_AND_GPL: ffmpeg 9.0 lists libvmaf in the plain
 # EXTERNAL_LIBRARY_LIST (configure line 2140) and in none of the GPL/nonfree/version3 lists - Netflix
 # releases it under BSD-2-Clause-Patent.
+VER_LIBVMAF=("3.2.0" "a28f93f3b4fa65601be324587072e32a6a704a304ba7b1aec9b70b3f709bc1dc")
 build_libvmaf() {
     # python3 is needed twice over: meson itself is a Python program, and the xxd shim below is
     # Python. Mirrors build_dav1d/build_libplacebo, which skip themselves the same way.

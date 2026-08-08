@@ -74,8 +74,6 @@ fragment_failed() {
 
 # shellcheck source=src/00-header.sh
 . "$SCRIPT_DIR/src/00-header.sh" || fragment_failed 00-header.sh
-# shellcheck source=src/10-versions.sh
-. "$SCRIPT_DIR/src/10-versions.sh" || fragment_failed 10-versions.sh
 # shellcheck source=src/20-globals.sh
 . "$SCRIPT_DIR/src/20-globals.sh" || fragment_failed 20-globals.sh
 # shellcheck source=src/30-helpers.sh

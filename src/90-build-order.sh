@@ -119,6 +119,48 @@ PACKAGE_BUILD_ORDER=(
     opencl_icd_loader
 )
 
+# --list-packages. Derives the version and checksum through the same helper
+# download() uses, so a package whose VER_ array name has drifted out of sync
+# with the name passed to build() shows up here as "MISSING" instead of being
+# silently downloaded unverified.
+if $LIST_PACKAGES; then
+    # Packages that fetch no tarball of their own and so carry no VER_ array:
+    # meson and ninja come from pip3. Listed explicitly rather than excusing
+    # every absent array, so that a name which has genuinely drifted out of
+    # sync still reports as MISSING.
+    PACKAGES_WITHOUT_TARBALL=" meson_and_ninja "
+
+    echo "Packages in build order:"
+    echo ""
+    for PACKAGE in "${PACKAGE_BUILD_ORDER[@]}"; do
+        LIST_VERSION_REF=$(package_ver_var "$PACKAGE" 0)
+        LIST_SHA_REF=$(package_ver_var "$PACKAGE" 1)
+        LIST_VERSION="${!LIST_VERSION_REF}"
+        LIST_SHA="${!LIST_SHA_REF}"
+
+        case "$PACKAGES_WITHOUT_TARBALL" in
+        *" $PACKAGE "*)
+            printf '  %-22s %-28s %s\n' "$PACKAGE" "-" "no tarball"
+            continue
+            ;;
+        esac
+
+        if [ -z "$LIST_VERSION" ]; then
+            LIST_STATE="MISSING - no ${LIST_VERSION_REF%%[*} array"
+            LIST_VERSION="?"
+        elif [ -z "$LIST_SHA" ]; then
+            LIST_STATE="not pinned"
+        else
+            LIST_STATE="pinned"
+        fi
+
+        printf '  %-22s %-28s %s\n' "$PACKAGE" "$LIST_VERSION" "$LIST_STATE"
+    done
+    echo ""
+    echo "${#PACKAGE_BUILD_ORDER[@]} packages, then ffmpeg $FFMPEG_VERSION."
+    exit 0
+fi
+
 for PACKAGE in "${PACKAGE_BUILD_ORDER[@]}"; do
     "build_${PACKAGE}"
 done

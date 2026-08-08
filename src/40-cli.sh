@@ -4,6 +4,7 @@ usage() {
     echo "Options:"
     echo "  -h, --help                     Display usage information"
     echo "      --version                  Display version information"
+    echo "      --list-packages            List the packages in build order, with versions"
     echo "  -b, --build                    Starts the build process"
     echo "      --enable-gpl-and-non-free  Enable GPL and non-free codecs  - https://ffmpeg.org/legal.html"
     echo "      --disable-lv2              Disable LV2 libraries"
@@ -31,6 +32,13 @@ while (($# > 0)); do
     --version)
         echo "$SCRIPT_VERSION"
         exit 0
+        ;;
+    --list-packages)
+        # Only recorded here. The VER_ arrays live next to their build_
+        # functions, which are sourced after this fragment, so the listing
+        # itself happens in 90-build-order.sh once they exist.
+        LIST_PACKAGES=true
+        shift
         ;;
     -b | --build)
         bflag='-b'
@@ -102,12 +110,22 @@ if [ -n "$cflag" ]; then
     cleanup
 fi
 
-if [ -z "$bflag" ]; then
+if [ -z "$bflag" ] && ! $LIST_PACKAGES; then
     if [ -z "$cflag" ]; then
         usage
         exit 1
     fi
     exit 0
+fi
+
+# --list-packages is a query, so it stops here: nothing below is needed to
+# print the list, and creating packages/ and workspace/ or demanding a
+# compiler would be a surprising side effect. Returning rather than exiting
+# hands control back to the entry point, which goes on to source the package
+# fragments; 90-build-order.sh prints the list once their VER_ arrays exist.
+# It takes precedence over --build.
+if $LIST_PACKAGES; then
+    return 0
 fi
 
 echo "Using $MJOBS make jobs simultaneously."

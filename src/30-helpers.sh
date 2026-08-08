@@ -13,13 +13,35 @@ remove_dir() {
     fi
 }
 
+##
+## Package versions and tarball SHA-256 checksums.
+##
+## Each package carries one VER_<PACKAGE>=("<version>" "<sha256>") array
+## directly above its build_<package> function, in the fragment that builds it.
+## <PACKAGE> is the name passed to build(), uppercased, with every
+## non-alphanumeric character replaced by an underscore - the two helpers below
+## derive the array name from it mechanically, so the name passed to build() and
+## the array name must stay in sync or the checksum silently goes unchecked.
+## Element 0 is the version, element 1 the checksum.
+##
+## The checksum is the one of the downloaded archive, not of its contents. An
+## empty checksum means "not pinned yet" and skips verification for that
+## download. Deliberately no associative arrays here: /bin/bash on macOS is
+## still 3.2, where "declare -A" is a fatal error - indexed arrays are fine.
+##
+package_ver_var() {
+    # package_ver_var <package-name> <index>
+    # Maps a build() package name onto a reference to one element of its VER_
+    # array: uppercase, non-alphanumerics become underscores. Element 0 is the
+    # version, element 1 the SHA-256. Read the result with ${!ref}.
+    PACKAGE_VER_VAR_NAME=$(printf '%s' "$1" | tr '[:lower:]' '[:upper:]')
+    printf 'VER_%s[%s]' "${PACKAGE_VER_VAR_NAME//[^A-Z0-9]/_}" "$2"
+}
+
 package_sha_var() {
     # package_sha_var <package-name>
-    # Maps a build() package name onto a reference to the checksum element of its
-    # VER_ array in the table at the top of this script: uppercase,
-    # non-alphanumerics become underscores, element 1 is the SHA-256.
-    PACKAGE_SHA_VAR_NAME=$(printf '%s' "$1" | tr '[:lower:]' '[:upper:]')
-    printf 'VER_%s[1]' "${PACKAGE_SHA_VAR_NAME//[^A-Z0-9]/_}"
+    # The checksum element, which is what download() verifies against.
+    package_ver_var "$1" 1
 }
 
 verify_checksum() {

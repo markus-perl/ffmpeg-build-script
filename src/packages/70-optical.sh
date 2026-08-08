@@ -14,6 +14,9 @@
 #
 # 1.2.0 dropped autotools and is meson-only, which is why this looks nothing like the
 # autotools packages around it.
+# libbluray's only mandatory dependency, and a separate package because it cannot be
+# anything else: see the comment on build_libudfread.
+VER_LIBUDFREAD=("1.2.0" "bb477cbd4cfbfc7787d9d05b71ee5e70430f5cfebf1297497f7e83547958050f")
 build_libudfread() {
     if ! command_exists "python3"; then return; fi
     if ! command_exists "meson"; then return; fi
@@ -43,6 +46,7 @@ build_libudfread() {
 #
 # Not licence-gated: ffmpeg 9.0 lists libbluray in the plain EXTERNAL_LIBRARY_LIST, and
 # libbluray itself is LGPL-2.1.
+VER_LIBBLURAY=("1.5.0" "f676408e91a5d321abf8b8d4dfdae36205c297dab5c54c3ec519639025f474a2")
 build_libbluray() {
     if ! command_exists "python3"; then return; fi
     if ! command_exists "meson"; then return; fi
