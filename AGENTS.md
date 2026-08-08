@@ -14,16 +14,36 @@ own — the script *is* the project.
 | Path | What it is |
 | --- | --- |
 | `build-ffmpeg` | **The script.** Almost every change goes here. |
-| `web-install.sh`, `web-install-gpl-and-non-free.sh` | One-liner installers that curl and run `build-ffmpeg`. |
+| `web-install.sh`, `web-install-gpl-and-non-free.sh` | One-liner installers. They resolve the **latest release**, download GitHub's auto-generated archive for that tag, extract it and run `build-ffmpeg` from it. They do not fetch anything from `master`. |
 | `Dockerfile`, `cuda-ubuntu.dockerfile`, `full-static.dockerfile`, `export.dockerfile` | Container builds, all exercised by CI. |
-| `.github/workflows/build.yml` | `lint`, then five full builds: `build-linux`, `build-macos`, `build-docker`, `build-cuda-ubuntu-docker`, `build-full-static`. |
+| `.github/workflows/build.yml` | `lint`, then five full builds: `build-linux`, `build-macos`, `build-docker`, `build-cuda-ubuntu-docker`, `build-full-static`, then `release` on `v*` tags only. |
 | `README.md` | End-user documentation. Not contributor docs. |
 | `.editorconfig` | shfmt reads its indent keys from here. |
+| `.gitattributes` | `export-ignore` entries that keep repo infrastructure out of the release tarball `git archive` builds. Nothing the build needs may be listed there. |
 | `packages/`, `workspace/`, `build/` | **Build output. Gitignored. Never read or edit these.** `packages/` holds ~70 extracted upstream source trees; grepping it will bury you in unrelated code. |
 | `docs/`, `plans/` | Gitignored scratch notes. Not part of the project. |
 
 When searching the repo, restrict the search to the tracked files. `git ls-files` is the
 reliable filter; a bare `grep -r .` is not.
+
+## Releases vs master
+
+`master` holds unreleased work; users get releases.
+
+**Releases are drafted and published by hand.** Nothing is uploaded to them and nothing
+needs to be: GitHub generates a source archive for every tag, so if the tag exists its
+archive exists. `.gitattributes` `export-ignore` applies to those archives, which is what
+keeps repo infrastructure out of what users download.
+
+The installers resolve the newest release from the `/releases/latest` redirect, which
+points at `/releases/tag/<tag>`, and then fetch `/archive/refs/tags/<tag>.tar.gz`. Do not
+replace that with an `api.github.com` lookup: it is rate-limited to 60/hr per IP, breaks CI
+runners behind shared NAT, and would add a `jq` dependency.
+
+The `release-version-check` job asserts that a pushed tag matches `SCRIPT_VERSION` *in the
+tagged commit* (`v1.61` requires `SCRIPT_VERSION=1.61`), so master carrying the next
+release's version is legal while a mismatched tag fails. It does not gate on the builds —
+there is no artifact to withhold, so it reports in seconds instead of after an hour.
 
 ## Style and tooling
 
@@ -119,7 +139,10 @@ once: `--enable-gpl-and-non-free` → gettext + openssl; default LGPL → gmp + 
 5. Get the checksum by downloading the archive and hashing it — do not invent one, and do not
    leave it empty unless the URL genuinely produces unstable bytes (as `av1` does; say so in a
    comment when you do).
-6. Bump `SCRIPT_VERSION`.
+6. Bump `SCRIPT_VERSION` — but only if it is not already ahead of the latest release tag.
+   It names the *next* release, not the current commit, so a whole batch of unreleased
+   commits shares one bump. Check `git tag | tail -1` first: bumping again while master is
+   already ahead skips a version and makes the `release` job's tag assertion fail.
 
 Prefer `--disable-shared --enable-static` and disabling docs, tests, examples and CLI tools:
 everything here is a static link into one binary and nothing else consumes these installs.
