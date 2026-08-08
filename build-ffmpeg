@@ -10,7 +10,7 @@
 
 PROGNAME=$(basename "$0")
 FFMPEG_VERSION=9.0
-SCRIPT_VERSION=1.61
+SCRIPT_VERSION=1.62
 
 ##
 ## Package versions and tarball SHA-256 checksums.
@@ -1288,6 +1288,23 @@ build_x265() {
             done
         fi
 
+        # x265's bundled json11 uses uint8_t without including <cstdint>. libstdc++ pulled
+        # that in transitively until GCC 15, which no longer does, so dynamicHDR10 fails to
+        # compile on Ubuntu 26.04. Force the header in rather than patching vendored source.
+        # This has to go through the environment: cmake seeds CMAKE_CXX_FLAGS from CXXFLAGS
+        # and x265 appends its own -std=c++11 to it, whereas passing -DCMAKE_CXX_FLAGS on the
+        # command line replaces that and the build then fails for want of C++11.
+        X265_CXXFLAGS_BACKUP="$CXXFLAGS"
+        export CXXFLAGS="-include cstdint ${CXXFLAGS}"
+
+        # source/CMakeLists.txt selects the language standard from ENABLE_HDR10_PLUS: on for
+        # gnu++11, off for gnu++98. The 8-bit pass below does not set it, and GCC 15's
+        # libstdc++ headers refuse to compile as C++98 at all, so that pass fails on Ubuntu
+        # 26.04. Build every pass as gnu++11, which the 10- and 12-bit ones already use.
+        # add_definitions() puts the flag after CXXFLAGS on the command line, so it cannot be
+        # overridden from the environment; the source has to say it.
+        apply_inline_patch source/CMakeLists.txt 's/-std=gnu++98/-std=gnu++11/'
+
         cd build/linux || exit
         rm -rf 8bit 10bit 12bit 2>/dev/null
         mkdir -p 8bit 10bit 12bit
@@ -1319,6 +1336,8 @@ EOF
         fi
 
         execute make install
+
+        export CXXFLAGS="$X265_CXXFLAGS_BACKUP"
 
         if [ -n "$LDEXEFLAGS" ]; then
             sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "${WORKSPACE}/lib/pkgconfig/x265.pc" # The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
@@ -1387,7 +1406,13 @@ build_xvidcore() {
     if build "xvidcore" "${VER_XVIDCORE[0]}"; then
         download "https://downloads.xvid.com/downloads/xvidcore-$CURRENT_PACKAGE_VERSION.tar.gz"
         cd build/generic || exit
-        execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+        # src/encoder.h typedefs "bool", which C23 made a keyword. See pre_c23_cflag.
+        XVID_STD_FLAG="$(pre_c23_cflag)"
+        if [ -n "$XVID_STD_FLAG" ]; then
+            execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static CFLAGS="-O2$XVID_STD_FLAG"
+        else
+            execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+        fi
         execute make -j "$MJOBS"
         execute make install
 
