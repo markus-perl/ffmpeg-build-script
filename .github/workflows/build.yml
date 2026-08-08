@@ -68,6 +68,48 @@ jobs:
         run: |
           ./build-ffmpeg --cleanup
 
+  # Every other job builds on a host with almost no -dev packages, but real users
+  # build on full desktop distributions, and several packages autodetect whatever
+  # they find there. That difference hid issue #266 for a whole release: with the
+  # system libharfbuzz-dev installed, FreeType linked against it instead of the
+  # workspace copy and ffmpeg's harfbuzz check then failed on an unresolved
+  # hb_shape. This job installs exactly those tempting -dev packages so that the
+  # contaminated-host case is covered, and asserts the affected libraries really
+  # ended up in the binary rather than being silently skipped.
+  build-linux-with-system-libs:
+    name: build in native linux with system dev packages
+    runs-on: ubuntu-26.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: install system dev packages that packages autodetect
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libva-dev libharfbuzz-dev libfreetype-dev libpng-dev libbrotli-dev meson ninja-build
+
+      - name: build ffmpeg
+        run: |
+          while sleep 300; do echo "=====[ $SECONDS seconds still running ]====="; done &
+          SKIPINSTALL=yes VERBOSE=yes SKIPRAV1E=yes ./build-ffmpeg --build --enable-gpl-and-non-free
+          kill %1
+
+      # -buildconf on its own passes even when a library was quietly dropped, so
+      # name the ones this job exists to protect.
+      - name: check the autodetect-sensitive libraries are enabled
+        run: |
+          ./workspace/bin/ffmpeg -buildconf
+          for lib in libharfbuzz libfreetype libfontconfig libass; do
+            ./workspace/bin/ffmpeg -buildconf 2>&1 | grep -q -- "--enable-$lib" || {
+              echo "::error::$lib is missing from the build configuration"
+              exit 1
+            }
+          done
+
+      - name: clean up
+        run: |
+          ./build-ffmpeg --cleanup
+
   build-macos:
     name: build in native macOS
     runs-on: macos-15

@@ -34,7 +34,10 @@ build_fribidi() {
 # Without it libass and drawtext still work, but complex scripts are not shaped.
 VER_HARFBUZZ=("14.3.0" "16070d77cfc4ba1f1e7327e83bf9b3f55898081cabdb94e56a33e04fc8874eae")
 build_harfbuzz() {
-    if ! command_exists "meson"; then return; fi
+    if ! command_exists "meson"; then
+        echo "meson is missing, skipping harfbuzz. Complex scripts will not be shaped."
+        return
+    fi
 
     if build "harfbuzz" "${VER_HARFBUZZ[0]}"; then
         download "https://github.com/harfbuzz/harfbuzz/releases/download/$CURRENT_PACKAGE_VERSION/harfbuzz-$CURRENT_PACKAGE_VERSION.tar.xz"

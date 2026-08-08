@@ -134,10 +134,21 @@ build_libssh() {
 }
 
 VER_FREETYPE2=("2.14.3" "36bc4f1cc413335368ee656c42afca65c5a3987e8768cc28cf11ba775e785a5f")
+# --with-harfbuzz=no is not optional. FreeType and harfbuzz depend on each other, and this
+# script builds FreeType first, so harfbuzz is not in the workspace yet when configure runs.
+# Left to autodetect, FreeType picks up a *system* harfbuzz instead: libfreetype.a then carries
+# hb_shape references from its autofit module and freetype2.pc gains Requires.private: harfbuzz,
+# which forms a pkg-config cycle with the workspace harfbuzz.pc built later (that one requires
+# freetype2). ffmpeg's --enable-libharfbuzz link test flattens the cycle into an order where
+# libfreetype.a lands after libharfbuzz.a, hb_shape stays unresolved, and configure reports the
+# misleading "ERROR: harfbuzz not found using pkg-config" (issue #266).
+#
+# The only thing given up is harfbuzz-assisted auto-hinting inside FreeType. Text shaping for
+# libass and drawtext comes from libharfbuzz itself and is unaffected.
 build_freetype2() {
     if build "FreeType2" "${VER_FREETYPE2[0]}"; then
         download "https://downloads.sourceforge.net/freetype/freetype-$CURRENT_PACKAGE_VERSION.tar.xz"
-        execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+        execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --with-harfbuzz=no
         execute make -j "$MJOBS"
         execute make install
         build_done "FreeType2" "$CURRENT_PACKAGE_VERSION"
