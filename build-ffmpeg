@@ -10,7 +10,7 @@
 
 PROGNAME=$(basename "$0")
 FFMPEG_VERSION=9.0
-SCRIPT_VERSION=1.62
+SCRIPT_VERSION=1.61
 
 ##
 ## Package versions and tarball SHA-256 checksums.

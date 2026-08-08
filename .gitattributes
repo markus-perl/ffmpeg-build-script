@@ -1,0 +1,13 @@
+# Keep the release tarball (git archive) to what an end user actually needs to
+# run a build. Everything listed here is repo infrastructure or scratch space.
+#
+# docs/ and plans/ are gitignored, so they are never in the archive anyway -
+# they are listed defensively in case a note ever gets committed by accident.
+# .idea/ is likewise gitignored.
+#
+# Nothing the build needs may appear below: build-ffmpeg, src/, web-install*.sh,
+# the Dockerfiles, LICENSE and README.md all have to stay in the tarball.
+.github/        export-ignore
+.idea/          export-ignore
+docs/           export-ignore
+plans/          export-ignore

@@ -106,7 +106,11 @@ The script is one bash file, and it has to keep running everywhere it currently 
   New packages should read like their neighbours.
 - **Pin what you add.** Every package carries a `VER_<NAME>=("<version>" "<sha256>")` entry.
   Obtain the checksum by hashing the archive you actually downloaded.
-- **Bump `SCRIPT_VERSION`** when you change build behaviour.
+- **Bump `SCRIPT_VERSION`** when you change build behaviour — but only if it is not already
+  ahead of the latest release tag. It names the *next* release, not the current commit, so a
+  batch of unreleased commits shares one bump. Check `git tag | tail -1` first: bumping again
+  while master is already ahead skips a version, and the release workflow refuses to publish
+  a tag that does not match `SCRIPT_VERSION`.
 
 [AGENTS.md](AGENTS.md) documents the internals in more depth — the anatomy of a package
 function, the license and capability gates, the build order array, and the traps that are easy

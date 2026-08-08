@@ -160,3 +160,71 @@ jobs:
       - name: test run ffmepg
         run: |
           docker run --rm ffmpeg:cuda-static -buildconf
+
+  # Publishes the install tarball. The `on:` block above is deliberately left
+  # alone: a tag push is already a push event (and path filters do not apply to
+  # tags), so lint and all five builds run for the tag as-is. Adding a `tags:`
+  # filter there would stop branch pushes from triggering anything at all.
+  # Instead this job filters itself with `if:` and gates on the other six.
+  release:
+    name: publish release tarball
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [ lint, build-linux, build-macos, build-docker, build-cuda-ubuntu-docker, build-full-static ]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      # fetch-depth: 0 so refs/tags/<TAG> exists locally for `git archive`.
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      # Guards the one mistake that hurts: tagging v1.63 on a commit whose
+      # build-ffmpeg still says 1.62. Checked against the tagged commit only,
+      # so master carrying the next release's version stays legal. The tag has
+      # a v prefix, SCRIPT_VERSION does not.
+      - name: check the tag matches SCRIPT_VERSION
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version=$(sed -n 's/^SCRIPT_VERSION=//p' build-ffmpeg | head -n 1)
+          echo "tag=$TAG SCRIPT_VERSION=$version"
+          if [ "$TAG" != "v$version" ]; then
+            echo "::error::tag $TAG does not match SCRIPT_VERSION=$version in build-ffmpeg; expected tag v$version"
+            exit 1
+          fi
+
+      # The asset names must never contain the version:
+      # releases/latest/download/<asset> only resolves for a filename that is
+      # identical across releases. .gitattributes export-ignore keeps the
+      # archive to what a build actually needs.
+      - name: build the tarball and its checksum
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          git archive --prefix=ffmpeg-build-script/ -o ffmpeg-build-script.tar.gz "$TAG"
+          # A bare filename here, so the .sha256 records a bare filename and
+          # `sha256sum -c` works from whatever directory the installer
+          # downloaded the pair into.
+          sha256sum ffmpeg-build-script.tar.gz >ffmpeg-build-script.tar.gz.sha256
+          cat ffmpeg-build-script.tar.gz.sha256
+          sha256sum -c ffmpeg-build-script.tar.gz.sha256
+          tar -tzf ffmpeg-build-script.tar.gz
+
+      # The release itself must already exist for this tag - publishing it from
+      # the GitHub UI creates the tag, which is what starts this workflow. A
+      # tag pushed from the command line with no release behind it fails here
+      # with "release not found"; publish the release and re-run the job.
+      #
+      # --clobber so re-running the workflow on an existing release replaces
+      # the assets instead of failing on "already exists".
+      - name: upload the assets
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release upload "$TAG" \
+            ffmpeg-build-script.tar.gz \
+            ffmpeg-build-script.tar.gz.sha256 \
+            --clobber
