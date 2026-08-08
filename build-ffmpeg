@@ -783,6 +783,25 @@ build_yasm() {
         # is why yasm is ordered after automake; it runs configure itself and forwards
         # these arguments to it. re2c is vendored in tools/, so nothing else is needed.
         execute ./autogen.sh --prefix="${WORKSPACE}"
+
+        # Generate the x86 instruction tables serially before the parallel build, or yasm
+        # fails intermittently with "1: no keywords section found" from genperf.
+        #
+        # modules/arch/x86/Makefile.inc:16 declares one recipe with three outputs:
+        #     x86insn_nasm.gperf x86insn_gas.gperf x86insns.c: gen_x86_insn.py
+        #             $(PYTHON) gen_x86_insn.py
+        # For a non-pattern rule GNU make treats that as three independent rules that each
+        # run the recipe, so under -j it can start gen_x86_insn.py up to three times at once,
+        # every copy writing the same three files. genperf then reads a .gperf that another
+        # copy is still truncating and dies on the half-written file. It is timing-dependent,
+        # so it passes far more often than it fails - which is exactly what makes it worth
+        # pinning down rather than retrying.
+        #
+        # Asking for the three outputs explicitly costs a couple of redundant generator runs
+        # and keeps the rest of the build parallel; -j1 on the whole package would serialise
+        # the compile too. This is the only multi-output rule in the tree, so nothing else
+        # needs the same treatment.
+        execute make -j1 x86insn_nasm.gperf x86insn_gas.gperf x86insns.c
         execute make -j "$MJOBS"
         execute make install
         build_done "yasm" "$CURRENT_PACKAGE_VERSION"
