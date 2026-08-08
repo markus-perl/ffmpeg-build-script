@@ -213,6 +213,8 @@ build_x264() {
 }
 
 VER_X265=("b81f650" "540de59b5004274f70a4fe229e86c7602d49b5b1a96112fd95a9dcdb5c9f1dc9")
+# The bitbucket archive URL needs the full commit hash, VER_X265 is its short form.
+X265_COMMIT=b81f650e21e8aacbe6a9ad04ce14aefc05b932c0
 build_x265() {
     if ! $NONFREE_AND_GPL; then return; fi
 
