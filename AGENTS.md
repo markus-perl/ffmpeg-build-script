@@ -22,7 +22,7 @@ tarball, `git clone`, or the Dockerfiles' `COPY src`).
 | `src/` | **The script.** Almost every change goes here — see the fragment list below. |
 | `web-install.sh`, `web-install-gpl-and-non-free.sh` | One-liner installers. They resolve the **latest release**, download GitHub's auto-generated archive for that tag, extract it and run `build-ffmpeg` from it. They do not fetch anything from `master`. |
 | `Dockerfile`, `cuda-ubuntu.dockerfile`, `full-static.dockerfile`, `export.dockerfile` | Container builds, all exercised by CI. |
-| `.github/workflows/build.yml` | `lint`, then five full builds: `build-linux`, `build-macos`, `build-docker`, `build-cuda-ubuntu-docker`, `build-full-static`, then `release-version-check` on `v*` tags only. |
+| `.github/workflows/build.yml` | `lint`, then six full builds: `build-linux`, `build-linux-with-system-libs`, `build-macos`, `build-docker`, `build-cuda-ubuntu-docker`, `build-full-static`, then `release-version-check` on `v*` tags only. |
 | `README.md` | End-user documentation. Not contributor docs. |
 | `.editorconfig` | shfmt reads its indent keys from here. |
 | `.gitattributes` | `export-ignore` entries that keep repo infrastructure out of the release tarball `git archive` builds. Nothing the build needs may be listed there. |
@@ -47,7 +47,7 @@ replace that with an `api.github.com` lookup: it is rate-limited to 60/hr per IP
 runners behind shared NAT, and would add a `jq` dependency.
 
 The `release-version-check` job asserts that a pushed tag matches `SCRIPT_VERSION` *in the
-tagged commit*, read from `src/00-header.sh` (`v1.61` requires `SCRIPT_VERSION=1.61`), so
+tagged commit*, read from `src/00-header.sh` (`v9.0.3` requires `SCRIPT_VERSION=9.0.3`), so
 master carrying the next
 release's version is legal while a mismatched tag fails. It does not gate on the builds —
 there is no artifact to withhold, so it reports in seconds instead of after an hour.
@@ -92,7 +92,6 @@ there is no artifact to withhold, so it reports in seconds instead of after an h
 | Fragment | What is in it |
 | --- | --- |
 | `src/00-header.sh` | Banner comment, `PROGNAME`, `FFMPEG_VERSION`, `SCRIPT_VERSION`. |
-| `src/10-versions.sh` | The whole `VER_*` version/checksum table. |
 | `src/20-globals.sh` | `CWD`/`PACKAGES`/`WORKSPACE`/`CFLAGS`/`LDFLAGS`/…, the small predicates (`version_gte`, `command_exists`, `cxx_supports_flag`), Apple Silicon detection and `MJOBS` detection. |
 | `src/30-helpers.sh` | `make_dir` … `download`, `execute`, `build`, `build_done`, `verify_binary_type`, `cleanup`. |
 | `src/40-cli.sh` | `usage()`, the version banner, the argument loop, the preflight `command_exists` checks. |
@@ -123,8 +122,8 @@ Rules the entry point encodes, none of them cosmetic:
 
 ### The version/checksum table
 
-Every package has one `VER_<PACKAGE>=("<version>" "<sha256>")` array in
-`src/10-versions.sh`. `download()` derives the array name from the package name mechanically — uppercased,
+Every package has one `VER_<PACKAGE>=("<version>" "<sha256>")` array directly above its
+`build_<package>` function, in the fragment that builds it. `download()` derives the array name from the package name mechanically — uppercased,
 every non-alphanumeric replaced by `_` — so the name passed to `build()` and the array name
 must stay in sync or the checksum silently goes unchecked. An empty checksum means
 "not pinned yet" and skips verification.
@@ -183,7 +182,7 @@ once: `--enable-gpl-and-non-free` → gettext + openssl; default LGPL → gmp + 
 
 ## Adding a package
 
-1. Add `VER_<NAME>=("<version>" "<sha256>")` to the table in `src/10-versions.sh`, in the
+1. Add `VER_<NAME>=("<version>" "<sha256>")` directly above the new `build_<name>`, in the
    section matching where it will be built.
 2. Write `build_<name>()` following the anatomy above, next to its neighbours in the
    matching `src/packages/*.sh` fragment. A new fragment also has to be added to the source

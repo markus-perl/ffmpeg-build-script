@@ -100,7 +100,7 @@ The script is a set of bash fragments under `src/` that `build-ffmpeg` sources i
 order, and it has to keep running everywhere it currently runs:
 
 - **Put the change in the right fragment.** `build-ffmpeg` itself is only the loader; the
-  `VER_*` table is `src/10-versions.sh`, the helpers `src/30-helpers.sh`, the package
+  `VER_*` array goes above its own `build_*`, the helpers `src/30-helpers.sh`, the package
   functions `src/packages/*.sh`, the build order `src/90-build-order.sh`. Load order is
   load-bearing and the source list in `build-ffmpeg` is explicit, so a new fragment has to
   be added there too.
@@ -112,11 +112,18 @@ order, and it has to keep running everywhere it currently runs:
   New packages should read like their neighbours.
 - **Pin what you add.** Every package carries a `VER_<NAME>=("<version>" "<sha256>")` entry.
   Obtain the checksum by hashing the archive you actually downloaded.
-- **Bump `SCRIPT_VERSION`** when you change build behaviour — but only if it is not already
-  ahead of the latest release tag. It names the *next* release, not the current commit, so a
-  batch of unreleased commits shares one bump. Check `git tag | tail -1` first: bumping again
-  while master is already ahead skips a version, and the release workflow refuses to publish
-  a tag that does not match `SCRIPT_VERSION`.
+- **Bump `SCRIPT_VERSION`** (in `src/00-header.sh`) when you change build behaviour — but only
+  if it is not already ahead of the latest release tag. It names the *next* release, not the
+  current commit, so a batch of unreleased commits shares one bump. Check `git tag | tail -1`
+  first: bumping again while master is already ahead skips a version, and the release workflow
+  refuses to publish a tag that does not match `SCRIPT_VERSION`.
+
+  Since 9.0.3 the version tracks the FFmpeg release it builds: `<ffmpeg major>.<ffmpeg
+  minor>.<n>`, where `n` counts the releases of this script against that FFmpeg version. So
+  9.0.3 is the third release building FFmpeg 9.0, and moving to FFmpeg 9.1 would start again
+  at 9.1.1. `FFMPEG_VERSION` sits directly above `SCRIPT_VERSION` in the same fragment, so
+  the two are easy to keep aligned. The older 1.x numbering ran independently of FFmpeg and
+  said nothing about what you were getting.
 
 [AGENTS.md](AGENTS.md) documents the internals in more depth — the anatomy of a package
 function, the license and capability gates, the build order array, and the traps that are easy
@@ -192,7 +199,8 @@ modes build different TLS stacks and are not interchangeable.
   `-buildconf` when you added or changed a feature.
 - Do not commit `packages/`, `workspace/` or `build/`; they are gitignored. If you find a
   `.git.bak` directory and no `.git`, a build died — move it back before committing.
-- CI runs the lint job plus five full builds (native Linux, native macOS, Docker, CUDA Docker,
+- CI runs the lint job plus six full builds (native Linux, native Linux with system dev
+  packages, native macOS, Docker, CUDA Docker,
   full-static). It takes a while; a failure there is a real failure, not flakiness, in almost
   every case.
 

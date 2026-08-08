@@ -2,7 +2,7 @@
 # Helper script to download and run the build-ffmpeg script.
 #
 # By default the latest GitHub release is used. Set FFMPEG_BUILD_SCRIPT_REF to
-# a release tag (for example "v1.61") to pin a release, or to a branch name
+# a release tag (for example "v9.0.3") to pin a release, or to a branch name
 # (for example "master") to try unreleased work.
 
 make_dir() {
@@ -53,7 +53,7 @@ done
 case "$REF" in
 -* | *..* | */*)
     echo "Invalid FFMPEG_BUILD_SCRIPT_REF: '$REF'"
-    echo "Expected one release tag (for example v1.61) or branch name (for example master)."
+    echo "Expected one release tag (for example v9.0.3) or branch name (for example master)."
     exit 1
     ;;
 esac
