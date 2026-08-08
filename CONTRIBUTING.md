@@ -96,8 +96,14 @@ $ git config blame.ignoreRevsFile .git-blame-ignore-revs
 
 ## Coding guidelines
 
-The script is one bash file, and it has to keep running everywhere it currently runs:
+The script is a set of bash fragments under `src/` that `build-ffmpeg` sources in a fixed
+order, and it has to keep running everywhere it currently runs:
 
+- **Put the change in the right fragment.** `build-ffmpeg` itself is only the loader; the
+  `VER_*` table is `src/10-versions.sh`, the helpers `src/30-helpers.sh`, the package
+  functions `src/packages/*.sh`, the build order `src/90-build-order.sh`. Load order is
+  load-bearing and the source list in `build-ffmpeg` is explicit, so a new fragment has to
+  be added there too.
 - **Target bash 3.2.** macOS still ships it. No associative arrays (`declare -A` is a *fatal*
   error there), no `${var^^}`, no `mapfile`/`readarray`, no `**` globstar.
 - **Assume both GNU and BSD userland.** `sed -i` and `tar --wildcards` differ between Linux and
@@ -122,10 +128,22 @@ the script is put together, so it is worth reading before a non-trivial change.
 Always, and they take seconds:
 
 ```bash
-$ bash -n build-ffmpeg
-$ shfmt -d build-ffmpeg web-install.sh web-install-gpl-and-non-free.sh
-$ shellcheck --severity=style build-ffmpeg web-install.sh web-install-gpl-and-non-free.sh
+$ bash -n build-ffmpeg && (for f in src/*.sh src/packages/*.sh; do bash -n "$f" || exit 1; done)
+$ shfmt -d build-ffmpeg web-install.sh web-install-gpl-and-non-free.sh src/
+$ shellcheck -x --severity=style build-ffmpeg web-install.sh web-install-gpl-and-non-free.sh src/*.sh src/packages/*.sh
 ```
+
+The subshell around the `bash -n` loop is what makes it report failure: with a bare
+`|| break` the loop — and the whole line — still exits 0 when a fragment has a syntax error.
+
+`build-ffmpeg` is only the entry point; the script itself lives in the `src/` fragments it
+sources, so **the fragments have to be listed on the `shellcheck` command line.** `-x` follows
+the `source` lines only to resolve definitions for the file being checked — it reports nothing
+about the sourced files themselves, so linting the entry point alone covers the loader and
+none of the ~3,500 lines that matter. Each fragment carries a `# shellcheck shell=bash`
+directive because fragments have no shebang, and the few variables that are set in one
+fragment and read in another carry a narrow `# shellcheck disable=` with a reason on the same
+line.
 
 `shfmt` must produce no diff and `shellcheck` no findings — the scripts are currently clean at
 that level, so anything reported is a regression.

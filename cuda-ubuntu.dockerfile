@@ -48,6 +48,7 @@ RUN mkdir -p /npp && cd /usr/local/cuda/targets/x86_64-linux/lib && \
     cp -a libnppc.so.* libnppig.so.* libnppicc.so.* libnppidei.so.* libnppif.so.* /npp/
 
 COPY ./build-ffmpeg /app/build-ffmpeg
+COPY src /app/src
 
 RUN CUDA_COMPUTE_CAPABILITY=$(deviceQuery | grep Capability | head -n 1 | awk 'END {print $NF}' | tr -d '.') SKIPINSTALL=yes /app/build-ffmpeg --build --enable-gpl-and-non-free && \
     rm -rf /app/packages/* /app/workspace/doc/* /app/workspace/lib/* /app/workspace/share/* /app/workspace/include/*

@@ -5,3 +5,9 @@
 
 # formatting with zed (shfmt) - whitespace only, no functional change
 025f9b33cd7c9edd57800c584f0bd3cd0e695aeb
+
+# split build-ffmpeg into the sourced src/ tree - pure text movement, every
+# line landed in a fragment unchanged. Uncomment the line below and replace it
+# with the real SHA once the split is committed - it is left commented because
+# git blame aborts on an entry it cannot resolve to an object.
+# TODO <sha-of-the-src-split-commit>

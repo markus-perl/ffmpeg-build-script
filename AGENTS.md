@@ -4,23 +4,29 @@ Instructions for AI coding agents working in this repository.
 
 ## What this repo is
 
-A single POSIX-ish bash script, `build-ffmpeg`, that downloads, builds and statically
-links FFmpeg and ~70 of its dependencies from source, plus the Dockerfiles and CI that
-exercise it. There is no application code, no test suite, and no build system of its
-own — the script *is* the project.
+A bash script, `build-ffmpeg`, that downloads, builds and statically links FFmpeg and ~70
+of its dependencies from source, plus the Dockerfiles and CI that exercise it. There is no
+application code, no test suite, and no build system of its own — the script *is* the
+project.
+
+The script is not one file: `build-ffmpeg` is a thin entry point that `source`s the
+fragments under `src/` in an explicit order. There is **no assembly or codegen step** —
+the fragments are the source, sourced at runtime. Users always get the whole tree (release
+tarball, `git clone`, or the Dockerfiles' `COPY src`).
 
 ## Repository layout
 
 | Path | What it is |
 | --- | --- |
-| `build-ffmpeg` | **The script.** Almost every change goes here. |
+| `build-ffmpeg` | Entry point only: resolves `SCRIPT_DIR`, checks `src/` exists, sources the fragments in order. Edit it only to add, remove or reorder a fragment. |
+| `src/` | **The script.** Almost every change goes here — see the fragment list below. |
 | `web-install.sh`, `web-install-gpl-and-non-free.sh` | One-liner installers. They resolve the **latest release**, download GitHub's auto-generated archive for that tag, extract it and run `build-ffmpeg` from it. They do not fetch anything from `master`. |
 | `Dockerfile`, `cuda-ubuntu.dockerfile`, `full-static.dockerfile`, `export.dockerfile` | Container builds, all exercised by CI. |
-| `.github/workflows/build.yml` | `lint`, then five full builds: `build-linux`, `build-macos`, `build-docker`, `build-cuda-ubuntu-docker`, `build-full-static`, then `release` on `v*` tags only. |
+| `.github/workflows/build.yml` | `lint`, then five full builds: `build-linux`, `build-macos`, `build-docker`, `build-cuda-ubuntu-docker`, `build-full-static`, then `release-version-check` on `v*` tags only. |
 | `README.md` | End-user documentation. Not contributor docs. |
 | `.editorconfig` | shfmt reads its indent keys from here. |
 | `.gitattributes` | `export-ignore` entries that keep repo infrastructure out of the release tarball `git archive` builds. Nothing the build needs may be listed there. |
-| `packages/`, `workspace/`, `build/` | **Build output. Gitignored. Never read or edit these.** `packages/` holds ~70 extracted upstream source trees; grepping it will bury you in unrelated code. |
+| `packages/`, `workspace/`, `build/` | **Build output. Gitignored. Never read or edit these.** `packages/` holds ~70 extracted upstream source trees; grepping it will bury you in unrelated code. Not to be confused with `src/packages/`, which is script source — the `.gitignore` entries are anchored (`/packages`) precisely so they do not swallow it. |
 | `docs/`, `plans/` | Gitignored scratch notes. Not part of the project. |
 
 When searching the repo, restrict the search to the tracked files. `git ls-files` is the
@@ -41,7 +47,8 @@ replace that with an `api.github.com` lookup: it is rate-limited to 60/hr per IP
 runners behind shared NAT, and would add a `jq` dependency.
 
 The `release-version-check` job asserts that a pushed tag matches `SCRIPT_VERSION` *in the
-tagged commit* (`v1.61` requires `SCRIPT_VERSION=1.61`), so master carrying the next
+tagged commit*, read from `src/00-header.sh` (`v1.61` requires `SCRIPT_VERSION=1.61`), so
+master carrying the next
 release's version is legal while a mismatched tag fails. It does not gate on the builds —
 there is no artifact to withhold, so it reports in seconds instead of after an hour.
 
@@ -49,8 +56,18 @@ there is no artifact to withhold, so it reports in seconds instead of after an h
 
 - **Formatting is enforced.** `shfmt` (v3.12.0) must produce no diff. It reads
   `.editorconfig`: 4-space indent, `binary_next_line = false`, `switch_case_indent = false`.
-  Run `shfmt -d build-ffmpeg web-install.sh web-install-gpl-and-non-free.sh` before finishing.
+  Run `shfmt -d build-ffmpeg web-install.sh web-install-gpl-and-non-free.sh src/` before
+  finishing.
 - **ShellCheck is enforced at `--severity=style`**, its strictest level, pinned to v0.11.0.
+  Run it as `shellcheck -x --severity=style build-ffmpeg web-install.sh
+  web-install-gpl-and-non-free.sh src/*.sh src/packages/*.sh`. **The fragments have to be
+  named on the command line.** `-x` follows the `source` lines only to resolve definitions
+  for the file being checked; it emits no diagnostics for the sourced files, so `-x` on the
+  entry point alone lints the loader and nothing else. Each fragment therefore carries a
+  `# shellcheck shell=bash` directive (fragments have no shebang), and the handful of
+  variables that are set in one fragment and read in another carry a narrow
+  `# shellcheck disable=` with a reason on the same line. The `# shellcheck source=`
+  directives in the entry point stay — they make `-x` resolve the loader's own call graph.
   The scripts are currently clean, so anything it reports is a regression you introduced.
   Prefer fixing over silencing; if a `# shellcheck disable=` really is warranted, give it a
   reason comment on the same line.
@@ -63,13 +80,44 @@ there is no artifact to withhold, so it reports in seconds instead of after an h
 
 ## How the script is structured
 
-Read in this order: the `VER_*` table at the top → the helpers → the `build_*` functions →
-`PACKAGE_BUILD_ORDER` and its dispatch loop → the FFmpeg configure block at the bottom.
+`build-ffmpeg` sources these, in exactly this order. Read them in the same order:
+
+| Fragment | What is in it |
+| --- | --- |
+| `src/00-header.sh` | Banner comment, `PROGNAME`, `FFMPEG_VERSION`, `SCRIPT_VERSION`. |
+| `src/10-versions.sh` | The whole `VER_*` version/checksum table. |
+| `src/20-globals.sh` | `CWD`/`PACKAGES`/`WORKSPACE`/`CFLAGS`/`LDFLAGS`/…, the small predicates (`version_gte`, `command_exists`, `cxx_supports_flag`), Apple Silicon detection and `MJOBS` detection. |
+| `src/30-helpers.sh` | `make_dir` … `download`, `execute`, `build`, `build_done`, `verify_binary_type`, `cleanup`. |
+| `src/40-cli.sh` | `usage()`, the version banner, the argument loop, the preflight `command_exists` checks. |
+| `src/packages/*.sh` | The `build_*` functions, grouped by the sections the monolith already used: `10-build-tools`, `20-tls`, `25-cmake`, `30-video`, `40-audio`, `50-image`, `55-other`, `60-text-subtitle`, `70-optical`, `75-zmq`, `80-hwaccel`. |
+| `src/90-build-order.sh` | `PACKAGE_BUILD_ORDER` and the dispatch loop. |
+| `src/95-ffmpeg.sh` | The FFmpeg configure/make/install, the binary verification and the install-to-system prompt. |
+
+Rules the entry point encodes, none of them cosmetic:
+
+- **Order is load-bearing.** The dispatch loop and the FFmpeg block only work once every
+  function and variable above them exists.
+- **Nothing is wrapped in a subshell or a function.** Fragments are sourced into the
+  current shell because the package functions mutate `CONFIGURE_OPTIONS`,
+  `CFLAGS`/`LDFLAGS`/`CXXFLAGS`, `EXTRALIBS`, `PATH` and the `OPENSSL_*` exports, and
+  `download()` leaves the shell inside the extracted source directory.
+- **The source list is explicit, never a glob.** Glob order depends on `LC_COLLATE`, and an
+  in-place upgrade over an existing `ffmpeg-build/` tree leaves renamed-away fragments
+  behind — an explicit list makes those orphans inert.
+- **`CWD=$(pwd)` in `src/20-globals.sh` is the invocation directory** and decides where
+  `packages/` and `workspace/` are created. `SCRIPT_DIR` in the entry point exists only to
+  locate the fragments. Do not conflate them.
+- A fragment carries no shebang and is never executable on its own. It starts with a
+  `# shellcheck shell=bash` directive instead, which is what lets it be linted on its own.
+- **A fragment that fails to load is fatal.** Each `source` line is followed by
+  `|| fragment_failed <name>`, which aborts when the file is missing or unreadable and is a
+  no-op otherwise — a sourced file's exit status is that of its last command, which for
+  `src/90-build-order.sh` is the dispatch loop, so the status itself cannot be trusted.
 
 ### The version/checksum table
 
-Every package has one `VER_<PACKAGE>=("<version>" "<sha256>")` array near the top of the
-file. `download()` derives the array name from the package name mechanically — uppercased,
+Every package has one `VER_<PACKAGE>=("<version>" "<sha256>")` array in
+`src/10-versions.sh`. `download()` derives the array name from the package name mechanically — uppercased,
 every non-alphanumeric replaced by `_` — so the name passed to `build()` and the array name
 must stay in sync or the checksum silently goes unchecked. An empty checksum means
 "not pinned yet" and skips verification.
@@ -128,11 +176,14 @@ once: `--enable-gpl-and-non-free` → gettext + openssl; default LGPL → gmp + 
 
 ## Adding a package
 
-1. Add `VER_<NAME>=("<version>" "<sha256>")` to the table, in the section matching where it
-   will be built.
-2. Write `build_<name>()` following the anatomy above, next to its neighbours in the same section.
-3. Add `<name>` to `PACKAGE_BUILD_ORDER` **in the position where it must be built** — the array
-   is the actual build order and dependencies are not resolved, only ordered.
+1. Add `VER_<NAME>=("<version>" "<sha256>")` to the table in `src/10-versions.sh`, in the
+   section matching where it will be built.
+2. Write `build_<name>()` following the anatomy above, next to its neighbours in the
+   matching `src/packages/*.sh` fragment. A new fragment also has to be added to the source
+   list in `build-ffmpeg`, in the right position — it is not picked up automatically.
+3. Add `<name>` to `PACKAGE_BUILD_ORDER` in `src/90-build-order.sh` **in the position where
+   it must be built** — the array is the actual build order and dependencies are not
+   resolved, only ordered.
 4. If the package name contains a `-`, the function name uses `_` (`pkg-config` →
    `build_pkg_config`, entry `pkg_config`, `VER_PKG_CONFIG`). The dispatch loop calls
    `"build_${PACKAGE}"` verbatim.
@@ -142,7 +193,7 @@ once: `--enable-gpl-and-non-free` → gettext + openssl; default LGPL → gmp + 
 6. Bump `SCRIPT_VERSION` — but only if it is not already ahead of the latest release tag.
    It names the *next* release, not the current commit, so a whole batch of unreleased
    commits shares one bump. Check `git tag | tail -1` first: bumping again while master is
-   already ahead skips a version and makes the `release` job's tag assertion fail.
+   already ahead skips a version and makes the `release-version-check` job's tag assertion fail.
 
 Prefer `--disable-shared --enable-static` and disabling docs, tests, examples and CLI tools:
 everything here is a static link into one binary and nothing else consumes these installs.
@@ -151,8 +202,9 @@ everything here is a static link into one binary and nothing else consumes these
 
 A full build takes well over an hour, so do not casually run one.
 
-- **Syntax and lint** — always, they are seconds: `bash -n build-ffmpeg`, then `shfmt -d` and
-  `shellcheck --severity=style` as spelled out above.
+- **Syntax and lint** — always, they are seconds: `bash -n` on `build-ffmpeg` and on every
+  fragment you touched, then `shfmt -d` and `shellcheck -x --severity=style` as spelled out
+  above.
 - **One package** — a full build leaves `packages/*.done` lockfiles behind. Delete just the one
   you touched (`rm packages/foo.done`) and rerun `./build-ffmpeg --build …`; every other package
   is skipped and only yours rebuilds. This is the fast iteration loop.

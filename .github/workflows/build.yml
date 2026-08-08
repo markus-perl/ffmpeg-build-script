@@ -20,18 +20,26 @@ jobs:
         run: |
           curl -sSfL -o /tmp/shfmt https://github.com/mvdan/sh/releases/download/v3.12.0/shfmt_v3.12.0_linux_amd64
           chmod +x /tmp/shfmt
-          /tmp/shfmt -d build-ffmpeg web-install.sh web-install-gpl-and-non-free.sh
+          /tmp/shfmt -d build-ffmpeg web-install.sh web-install-gpl-and-non-free.sh src/
 
       # The runner image ships its own shellcheck, but its version moves without
       # notice - pin one so a new release cannot turn a green branch red.
       # The scripts are clean at --severity=style, the strictest of the four
       # levels, so anything ShellCheck reports here is a regression.
+      #
+      # The src/ fragments must be named on the command line. -x only makes
+      # ShellCheck follow the `source` lines to resolve definitions for the file
+      # being checked - it emits no diagnostics for the sourced files, so `-x`
+      # on build-ffmpeg alone would lint the loader and nothing else. The glob
+      # is deliberate: a fragment added without touching this line still gets
+      # linted. Each fragment carries a `# shellcheck shell=bash` directive
+      # because fragments have no shebang.
       - name: shellcheck
         run: |
           curl -sSfL https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.xz |
             tar -xJf - -C /tmp --strip-components=1 shellcheck-v0.11.0/shellcheck
           /tmp/shellcheck --version
-          /tmp/shellcheck --severity=style --color=always build-ffmpeg web-install.sh web-install-gpl-and-non-free.sh
+          /tmp/shellcheck -x --severity=style --color=always build-ffmpeg web-install.sh web-install-gpl-and-non-free.sh src/*.sh src/packages/*.sh
 
   build-linux:
     name: build in native linux
@@ -164,7 +172,7 @@ jobs:
   # Releases are drafted and published by hand, and the installer downloads
   # GitHub's auto-generated archive for the tag, so nothing has to be uploaded
   # here. This job only guards the one mistake that hurts: tagging v1.63 on a
-  # commit whose build-ffmpeg still says 1.62.
+  # commit whose src/00-header.sh still says 1.62.
   #
   # It deliberately does not gate on the builds. There is no artifact to
   # withhold, so waiting an hour to report a wrong version string would only
@@ -187,9 +195,9 @@ jobs:
         env:
           TAG: ${{ github.ref_name }}
         run: |
-          version=$(sed -n 's/^SCRIPT_VERSION=//p' build-ffmpeg | head -n 1)
+          version=$(sed -n 's/^SCRIPT_VERSION=//p' src/00-header.sh | head -n 1)
           echo "tag=$TAG SCRIPT_VERSION=$version"
           if [ "$TAG" != "v$version" ]; then
-            echo "::error::tag $TAG does not match SCRIPT_VERSION=$version in build-ffmpeg; expected tag v$version"
+            echo "::error::tag $TAG does not match SCRIPT_VERSION=$version in src/00-header.sh; expected tag v$version"
             exit 1
           fi

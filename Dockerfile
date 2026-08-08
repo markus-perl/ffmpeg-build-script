@@ -18,6 +18,7 @@ RUN apt-get update \
 
 WORKDIR /app
 COPY ./build-ffmpeg /app/build-ffmpeg
+COPY src /app/src
 
 RUN SKIPINSTALL=yes /app/build-ffmpeg --build
 

@@ -1,9 +1,9 @@
-packages
-workspace
+/packages
+/workspace
 .idea
-linux
-.artifacts
-build
+/linux
+/.artifacts
+/build
 full-static-test.dockerfile
 .DS_Store
 docs
