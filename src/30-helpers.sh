@@ -13,22 +13,10 @@ remove_dir() {
     fi
 }
 
-##
-## Package versions and tarball SHA-256 checksums.
-##
-## Each package carries one VER_<PACKAGE>=("<version>" "<sha256>") array
-## directly above its build_<package> function, in the fragment that builds it.
-## <PACKAGE> is the name passed to build(), uppercased, with every
-## non-alphanumeric character replaced by an underscore - the two helpers below
-## derive the array name from it mechanically, so the name passed to build() and
-## the array name must stay in sync or the checksum silently goes unchecked.
-## Element 0 is the version, element 1 the checksum.
-##
-## The checksum is the one of the downloaded archive, not of its contents. An
-## empty checksum means "not pinned yet" and skips verification for that
-## download. Deliberately no associative arrays here: /bin/bash on macOS is
-## still 3.2, where "declare -A" is a fatal error - indexed arrays are fine.
-##
+# The VER_ arrays live in src/10-versions.sh; these two map a build() package name
+# onto one of its elements. The mapping is mechanical, so the name passed to build()
+# and the array name must stay in sync or the checksum silently goes unchecked -
+# --list-packages reports the ones that do not line up.
 package_ver_var() {
     # package_ver_var <package-name> <index>
     # Maps a build() package name onto a reference to one element of its VER_

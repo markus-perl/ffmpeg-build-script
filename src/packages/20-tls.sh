@@ -23,7 +23,6 @@
 # AM_GNU_GETTEXT([external]) -- which requires autopoint from gettext. zvbi is
 # non-free-gated, so gettext inherits the same gate. (Both were added together
 # in 9c89658.)
-VER_GETTEXT=("1.0" "85d99b79c981a404874c02e0342176cf75c7698e2b51fe41031cf6526d974f1a")
 build_gettext() {
     if ! $NONFREE_AND_GPL; then return; fi
 
@@ -36,7 +35,6 @@ build_gettext() {
     fi
 }
 
-VER_OPENSSL=("4.0.1" "d8dee4712f66b113ab2060ca693febcfbf81edb08c323c1a87e7526364d0fef8")
 build_openssl() {
     if ! $NONFREE_AND_GPL; then return; fi
 
@@ -52,7 +50,6 @@ build_openssl() {
 
 # gmp and nettle exist only as GnuTLS dependencies, so they carry the inverse
 # gate of build_openssl above: skipped whenever OpenSSL is the chosen backend.
-VER_GMP=("6.3.0" "a3c2b80201b89e68616f4ad30bc66aee4927c3ce50e33929ca819d5c43538898")
 build_gmp() {
     if $NONFREE_AND_GPL; then return; fi
 
@@ -75,7 +72,6 @@ build_gmp() {
     fi
 }
 
-VER_NETTLE=("4.0" "3addbc00da01846b232fb3bc453538ea5468da43033f21bb345cb1e9073f5094")
 build_nettle() {
     if $NONFREE_AND_GPL; then return; fi
 
@@ -108,7 +104,6 @@ build_nettle() {
 #      a system one. Re-enabling the flag means the arm64 skip above turns into
 #      a hard difference in features between architectures, which is presumably
 #      why it was commented out rather than fixed.
-VER_GNUTLS=("3.8.13" "ffed8ec1bf09c2426d4f14aae377de4753b53e537d685e604e99a8b16ca9c97e")
 build_gnutls() {
     if $NONFREE_AND_GPL; then return; fi
     if [[ $ARCH == 'arm64' ]]; then return; fi

@@ -3,7 +3,6 @@
 ## zmq library
 ##
 
-VER_LIBZMQ=("4.3.5" "6653ef5910f17954861fe72332e68b03ca6e4d9c7160eb3a8de5a5a913bfab43")
 build_libzmq() {
     if build "libzmq" "${VER_LIBZMQ[0]}"; then
         download "https://github.com/zeromq/libzmq/releases/download/v$CURRENT_PACKAGE_VERSION/zeromq-$CURRENT_PACKAGE_VERSION.tar.gz"

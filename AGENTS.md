@@ -92,6 +92,7 @@ there is no artifact to withhold, so it reports in seconds instead of after an h
 | Fragment | What is in it |
 | --- | --- |
 | `src/00-header.sh` | Banner comment, `PROGNAME`, `FFMPEG_VERSION`, `SCRIPT_VERSION`. |
+| `src/10-versions.sh` | Every `VER_*` version/checksum array, plus `X265_COMMIT`. One central table. |
 | `src/20-globals.sh` | `CWD`/`PACKAGES`/`WORKSPACE`/`CFLAGS`/`LDFLAGS`/…, the small predicates (`version_gte`, `command_exists`, `cxx_supports_flag`), Apple Silicon detection and `MJOBS` detection. |
 | `src/30-helpers.sh` | `make_dir` … `download`, `execute`, `build`, `build_done`, `verify_binary_type`, `cleanup`. |
 | `src/40-cli.sh` | `usage()`, the version banner, the argument loop, the preflight `command_exists` checks. |
@@ -122,8 +123,8 @@ Rules the entry point encodes, none of them cosmetic:
 
 ### The version/checksum table
 
-Every package has one `VER_<PACKAGE>=("<version>" "<sha256>")` array directly above its
-`build_<package>` function, in the fragment that builds it. `download()` derives the array name from the package name mechanically — uppercased,
+Every package has one `VER_<PACKAGE>=("<version>" "<sha256>")` array in
+`src/10-versions.sh`. `download()` derives the array name from the package name mechanically — uppercased,
 every non-alphanumeric replaced by `_` — so the name passed to `build()` and the array name
 must stay in sync or the checksum silently goes unchecked. An empty checksum means
 "not pinned yet" and skips verification.
@@ -182,8 +183,8 @@ once: `--enable-gpl-and-non-free` → gettext + openssl; default LGPL → gmp + 
 
 ## Adding a package
 
-1. Add `VER_<NAME>=("<version>" "<sha256>")` directly above the new `build_<name>`, in the
-   section matching where it will be built.
+1. Add `VER_<NAME>=("<version>" "<sha256>")` to `src/10-versions.sh`, in the section
+   matching where it will be built.
 2. Write `build_<name>()` following the anatomy above, next to its neighbours in the
    matching `src/packages/*.sh` fragment. A new fragment also has to be added to the source
    list in `build-ffmpeg`, in the right position — it is not picked up automatically.

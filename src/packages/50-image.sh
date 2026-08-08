@@ -3,7 +3,6 @@
 ## image library
 ##
 
-VER_LIBPNG=("1.6.58" "8c9b05b675ca7301a458df2c2e46f26e1d41ff36b8863f8c33530bc58c2e6225")
 build_libpng() {
     if build "libpng" "${VER_LIBPNG[0]}"; then
         download "https://sourceforge.net/projects/libpng/files/libpng16/$CURRENT_PACKAGE_VERSION/libpng-$CURRENT_PACKAGE_VERSION.tar.gz" "libpng-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -17,7 +16,6 @@ build_libpng() {
     fi
 }
 
-VER_LCMS2=("2.19.1" "bfc54f7bab59fbc921012014a8032e4cba4abd46db47d46b76416a8c0b2815c8")
 build_lcms2() {
     if build "lcms2" "${VER_LCMS2[0]}"; then
         download "https://github.com/mm2/Little-CMS/releases/download/lcms$CURRENT_PACKAGE_VERSION/lcms2-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -31,7 +29,6 @@ build_lcms2() {
     CONFIGURE_OPTIONS+=("--enable-lcms2")
 }
 
-VER_LIBJXL=("0.12.0" "03e9be69a30be4011f559da75328b6d7cea8ad921fabfbd551ce10bf45cdc992")
 build_libjxl() {
     if build "libjxl" "${VER_LIBJXL[0]}"; then
         download "https://github.com/libjxl/libjxl/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "libjxl-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -49,7 +46,6 @@ build_libjxl() {
     EXTRALIBS="${EXTRALIBS} -llcms2"
 }
 
-VER_LIBWEBP=("1.6.0" "e4ab7009bf0629fd11982d4c2aa83964cf244cffba7347ecd39019a9e38c4564")
 build_libwebp() {
     if build "libwebp" "${VER_LIBWEBP[0]}"; then
         # libwebp can fail to compile on Ubuntu if these flags were left set to CFLAGS
@@ -74,7 +70,6 @@ build_libwebp() {
 # EXTERNAL_LIBRARY_LIST (configure line 2110) and in none of the GPL/nonfree/version3 lists -
 # openjpeg is BSD-2-Clause. It is the only JPEG 2000 *encoder* available: ffmpeg has a native j2k
 # decoder but its native encoder is far weaker, so gating this would cost real functionality.
-VER_OPENJPEG=("2.5.4" "a695fbe19c0165f295a8531b1e4e855cd94d0875d2f88ec4b61080677e27188a")
 build_openjpeg() {
     if build "openjpeg" "${VER_OPENJPEG[0]}"; then
         download "https://github.com/uclouvain/openjpeg/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "openjpeg-$CURRENT_PACKAGE_VERSION.tar.gz"

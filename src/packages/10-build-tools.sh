@@ -3,7 +3,6 @@
 ## build tools
 ##
 
-VER_GIFLIB=("6.1.3" "b65b66b99f0424b93525f987386f22fc5efb9da2bfc92ad4a532249aaffbab0e")
 build_giflib() {
     if build "giflib" "${VER_GIFLIB[0]}"; then
         download "https://sf-eu-introserv-1.dl.sourceforge.net/project/giflib/giflib-6.x/giflib-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -21,7 +20,6 @@ build_giflib() {
     fi
 }
 
-VER_PKG_CONFIG=("0.29.2" "6fc69c01688c9458a57eb9a1664c9aba372ccda420a02bf4429fe610e7e7d591")
 build_pkg_config() {
     if build "pkg-config" "${VER_PKG_CONFIG[0]}"; then
         download "https://pkgconfig.freedesktop.org/releases/pkg-config-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -39,12 +37,6 @@ build_pkg_config() {
     fi
 }
 
-# yasm is pinned to a master commit rather than a release: 1.3.0 is from 2019 and its
-# libyasm/bitvect.h declares an enumeration constant named "false", which C23 rejects, so
-# it does not build on GCC 15 (Ubuntu 26.04). Upstream guarded that on __STDC_VERSION__
-# but has published no release since. A commit archive has no generated configure, so
-# build_yasm bootstraps with autogen.sh and the entry sits after automake below.
-VER_YASM=("09d1bc90ed53d0ec3e9b074f111058cbf262ed56" "5908256a2db37ca6f6b60025ee2a4a81a52ff8588e08776ce37c2551f00ab2e0")
 build_yasm() {
     if build "yasm" "${VER_YASM[0]}"; then
         download "https://github.com/yasm/yasm/archive/$CURRENT_PACKAGE_VERSION.tar.gz" "yasm-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -78,7 +70,6 @@ build_yasm() {
     fi
 }
 
-VER_NASM=("3.02" "87336eba53b4acfe917424ab5d500d2b0054d9f5148d35c2273ccf2cfb712f0d")
 build_nasm() {
     if build "nasm" "${VER_NASM[0]}"; then
         download "https://www.nasm.us/pub/nasm/releasebuilds/$CURRENT_PACKAGE_VERSION/nasm-$CURRENT_PACKAGE_VERSION.tar.xz"
@@ -89,7 +80,6 @@ build_nasm() {
     fi
 }
 
-VER_ZLIB=("1.3.2" "bb329a0a2cd0274d05519d61c667c062e06990d72e125ee2dfa8de64f0119d16")
 build_zlib() {
     if build "zlib" "${VER_ZLIB[0]}"; then
         download "https://github.com/madler/zlib/releases/download/v$CURRENT_PACKAGE_VERSION/zlib-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -113,9 +103,6 @@ build_zlib() {
 # Only liblzma is wanted, so every tool and script the package would otherwise install is
 # switched off. The xz *binary* is a host prerequisite for unpacking .tar.xz sources and is
 # deliberately not taken from here: this runs long after the first .tar.xz is extracted.
-# xz, for liblzma. Note 5.6.0 and 5.6.1 carried the xz-utils backdoor (CVE-2024-3094);
-# this is well past both, and the tarball is pinned by checksum like every other package.
-VER_XZ=("5.8.3" "3d3a1b973af218114f4f889bbaa2f4c037deaae0c8e815eec381c3d546b974a0")
 build_xz() {
     if build "xz" "${VER_XZ[0]}"; then
         download "https://github.com/tukaani-project/xz/releases/download/v$CURRENT_PACKAGE_VERSION/xz-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -153,9 +140,6 @@ build_xz() {
 # hardcodes CC=gcc, which is not a safe assumption on macOS; CFLAGS is deliberately left
 # alone, since overriding it on the command line would drop the Makefile's own $(BIGFILES)
 # and with it -D_FILE_OFFSET_BITS=64.
-# 1.0.8 is the last release from sourceware and has been current since 2019; the successor
-# repository at gitlab.com/bzip2/bzip2 has never tagged one.
-VER_BZIP2=("1.0.8" "ab5a03176ee106d3f0fa90e381da478ddae405918153cca248e682cd0c4a2269")
 build_bzip2() {
     if build "bzip2" "${VER_BZIP2[0]}"; then
         download "https://sourceware.org/pub/bzip2/bzip2-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -172,7 +156,6 @@ build_bzip2() {
     CONFIGURE_OPTIONS+=("--enable-bzlib")
 }
 
-VER_M4=("1.4.21" "38ae59f7a30bf9c108193cc5c25fbb06014f21e230c7ede2eff614f7b7c37ed8")
 build_m4() {
     if build "m4" "${VER_M4[0]}"; then
         download "https://ftp.gnu.org/gnu/m4/m4-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -183,7 +166,6 @@ build_m4() {
     fi
 }
 
-VER_AUTOCONF=("2.73" "259ddfa3bddc799cfb81489cc0f17dfdf1bd6d1505dda53c0f45ff60d6a4f9a7")
 build_autoconf() {
     if build "autoconf" "${VER_AUTOCONF[0]}"; then
         download "https://ftp.gnu.org/gnu/autoconf/autoconf-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -194,7 +176,6 @@ build_autoconf() {
     fi
 }
 
-VER_AUTOMAKE=("1.18.1" "63e585246d0fc8772dffdee0724f2f988146d1a3f1c756a3dc5cfbefa3c01915")
 build_automake() {
     if build "automake" "${VER_AUTOMAKE[0]}"; then
         download "https://ftp.gnu.org/gnu/automake/automake-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -205,7 +186,6 @@ build_automake() {
     fi
 }
 
-VER_LIBTOOL=("2.6.2" "24adb3aa9ae035c70faba344af57d73215eb89281045af6c7ccd307751f8b0bf")
 build_libtool() {
     if build "libtool" "${VER_LIBTOOL[0]}"; then
         download "https://ftp.gnu.org/gnu/libtool/libtool-$CURRENT_PACKAGE_VERSION.tar.gz"

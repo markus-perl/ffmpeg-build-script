@@ -3,7 +3,6 @@
 ## audio library
 ##
 
-VER_LV2=("1.18.10" "78c51bcf21b54e58bb6329accbb4dae03b2ed79b520f9a01e734bd9de530953f")
 build_lv2() {
     if $DISABLE_LV2; then return; fi
     if ! command_exists "python3"; then return; fi
@@ -18,7 +17,6 @@ build_lv2() {
     fi
 }
 
-VER_WAFLIB=("aeef9f5f" "5d3c1da4bf509c025c242e3482859692b3b6ae4e325dc1c9d413d01e2d13fcfc")
 build_waflib() {
     if $DISABLE_LV2; then return; fi
     if ! command_exists "python3"; then return; fi
@@ -30,7 +28,6 @@ build_waflib() {
     fi
 }
 
-VER_SERD=("0.32.10" "d17b99ef250e4dffcdd08c8eaad2459a1519c1ff2553fa91176ce71ac0dd0739")
 build_serd() {
     if $DISABLE_LV2; then return; fi
     if ! command_exists "python3"; then return; fi
@@ -45,7 +42,6 @@ build_serd() {
     fi
 }
 
-VER_PCRE=("8.45" "4e6ce03e0336e8b4a3d6c2b70b1c5e18590a5673a98186da90d4f33c23defc09")
 build_pcre() {
     if $DISABLE_LV2; then return; fi
     if ! command_exists "python3"; then return; fi
@@ -60,7 +56,6 @@ build_pcre() {
     fi
 }
 
-VER_ZIX=("0.8.2" "a2464cdc11fa359b5e713b3c82bf0b476952efe397a02374ddbc1b62eee04f13")
 build_zix() {
     if $DISABLE_LV2; then return; fi
     if ! command_exists "python3"; then return; fi
@@ -77,7 +72,6 @@ build_zix() {
     fi
 }
 
-VER_SORD=("0.16.22" "040fb3f369dd49a7717eb28ca0a66766352e25e760729903fc8a01e117122901")
 build_sord() {
     if $DISABLE_LV2; then return; fi
     if ! command_exists "python3"; then return; fi
@@ -92,7 +86,6 @@ build_sord() {
     fi
 }
 
-VER_SRATOM=("0.6.22" "4a88bde345370584b279895c2cb8f7f8341d2b31b6ca50e128faea02f02d3e76")
 build_sratom() {
     if $DISABLE_LV2; then return; fi
     if ! command_exists "python3"; then return; fi
@@ -107,7 +100,6 @@ build_sratom() {
     fi
 }
 
-VER_LILV=("0.28.0" "006065dcb59ccaad5463e6bb4598160e41dd6474a959838e74820f60a849bfdb")
 build_lilv() {
     if $DISABLE_LV2; then return; fi
     if ! command_exists "python3"; then return; fi
@@ -125,14 +117,6 @@ build_lilv() {
     CONFIGURE_OPTIONS+=("--enable-lv2")
 }
 
-# The LADSPA SDK has no upstream git repository and no release tags; ladspa.org
-# only ever publishes a versioned tarball, which is why this URL does not follow
-# the GitHub-tag pattern used everywhere else. The filename carries the version,
-# so the bytes are stable and hashable (verified by downloading it twice), and
-# the ladspa.h inside is byte-identical to the one in Debian's ladspa-sdk
-# 1.17 orig tarball. The GitHub copies that turn up in a search are all distro
-# packaging forks or vendored snapshots, none of them authoritative.
-VER_LADSPA=("1.17" "27d24f279e4b81bd17ecbdcc38e4c42991bb388826c0b200067ce0eb59d3da5b")
 build_ladspa() {
     # Unlike frei0r, ladspa is in the plain EXTERNAL_LIBRARY_LIST (configure line
     # 2076) with no license entry, so it is available in the default LGPL build and
@@ -161,7 +145,6 @@ build_ladspa() {
     CONFIGURE_OPTIONS+=("--enable-ladspa")
 }
 
-VER_OPENCORE=("0.1.6" "483eb4061088e2b34b358e47540b5d495a96cd468e361050fae615b1809dc4a1")
 build_opencore() {
     if build "opencore" "${VER_OPENCORE[0]}"; then
         download "https://deac-ams.dl.sourceforge.net/project/opencore-amr/opencore-amr/opencore-amr-$CURRENT_PACKAGE_VERSION.tar.gz" "opencore-amr-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -174,7 +157,6 @@ build_opencore() {
     CONFIGURE_OPTIONS+=("--enable-libopencore_amrnb" "--enable-libopencore_amrwb")
 }
 
-VER_LAME=("4.0" "3df5124d5ad3a98312ffd7ba6a9b36230e4f8a3e66d3ce0f425e336c32d216eb")
 build_lame() {
     if build "lame" "${VER_LAME[0]}"; then
         download "https://sourceforge.net/projects/lame/files/lame/$CURRENT_PACKAGE_VERSION/lame-$CURRENT_PACKAGE_VERSION.tar.gz/download?use_mirror=gigenet" "lame-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -189,7 +171,6 @@ build_lame() {
     CONFIGURE_OPTIONS+=("--enable-libmp3lame")
 }
 
-VER_OPUS=("1.6.1" "6ffcb593207be92584df15b32466ed64bbec99109f007c82205f0194572411a1")
 build_opus() {
     if build "opus" "${VER_OPUS[0]}"; then
         download "https://downloads.xiph.org/releases/opus/opus-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -202,7 +183,6 @@ build_opus() {
     CONFIGURE_OPTIONS+=("--enable-libopus")
 }
 
-VER_LIBOGG=("1.3.6" "5c8253428e181840cd20d41f3ca16557a9cc04bad4a3d04cce84808677fa1061")
 build_libogg() {
     if build "libogg" "${VER_LIBOGG[0]}"; then
         download "https://ftp.osuosl.org/pub/xiph/releases/ogg/libogg-$CURRENT_PACKAGE_VERSION.tar.xz"
@@ -213,7 +193,6 @@ build_libogg() {
     fi
 }
 
-VER_LIBVORBIS=("1.3.7" "0e982409a9c3fc82ee06e08205b1355e5c6aa4c36bca58146ef399621b0ce5ab")
 build_libvorbis() {
     if build "libvorbis" "${VER_LIBVORBIS[0]}"; then
         download "https://ftp.osuosl.org/pub/xiph/releases/vorbis/libvorbis-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -228,7 +207,6 @@ build_libvorbis() {
     CONFIGURE_OPTIONS+=("--enable-libvorbis")
 }
 
-VER_LIBTHEORA=("1.2.0" "279327339903b544c28a92aeada7d0dcfd0397b59c2f368cc698ac56f515906e")
 build_libtheora() {
     if build "libtheora" "${VER_LIBTHEORA[0]}"; then
         download "https://ftp.osuosl.org/pub/xiph/releases/theora/libtheora-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -241,7 +219,6 @@ build_libtheora() {
     CONFIGURE_OPTIONS+=("--enable-libtheora")
 }
 
-VER_FDK_AAC=("2.0.3" "829b6b89eef382409cda6857fd82af84fabb63417b08ede9ea7a553f811cb79e")
 build_fdk_aac() {
     if ! $NONFREE_AND_GPL; then return; fi
 
@@ -256,7 +233,6 @@ build_fdk_aac() {
     CONFIGURE_OPTIONS+=("--enable-libfdk-aac")
 }
 
-VER_SOXR=("0.1.3" "b111c15fdc8c029989330ff559184198c161100a59312f5dc19ddeb9b5a15889")
 build_soxr() {
     if build "soxr" "${VER_SOXR[0]}"; then
         download "https://sourceforge.net/projects/soxr/files/soxr-$CURRENT_PACKAGE_VERSION-Source.tar.xz/download?use_mirror=gigenet" "soxr-$CURRENT_PACKAGE_VERSION.tar.xz"
@@ -272,7 +248,6 @@ build_soxr() {
     CONFIGURE_OPTIONS+=("--enable-libsoxr")
 }
 
-VER_TWOLAME=("0.4.0" "cc35424f6019a88c6f52570b63e1baf50f62963a3eac52a03a800bb070d7c87d")
 build_twolame() {
     # Deliberately not licence-gated. ffmpeg 9.0 lists libtwolame in the plain
     # EXTERNAL_LIBRARY_LIST (configure line 2137), not in EXTERNAL_LIBRARY_GPL_LIST, and
@@ -309,7 +284,6 @@ build_twolame() {
     # this script already passes --extra-libs="-ldl -lpthread -lm -lz". Do not remove
     # -lm from EXTRALIBS.
 }
-VER_RUBBERBAND=("4.0.0" "24300f48a8014b7c863b573a9647e61b1b19b37875e2cdd92005e64c6424d266")
 build_rubberband() {
     # librubberband is in ffmpeg 9.0's EXTERNAL_LIBRARY_GPL_LIST (configure line 2036), so
     # --enable-librubberband implies --enable-gpl and must stay behind this script's flag.
@@ -389,7 +363,6 @@ build_rubberband() {
     # NOTE: deliberately not gated on --full-static. Nothing here is dlopen()ed, the .pc pulls in
     # no shared-only library, and the fully static link was verified to work - see the transcript.
 }
-VER_LIBOPENMPT=("0.8.7" "275c29ef47be9992f62a35fcc96f7ca05c06d2fd05c9298b8dee9f743f75b089")
 build_libopenmpt() {
     # Deliberately not licence-gated. ffmpeg 9.0 lists libopenmpt in the plain
     # EXTERNAL_LIBRARY_LIST (configure line 2111), not in EXTERNAL_LIBRARY_GPL_LIST, and
@@ -454,7 +427,6 @@ build_libopenmpt() {
 # Not licence-gated: ffmpeg 9.0 lists "libgme" in the plain EXTERNAL_LIBRARY_LIST (configure
 # line 2092), not in EXTERNAL_LIBRARY_GPL_LIST. That holds only for the default emulator set,
 # see the GME_YM2612_EMU note below. Placed after zlib, which it links for VGZ/compressed input.
-VER_LIBGME=("0.6.5" "a133f19278222136ba0d8c27b64a07987ba05fec9d2e6d293ccd8cabdd97ddbb")
 build_libgme() {
     if build "libgme" "${VER_LIBGME[0]}"; then
         download "https://github.com/libgme/game-music-emu/releases/download/$CURRENT_PACKAGE_VERSION/libgme-$CURRENT_PACKAGE_VERSION-src.tar.gz" "libgme-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -501,7 +473,6 @@ build_libgme() {
 # "chromaprint" in the plain EXTERNAL_LIBRARY_LIST (configure line 2072), not in
 # EXTERNAL_LIBRARY_GPL_LIST or any of the nonfree/version3 lists, and chromaprint itself is
 # LGPL-2.1-or-later. Note the ffmpeg switch is --enable-chromaprint, not --enable-libchromaprint.
-VER_CHROMAPRINT=("1.6.1" "7065ec9db48ac1fa929ec6c42afcd966605b1bfe48b6d5e64c25378a05f4fb02")
 build_chromaprint() {
     if build "chromaprint" "${VER_CHROMAPRINT[0]}"; then
         download "https://github.com/acoustid/chromaprint/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "chromaprint-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -562,7 +533,6 @@ build_chromaprint() {
 # (openal_indev_deps="openal") for audio capture. There is no encoder, no filter and no
 # outdev behind it. It sits in EXTERNAL_LIBRARY_LIST, not in EXTERNAL_LIBRARY_GPL_LIST, so
 # it is deliberately not gated on $NONFREE_AND_GPL.
-VER_OPENAL=("1.25.2" "fb27e5839aa11f0e5b9d33756965291fad5d6909ab928ea1f796f4a1a6877894")
 build_openal() {
     # Not built under --full-static. openal-soft never links its ALSA/PulseAudio/PipeWire
     # backend: with dlfcn.h present its ADD_BACKEND_LIBS macro expands to nothing and the
@@ -655,9 +625,6 @@ build_openal() {
 # treatment, as build_vaapi below: probe the host for the development package and enable the
 # flag only if it is installed. libpulse is in ffmpeg 9.0's plain EXTERNAL_LIBRARY_LIST and
 # not in EXTERNAL_LIBRARY_GPL_LIST, so it is intentionally not gated on $NONFREE_AND_GPL.
-# libpulse is not built from source (see build_libpulse); this only feeds the .done
-# guard, the same way VER_VAAPI does.
-VER_LIBPULSE=("1" "")
 build_libpulse() {
     if [[ ! "$OSTYPE" == "linux-gnu" ]]; then return; fi
 

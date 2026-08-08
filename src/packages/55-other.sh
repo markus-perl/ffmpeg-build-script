@@ -3,7 +3,6 @@
 ## other library
 ##
 
-VER_LIBSDL=("2.32.10" "5f5993c530f084535c65a6879e9b26ad441169b3e25d789d83287040a9ca5165")
 build_libsdl() {
     # Keep this on SDL 2.x. ffplay is the only thing that links SDL, and ffmpeg 9.0 accepts
     # SDL2 only: ffplay_deps lists sdl2, and configure tests for "sdl2 >= 2.0.1 sdl2 < 3.0.0",
@@ -25,7 +24,6 @@ build_libsdl() {
 # so without this there is no hap/hap_alpha/hap_q encoder at all (decoding is unaffected).
 # Not licence-gated: ffmpeg 9.0 lists libsnappy in the plain EXTERNAL_LIBRARY_LIST, not in
 # EXTERNAL_LIBRARY_GPL_LIST, and snappy itself is BSD-3-Clause.
-VER_LIBSNAPPY=("1.2.2" "90f74bc1fbf78a6c56b3c4a082a05103b3a56bb17bca1a27e052ea11723292dc")
 build_libsnappy() {
     if build "libsnappy" "${VER_LIBSNAPPY[0]}"; then
         # The tag archive is named after the bare tag ("1.2.2.tar.gz"), so the filename has to
@@ -68,7 +66,6 @@ build_libsnappy() {
 # ffmpeg's check is pkg-config-only with no fallback:
 #   require_pkg_config libssh "libssh >= 0.6.0" libssh/sftp.h sftp_init
 # so a working libssh.pc is as much a deliverable here as libssh.a is.
-VER_LIBSSH=("0.12.2" "49560f677d96e3706a904ac2de1116e25f3680937d51e5c92198fcba4a1c1e9f")
 build_libssh() {
     # libssh needs a crypto backend and the only one this script can offer is the OpenSSL it
     # builds into the workspace - and build_openssl returns early unless the build is
@@ -133,7 +130,6 @@ build_libssh() {
     CONFIGURE_OPTIONS+=("--enable-libssh")
 }
 
-VER_FREETYPE2=("2.14.3" "36bc4f1cc413335368ee656c42afca65c5a3987e8768cc28cf11ba775e785a5f")
 # --with-harfbuzz=no is not optional. FreeType and harfbuzz depend on each other, and this
 # script builds FreeType first, so harfbuzz is not in the workspace yet when configure runs.
 # Left to autodetect, FreeType picks up a *system* harfbuzz instead: libfreetype.a then carries

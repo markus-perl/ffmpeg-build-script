@@ -100,7 +100,7 @@ The script is a set of bash fragments under `src/` that `build-ffmpeg` sources i
 order, and it has to keep running everywhere it currently runs:
 
 - **Put the change in the right fragment.** `build-ffmpeg` itself is only the loader; the
-  `VER_*` array goes above its own `build_*`, the helpers `src/30-helpers.sh`, the package
+  `VER_*` table is `src/10-versions.sh`, the helpers `src/30-helpers.sh`, the package
   functions `src/packages/*.sh`, the build order `src/90-build-order.sh`. Load order is
   load-bearing and the source list in `build-ffmpeg` is explicit, so a new fragment has to
   be added there too.

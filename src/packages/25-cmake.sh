@@ -1,5 +1,4 @@
 # shellcheck shell=bash
-VER_CMAKE=("4.4.2" "1db9e61e60b6e0874c86386340b910382f3c5e75b9fbfb44d122063129a2789d")
 build_cmake() {
     if build "cmake" "${VER_CMAKE[0]}"; then
         CXXFLAGS_BACKUP=$CXXFLAGS

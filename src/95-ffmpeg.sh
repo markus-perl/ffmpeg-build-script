@@ -10,8 +10,6 @@
 # all. Linux builds therefore intentionally carry no extra version tag. See also
 # the .git -> .git.bak dance below, which keeps ffmpeg from describing *this*
 # repository instead of its own tree.
-# shellcheck disable=SC2034 # read indirectly by download(), see the note above
-VER_FFMPEG=("$FFMPEG_VERSION" "d97647ace36a307f17ba2bca052d68937487bed8682e1eb9b6737076a9c442b7")
 
 EXTRA_VERSION=""
 if [[ "$OSTYPE" == "darwin"* ]]; then
