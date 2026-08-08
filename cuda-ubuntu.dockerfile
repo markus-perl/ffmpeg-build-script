@@ -1,5 +1,5 @@
 ARG CUDAVER=13.3.1
-ARG UBUNTUVER=24.04
+ARG UBUNTUVER=26.04
 # cuda-samples tag to build deviceQuery from. Keep in sync with CUDAVER.
 # Never track master: the layout changes between releases (v13.0 moved
 # Samples/ to cpp/), which silently breaks the sparse-checkout below.
