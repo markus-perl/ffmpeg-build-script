@@ -10,7 +10,7 @@
 
 PROGNAME=$(basename "$0")
 FFMPEG_VERSION=9.0
-SCRIPT_VERSION=1.60
+SCRIPT_VERSION=1.61
 
 ##
 ## Package versions and tarball SHA-256 checksums.
@@ -32,7 +32,12 @@ VER_FFMPEG=("$FFMPEG_VERSION" "d97647ace36a307f17ba2bca052d68937487bed8682e1eb9b
 ## build tools
 VER_GIFLIB=("6.1.3" "b65b66b99f0424b93525f987386f22fc5efb9da2bfc92ad4a532249aaffbab0e")
 VER_PKG_CONFIG=("0.29.2" "6fc69c01688c9458a57eb9a1664c9aba372ccda420a02bf4429fe610e7e7d591")
-VER_YASM=("1.3.0" "3dce6601b495f5b3d45b59f7d2492a340ee7e84b5beca17e48f862502bd5603f")
+# yasm is pinned to a master commit rather than a release: 1.3.0 is from 2019 and its
+# libyasm/bitvect.h declares an enumeration constant named "false", which C23 rejects, so
+# it does not build on GCC 15 (Ubuntu 26.04). Upstream guarded that on __STDC_VERSION__
+# but has published no release since. A commit archive has no generated configure, so
+# build_yasm bootstraps with autogen.sh and the entry sits after automake below.
+VER_YASM=("09d1bc90ed53d0ec3e9b074f111058cbf262ed56" "5908256a2db37ca6f6b60025ee2a4a81a52ff8588e08776ce37c2551f00ab2e0")
 VER_NASM=("3.02" "87336eba53b4acfe917424ab5d500d2b0054d9f5148d35c2273ccf2cfb712f0d")
 VER_ZLIB=("1.3.2" "bb329a0a2cd0274d05519d61c667c062e06990d72e125ee2dfa8de64f0119d16")
 # xz, for liblzma. Note 5.6.0 and 5.6.1 carried the xz-utils backdoor (CVE-2024-3094);
@@ -515,6 +520,24 @@ library_exists() {
     pkg-config --exists "$1"
 }
 
+# GCC 15, which Ubuntu 26.04 ships, defaults to -std=gnu23, where "bool", "true" and
+# "false" became keywords. Several of the older packages here use them as struct members
+# or enumeration constants, which C23 rejects outright rather than warning about. Build
+# those as gnu17. Probed once and cached, because the answer cannot change during a run;
+# compilers that predate the option leave it empty and already default to a usable
+# standard. The leading space lets callers append this to an existing CFLAGS.
+PRE_C23_CFLAG=""
+PRE_C23_CFLAG_PROBED=false
+pre_c23_cflag() {
+    if ! $PRE_C23_CFLAG_PROBED; then
+        PRE_C23_CFLAG_PROBED=true
+        if echo 'int main(void) { return 0; }' | "${CC:-cc}" -std=gnu17 -x c - -o /dev/null >/dev/null 2>&1; then
+            PRE_C23_CFLAG=" -std=gnu17"
+        fi
+    fi
+    echo "$PRE_C23_CFLAG"
+}
+
 build_done() {
     echo "$2" >"$PACKAGES/$1.done"
 }
@@ -726,15 +749,9 @@ build_pkg_config() {
             CFLAGS+=" -Wno-error=int-conversion"
             export CFLAGS
         fi
-        # pkg-config 0.29.2 bundles a glib that uses "bool" as a struct member name.
-        # GCC 15 (Ubuntu 26.04) defaults to -std=gnu23, where bool is a keyword, so
-        # goption.c fails to compile. Build it as gnu17 where the compiler knows the
-        # option; older compilers already default to a suitable standard.
-        PKG_CONFIG_STD_FLAG=""
-        if echo 'int main(void) { return 0; }' | "${CC:-cc}" -std=gnu17 -x c - -o /dev/null >/dev/null 2>&1; then
-            PKG_CONFIG_STD_FLAG=" -std=gnu17"
-        fi
-        execute ./configure --silent --prefix="${WORKSPACE}" --with-pc-path="${WORKSPACE}"/lib/pkgconfig --with-internal-glib CFLAGS="${CFLAGS}${PKG_CONFIG_STD_FLAG}"
+        # pkg-config 0.29.2 bundles a glib that uses "bool" as a struct member name, so
+        # goption.c does not compile under C23. See pre_c23_cflag.
+        execute ./configure --silent --prefix="${WORKSPACE}" --with-pc-path="${WORKSPACE}"/lib/pkgconfig --with-internal-glib CFLAGS="${CFLAGS}$(pre_c23_cflag)"
         execute make -j "$MJOBS"
         execute make install
         build_done "pkg-config" "$CURRENT_PACKAGE_VERSION"
@@ -743,8 +760,12 @@ build_pkg_config() {
 
 build_yasm() {
     if build "yasm" "${VER_YASM[0]}"; then
-        download "https://github.com/yasm/yasm/releases/download/v$CURRENT_PACKAGE_VERSION/yasm-$CURRENT_PACKAGE_VERSION.tar.gz"
-        execute ./configure --prefix="${WORKSPACE}"
+        download "https://github.com/yasm/yasm/archive/$CURRENT_PACKAGE_VERSION.tar.gz" "yasm-$CURRENT_PACKAGE_VERSION.tar.gz"
+        # A commit archive ships configure.ac but no configure, so generate the build
+        # system first. autogen.sh needs aclocal, autoheader, automake and autoconf, which
+        # is why yasm is ordered after automake; it runs configure itself and forwards
+        # these arguments to it. re2c is vendored in tools/, so nothing else is needed.
+        execute ./autogen.sh --prefix="${WORKSPACE}"
         execute make -j "$MJOBS"
         execute make install
         build_done "yasm" "$CURRENT_PACKAGE_VERSION"
@@ -933,7 +954,17 @@ build_gmp() {
 
     if build "gmp" "${VER_GMP[0]}"; then
         download "https://ftp.gnu.org/gnu/gmp/gmp-$CURRENT_PACKAGE_VERSION.tar.xz"
-        execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+        # GMP's compiler probe calls "void g(){}" with six arguments. C23 made an empty
+        # parameter list mean (void), so GCC 15 rejects the call and configure concludes
+        # there is no working compiler at all. See pre_c23_cflag. The standard goes on CC
+        # rather than CFLAGS because GMP picks its own optimisation and ABI flags, and
+        # setting CFLAGS discards that tuning.
+        GMP_STD_FLAG="$(pre_c23_cflag)"
+        if [ -n "$GMP_STD_FLAG" ]; then
+            execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static CC="${CC:-gcc}$GMP_STD_FLAG"
+        else
+            execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+        fi
         execute make -j "$MJOBS"
         execute make install
         build_done "gmp" "$CURRENT_PACKAGE_VERSION"
@@ -2633,7 +2664,6 @@ PACKAGE_BUILD_ORDER=(
     ## build tools
     giflib
     pkg_config
-    yasm
     nasm
     zlib
     xz
@@ -2642,6 +2672,8 @@ PACKAGE_BUILD_ORDER=(
     autoconf
     automake
     libtool
+    # after automake: yasm is built from a commit archive and autogen.sh needs autotools
+    yasm
     gettext
     openssl
     gmp
