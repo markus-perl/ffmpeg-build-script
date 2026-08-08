@@ -71,6 +71,13 @@ there is no artifact to withhold, so it reports in seconds instead of after an h
   The scripts are currently clean, so anything it reports is a regression you introduced.
   Prefer fixing over silencing; if a `# shellcheck disable=` really is warranted, give it a
   reason comment on the same line.
+- **Package consistency is enforced too**, in the same `lint` job, because both failures it
+  catches are silent and only surface at download time — up to an hour into a build.
+  `./build-ffmpeg --list-packages | grep MISSING` must print nothing: `download()` derives
+  `VER_<PACKAGE>` from the name passed to `build()`, and when the two disagree it finds no
+  checksum and fetches the tarball **unverified** instead of failing. The job also checks
+  that every variable interpolated into a `download` URL is assigned somewhere — `X265_COMMIT`
+  was not, once, and the URL collapsed to `get/.tar.gz`.
 - **Target `/bin/bash` 3.2.** macOS still ships bash 3.2, so no associative arrays
   (`declare -A` is a *fatal* error there), no `${var^^}`, no `mapfile`/`readarray`,
   no `**` globstar.

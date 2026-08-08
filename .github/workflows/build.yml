@@ -41,6 +41,35 @@ jobs:
           /tmp/shellcheck --version
           /tmp/shellcheck -x --severity=style --color=always build-ffmpeg web-install.sh web-install-gpl-and-non-free.sh src/*.sh src/packages/*.sh
 
+      # Both failures below surface at download time, which is anywhere up to an
+      # hour into a build, and neither is loud: a package whose VER_ array name
+      # has drifted is fetched unverified rather than failing, and a download URL
+      # built from an unassigned variable just requests a nonsense path. Seconds
+      # here instead.
+      - name: check packages resolve their versions and download variables
+        run: |
+          status=0
+
+          # download() derives VER_<PACKAGE> from the name passed to build().
+          # When the two disagree it finds no checksum and skips verification,
+          # so --list-packages resolves them the same way and reports MISSING.
+          if ./build-ffmpeg --list-packages | grep -E 'MISSING'; then
+            echo "::error::a package above has no VER_ array under the name build() passes to it"
+            status=1
+          fi
+
+          # X265_COMMIT was dropped when the version table was split up and the
+          # x265 URL silently collapsed to get/.tar.gz.
+          for var in $(grep -rhoE 'download "[^"]+"' src/packages/*.sh src/95-ffmpeg.sh |
+            grep -oE '\$\{?[A-Za-z_][A-Za-z0-9_]*' | tr -d '${' | sort -u); do
+            if ! grep -rqE "^[[:space:]]*(export )?$var=" src/; then
+              echo "::error::\$$var is used in a download URL but is never assigned"
+              status=1
+            fi
+          done
+
+          exit $status
+
   build-linux:
     name: build in native linux
     runs-on: ubuntu-24.04

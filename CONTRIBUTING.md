@@ -131,7 +131,16 @@ Always, and they take seconds:
 $ bash -n build-ffmpeg && (for f in src/*.sh src/packages/*.sh; do bash -n "$f" || exit 1; done)
 $ shfmt -d build-ffmpeg web-install.sh web-install-gpl-and-non-free.sh src/
 $ shellcheck -x --severity=style build-ffmpeg web-install.sh web-install-gpl-and-non-free.sh src/*.sh src/packages/*.sh
+$ ./build-ffmpeg --list-packages | grep MISSING   # must print nothing
 ```
+
+`--list-packages` is worth the extra second after touching a `VER_` array or a
+package name. `download()` derives `VER_<PACKAGE>` from the name passed to
+`build()`, and when the two disagree it finds no checksum and downloads the
+tarball **unverified** rather than failing, so the mistake is invisible until
+someone looks. The listing resolves the names the same way and marks the
+casualties `MISSING`. CI runs this check too, along with one that every variable
+used in a `download` URL is actually assigned.
 
 The subshell around the `bash -n` loop is what makes it report failure: with a bare
 `|| break` the loop — and the whole line — still exits 0 when a fragment has a syntax error.
