@@ -9,7 +9,6 @@ usage() {
     echo "      --enable-gpl-and-non-free  Enable GPL and non-free codecs  - https://ffmpeg.org/legal.html"
     echo "      --disable-lv2              Disable LV2 libraries"
     echo "  -c, --cleanup                  Remove all working dirs"
-    echo "      --latest                   Build latest version of dependencies if newer available"
     echo "      --small                    Prioritize small size over speed and usability; don't build manpages"
     echo "      --full-static              Build a full static FFmpeg binary (eg. glibc, pthreads etc...) **only Linux**"
     echo "                                 Note: Because of the NSS (Name Service Switch), glibc does not recommend static links."
@@ -67,11 +66,6 @@ while (($# > 0)); do
         LDEXEFLAGS="-static -fPIC"
         CFLAGS+=" -fPIC"
         CXXFLAGS+=" -fPIC"
-        shift
-        ;;
-    --latest)
-        # shellcheck disable=SC2034 # read by download()/build() in 30-helpers.sh
-        LATEST=true
         shift
         ;;
     --small)

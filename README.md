@@ -342,12 +342,14 @@ Options:
       --version                  Display version information
   -b, --build                    Starts the build process
       --enable-gpl-and-non-free  Enable non-free codecs  - https://ffmpeg.org/legal.html
-      --latest                   Build latest version of dependencies if newer available
   -c, --cleanup                  Remove all working dirs
       --small                    Prioritize small size over speed and usability; don't build manpages.
       --full-static              Complete static build of ffmpeg (eg. glibc, pthreads etc...) **only Linux**
                                  Note: Because of the NSS (Name Service Switch), glibc does not recommend static links.
 ```
+
+There is no option to rebuild dependencies: a package whose pinned version changed is
+rebuilt automatically on the next build.
 
 Environment variables:
 
