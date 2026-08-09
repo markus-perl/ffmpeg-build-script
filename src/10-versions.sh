@@ -166,3 +166,8 @@ VER_AMF=("1.5.2" "8a70b6dc85261e6e6e57769bd81ac1e09c0a4c96bbd5e358ffbc2dee51e8e5
 VER_LIBVPL=("2.17.0" "4de3e2faf1e8307fb282e4a43f443191810f6a6b0a484fffa7995ba1c814c6ec")
 VER_OPENCL_HEADERS=("2026.05.29" "d9e6c48357de5002da11ce45de600e0c3ffe6ab4f628a3b9fe2b38603161658a")
 VER_OPENCL_ICD_LOADER=("2026.05.29" "48fd0c5181db7cd046f4f731d5955694892e10998d49d09ee0d997e7e04fd939")
+
+## speech recognition
+# whisper.cpp, for the af_whisper filter. Built last - see the comment on the
+# "whisper" entry in PACKAGE_BUILD_ORDER - so its array sits last here too.
+VER_WHISPER=("1.9.2" "a6abd064fcca8b85e794d205abf328c522e9451db43a3eadc178b883b7d0e9cd")

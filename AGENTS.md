@@ -176,6 +176,7 @@ Rules this shape encodes:
 | `if [ -n "$LDEXEFLAGS" ]; then return; fi` | Skipped in `--full-static` builds. Used for packages whose filters `dlopen()` plugins at runtime (frei0r, ladspa), which a static binary cannot do. |
 | `if ! command_exists "x"; then return; fi` | Optional on hosts lacking a tool (python3, meson, cargo, nvcc). |
 | `if [[ ! "$OSTYPE" == "linux-gnu" ]]; then return; fi` | Linux-only hardware accel. |
+| `if [ -z "$WHISPER_BACKEND" ]; then return; fi` | Opt-in: built only when `--whisper=BACKEND` selects one. Used by whisper.cpp, where exactly one ggml compute backend is compiled into the static binary and only the user knows which one fits the target machine. |
 
 Packages are also skipped from outside the gates: `--disable=name[,name...]` removes them from
 the dispatch loop in `src/90-build-order.sh`, so the `build_` function never runs and never

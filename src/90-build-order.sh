@@ -119,6 +119,12 @@ PACKAGE_BUILD_ORDER=(
     amf
     opencl_headers
     opencl_icd_loader
+
+    ## speech recognition
+    # Last, although build_whisper lives with the audio libraries: --whisper=vulkan
+    # compiles ggml's Vulkan backend against the headers vulkan_headers installs
+    # into the workspace, so it cannot run before the HWaccel section above.
+    whisper
 )
 
 ##

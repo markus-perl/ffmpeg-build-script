@@ -341,16 +341,27 @@ Options:
   -h, --help                     Display usage information
       --version                  Display version information
       --update                   Update this script to the latest release and exit
+      --list-packages            List the packages in build order, with versions
   -b, --build                    Starts the build process
-      --enable-gpl-and-non-free  Enable non-free codecs  - https://ffmpeg.org/legal.html
+      --enable-gpl-and-non-free  Enable GPL and non-free codecs  - https://ffmpeg.org/legal.html
       --disable=NAME[,NAME...]   Do not build these libraries. Repeatable.
                                  --list-packages shows every name that can be disabled.
       --tls=BACKEND              TLS backend for https/tls/dtls: gnutls or openssl
                                  Default: openssl with --enable-gpl-and-non-free, gnutls otherwise.
+      --whisper=BACKEND          Build whisper.cpp for the af_whisper filter (speech to text).
+                                 BACKEND is cpu, metal (macOS), cuda (Linux, needs nvcc)
+                                 or vulkan (Linux, needs glslc and a Vulkan loader).
+                                 Off by default: exactly one backend is compiled in, so
+                                 it has to match the machine that runs the binary.
+                                 Speech models are not shipped - af_whisper takes a
+                                 model=/path at runtime, see the README.
   -c, --cleanup                  Remove all working dirs
-      --small                    Prioritize small size over speed and usability; don't build manpages.
-      --full-static              Complete static build of ffmpeg (eg. glibc, pthreads etc...) **only Linux**
+      --small                    Prioritize small size over speed and usability; don't build manpages
+      --full-static              Build a full static FFmpeg binary (eg. glibc, pthreads etc...) **only Linux**
                                  Note: Because of the NSS (Name Service Switch), glibc does not recommend static links.
+      --skip-install             Don't install FFmpeg, FFprobe, and FFplay binaries to your system
+      --auto-install             Install FFmpeg, FFprobe, and FFplay binaries to your system
+                                 Note: Without --skip-install or --auto-install the script will prompt you to install.
 ```
 
 There is no option to rebuild dependencies: a package whose pinned version changed is
@@ -414,6 +425,52 @@ Environment variables:
 | --- | --- |
 | `SKIPINSTALL=yes` | do not prompt for installing the binaries after the build |
 | `CUDA_COMPUTE_CAPABILITY=75` | override the auto-detected CUDA compute capability, see [CUDA](#cuda-nvidia) |
+
+## Speech recognition (whisper.cpp)
+
+`--whisper=BACKEND` builds [whisper.cpp](https://github.com/ggml-org/whisper.cpp) and enables
+FFmpeg's `af_whisper` filter, which turns speech into text (subtitles, `-f srt`, or JSON
+metadata) inside a filter graph:
+
+```bash
+./build-ffmpeg --build --whisper=metal
+```
+
+It is off by default, and that is deliberate: **exactly one compute backend is compiled into
+the binary.** whisper.cpp's ggml can also load backends at runtime, but only when it is built
+as a shared library — everything this script produces is statically linked, so the backend has
+to be chosen at build time and it has to match the machine that will run the binary.
+
+| `--whisper=` | Runs on | Needs |
+| --- | --- | --- |
+| `cpu` | anything | nothing extra (on Apple hardware it still uses Accelerate) |
+| `metal` | macOS | macOS only, rejected elsewhere |
+| `cuda` | Linux | Linux only, plus `nvcc` from the CUDA toolkit |
+| `vulkan` | Linux | Linux only, plus `glslc` (shaderc) and a Vulkan loader — the script builds only the Vulkan *headers* |
+
+An unusable combination is rejected while the command line is parsed, not an hour into the
+build.
+
+### Models are not included
+
+No speech model is downloaded or installed. `af_whisper` takes the model as a runtime option
+and the files are large — roughly 75 MB for `tiny` up to ~3 GB for `large-v3`:
+
+```bash
+# fetch a model once, with whisper.cpp's own script
+git clone https://github.com/ggml-org/whisper.cpp
+./whisper.cpp/models/download-ggml-model.sh base.en
+
+# transcribe to SRT
+ffmpeg -i input.mp4 -vn -af "aformat=sample_fmts=s16:sample_rates=16000:channel_layouts=mono,\
+whisper=model=./whisper.cpp/models/ggml-base.en.bin:language=en:format=srt:destination=output.srt" \
+    -f null -
+```
+
+`af_whisper` wants 16 kHz mono signed 16-bit audio, which is what the `aformat` above is for;
+it passes the audio through unchanged and writes the transcription to `destination` (stdout
+when empty) in `text`, `srt` or `json`. Run `ffmpeg -h filter=whisper` for the full option
+list.
 
 ---
 
@@ -620,6 +677,8 @@ on macOS. Always available on macOS, nothing to install:
   Built together with `fribidi` (bidirectional text), `harfbuzz` (text shaping), `libunibreak` (Unicode line
   breaking for CJK and Thai) and `fontconfig` (font lookup by name). The latter three also make `drawtext`
   accept `font=Helvetica` instead of only an explicit `fontfile=` path.
+* `whisper`: whisper.cpp speech recognition for the `whisper` audio filter. Only built with
+  [`--whisper=BACKEND`](#speech-recognition-whispercpp), and no speech model is shipped.
 * `libxml2`: XML parser required for the DASH and IMF demuxers
 * `avisynth`: Reading of [AviSynth+](http://avs-plus.net/) script files (only with `--enable-gpl-and-non-free`).
   Only the headers are built; the AviSynth+ library itself is loaded at runtime and has to be installed separately.

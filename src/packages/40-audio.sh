@@ -671,3 +671,196 @@ build_libpulse() {
         CONFIGURE_OPTIONS+=("--enable-libpulse")
     fi
 }
+
+# whisper.cpp, for the af_whisper filter (speech recognition / subtitles). Not licence-gated:
+# ffmpeg 9.0 lists "whisper" in the plain EXTERNAL_LIBRARY_LIST (configure line 2162), not in
+# EXTERNAL_LIBRARY_GPL_LIST or any nonfree list, and whisper.cpp is MIT. ffmpeg's check is
+# pkg-config-only and link-tests a symbol:
+#   enabled whisper && require_pkg_config whisper "whisper >= 1.7.5" whisper.h \
+#       whisper_init_from_file_with_params                      (configure line 7465)
+# so whisper.pc has to describe a *complete* link line - see the fixup below.
+#
+# This function lives here with the other audio libraries, but its PACKAGE_BUILD_ORDER entry
+# is the last one in the list: the vulkan backend needs the Vulkan headers that the HWaccel
+# section installs into the workspace, and that section is built after this one. The fragment
+# a build_ function lives in has no influence on when it runs - the dispatch loop calls it by
+# name - so the entry moved rather than the code.
+#
+# No model is downloaded or installed. af_whisper takes model=/path/to/ggml-model.bin at
+# runtime and the models range from ~75 MB to ~3 GB; shipping one would be both a licence
+# question and a build this script has no business making.
+build_whisper() {
+    # Opt-in. Without --whisper the package is not built and --enable-whisper is never added,
+    # because exactly one ggml backend ends up compiled into the binary and only the user
+    # knows which one fits the target machine. ggml can load backends at runtime instead
+    # (GGML_BACKEND_DL), which would make one binary work everywhere, but that path is
+    # unavailable here: ggml/src/CMakeLists.txt line 188 is a hard
+    # "FATAL_ERROR: GGML_BACKEND_DL requires BUILD_SHARED_LIBS" and everything this script
+    # produces is static.
+    if [ -z "$WHISPER_BACKEND" ]; then return; fi
+
+    # The backend/OS combinations were already rejected in 40-cli.sh; what is checked here is
+    # the toolchain, which is the same "optional on hosts lacking a tool" gate the rest of the
+    # script uses - except that it aborts instead of skipping, since the user asked for this
+    # backend by name.
+    if [ "$WHISPER_BACKEND" = "cuda" ] && ! command_exists "nvcc"; then
+        echo "Error: --whisper=cuda needs nvcc (the CUDA toolkit) and it is not on PATH."
+        exit 1
+    fi
+    if [ "$WHISPER_BACKEND" = "vulkan" ] && ! command_exists "glslc"; then
+        # ggml/src/ggml-vulkan/CMakeLists.txt line 9 is find_package(Vulkan COMPONENTS glslc
+        # REQUIRED): it compiles its compute shaders with glslc, which comes from shaderc and
+        # not from the glslang this script builds (glslang installs glslangValidator, which
+        # ggml does not accept). find_package(Vulkan) also needs the loader library itself,
+        # so a Vulkan SDK / libvulkan-dev has to be installed - build_vulkan_headers only
+        # puts the headers in the workspace.
+        echo "Error: --whisper=vulkan needs glslc and a Vulkan loader (install the Vulkan SDK"
+        echo "       or libvulkan-dev + glslc). Only the Vulkan *headers* are built here."
+        exit 1
+    fi
+
+    # The backend is part of the version handed to build(), so it lands in the lockfile and
+    # switching --whisper=metal to --whisper=cpu rebuilds instead of silently keeping the
+    # previous backend: the lockfile is compared verbatim, and the pinned version alone does
+    # not change when only the backend does. The download URL uses VER_WHISPER directly rather
+    # than $CURRENT_PACKAGE_VERSION for the same reason - that now carries the suffix. The
+    # checksum is unaffected, download() looks it up by package name.
+    WHISPER_VERSION="${VER_WHISPER[0]}"
+    if build "whisper" "$WHISPER_VERSION-$WHISPER_BACKEND"; then
+        download "https://github.com/ggml-org/whisper.cpp/archive/refs/tags/v$WHISPER_VERSION.tar.gz" "whisper-$WHISPER_VERSION.tar.gz"
+
+        # A previous run with a different backend left its own libggml-*.a in the workspace,
+        # and the .pc fixup below reads that directory back to build the link line. Clear them
+        # first so a cpu build cannot inherit -lggml-metal and a pile of frameworks from the
+        # metal build that came before it.
+        execute rm -f "${WORKSPACE}"/lib/libggml*.a "${WORKSPACE}"/lib/pkgconfig/whisper.pc
+
+        # download() extracts over the existing package directory without removing it, so the
+        # build/ tree from the previous backend survives with its CMakeCache.txt. Re-running
+        # cmake would inherit that cache: the -D options below are re-applied, but ggml's
+        # derived state (which BLAS was found, which backends registered) is not necessarily
+        # re-derived. Cheaper to start clean than to reason about which parts are sticky.
+        execute rm -rf build
+
+        # One backend, selected explicitly in both directions. GGML_METAL and GGML_BLAS
+        # default to ON on Apple (ggml/CMakeLists.txt lines 96-98), so --whisper=cpu has to
+        # turn them off to actually get the portable CPU build it promises; on Linux both
+        # default to OFF and the assignments are no-ops.
+        #
+        # GGML_NATIVE is left at its default (ON for a non-cross build), which is -march=native
+        # on x86: the binary is then tuned for the machine that built it. That matches what
+        # the rest of this script does - x264, x265 and dav1d all build with runtime detection
+        # off a native baseline - and a user who wants a portable binary is building the cpu
+        # backend on the oldest machine anyway.
+        WHISPER_CMAKE_BACKEND=("-DGGML_METAL=OFF" "-DGGML_BLAS=OFF" "-DGGML_CUDA=OFF" "-DGGML_VULKAN=OFF")
+        case $WHISPER_BACKEND in
+        cpu) ;;
+        metal)
+            # GGML_METAL_EMBED_LIBRARY compiles default.metallib into the archive instead of
+            # installing it next to the library and looking it up by bundle path at runtime.
+            # It defaults to the value of GGML_METAL, but is named here because a static
+            # ffmpeg binary has no bundle to find the .metallib in - without it the backend
+            # initialises and then fails on the first filter invocation.
+            WHISPER_CMAKE_BACKEND=("-DGGML_METAL=ON" "-DGGML_METAL_EMBED_LIBRARY=ON" "-DGGML_BLAS=ON" "-DGGML_CUDA=OFF" "-DGGML_VULKAN=OFF")
+            ;;
+        cuda)
+            WHISPER_CMAKE_BACKEND=("-DGGML_METAL=OFF" "-DGGML_BLAS=OFF" "-DGGML_CUDA=ON" "-DGGML_VULKAN=OFF")
+            ;;
+        vulkan)
+            WHISPER_CMAKE_BACKEND=("-DGGML_METAL=OFF" "-DGGML_BLAS=OFF" "-DGGML_CUDA=OFF" "-DGGML_VULKAN=ON")
+            ;;
+        esac
+
+        # WHISPER_BUILD_TESTS/EXAMPLES/SERVER default to ON for a standalone build and pull in
+        # SDL2, a test corpus and an HTTP server; only libwhisper.a and whisper.pc are wanted.
+        # CMAKE_PREFIX_PATH points find_package at the workspace so the Vulkan headers built
+        # here are the ones used.
+        execute cmake -DCMAKE_PREFIX_PATH="${WORKSPACE}" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DWHISPER_BUILD_TESTS=OFF -DWHISPER_BUILD_EXAMPLES=OFF -DWHISPER_BUILD_SERVER=OFF "${WHISPER_CMAKE_BACKEND[@]}" -B build/
+        execute cmake --build build --target install -j "$MJOBS"
+
+        # cmake/whisper.pc.in hardcodes "Libs: -L${libdir} -lggml  -lggml-base -lwhisper" and
+        # has no Libs.private - a fixed string that mentions neither the backend archives nor
+        # the C++ runtime nor the frameworks, whatever was actually built. A static build
+        # installs one archive per backend (libggml-cpu.a, libggml-blas.a, libggml-metal.a,
+        # ...), so ffmpeg's link test above fails on undefined ggml_backend_load_best and
+        # std::__1::* symbols and reports only the useless "whisper not found". Same class of
+        # fixup as libchromaprint.pc, libvmaf.pc, libplacebo.pc and vpl.pc.
+        #
+        # The archive list is read back from what the install actually produced rather than
+        # derived from $WHISPER_BACKEND: ggml decides for itself which backends to build
+        # (enabling GGML_VULKAN also builds ggml-cpu, and a future release may split an
+        # archive out), and a hardcoded guess would silently go stale.
+        #
+        # Link order matters - GNU ld is one-pass, so a library has to sit to the left of
+        # nothing it needs: libwhisper calls the ggml registry, the registry (libggml.a) calls
+        # the backends, the backends call ggml-cpu's shared helpers, and everything bottoms
+        # out in ggml-base.
+        WHISPER_LIBS="-lwhisper"
+        if [ -f "${WORKSPACE}/lib/libggml.a" ]; then
+            WHISPER_LIBS+=" -lggml"
+        fi
+        for WHISPER_ARCHIVE in "${WORKSPACE}"/lib/libggml-*.a; do
+            case "$WHISPER_ARCHIVE" in
+            # ggml-cpu and ggml-base are emitted after the loop, in that order.
+            *"libggml-cpu.a" | *"libggml-base.a") continue ;;
+            # No match at all: bash leaves the pattern itself in the variable.
+            *"*"*) continue ;;
+            esac
+            WHISPER_ARCHIVE="${WHISPER_ARCHIVE##*/}"
+            WHISPER_ARCHIVE="${WHISPER_ARCHIVE#lib}"
+            WHISPER_LIBS+=" -l${WHISPER_ARCHIVE%.a}"
+        done
+        if [ -f "${WORKSPACE}/lib/libggml-cpu.a" ]; then
+            WHISPER_LIBS+=" -lggml-cpu"
+        fi
+        if [ -f "${WORKSPACE}/lib/libggml-base.a" ]; then
+            WHISPER_LIBS+=" -lggml-base"
+        fi
+
+        # Everything the archives reference but no .pc mentions. The C++ runtime is required
+        # in every configuration - whisper.cpp and all of ggml are C++ - and ffmpeg link-tests
+        # with $CC, which does not add one.
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            WHISPER_LIBS+=" -lc++"
+        else
+            WHISPER_LIBS+=" -lstdc++"
+        fi
+        # Per-backend system libraries, again keyed on the archive that was installed rather
+        # than on the requested backend:
+        #   ggml-metal  links Foundation, Metal and MetalKit (ggml/src/ggml-metal/CMakeLists.txt)
+        #   ggml-blas   links ${BLAS_LIBRARIES}, which on Apple is the Accelerate framework;
+        #               GGML_BLAS is only ever enabled above on macOS, so no Linux BLAS
+        #               (-lopenblas and friends) has to be guessed at here
+        #   ggml-cpu    also links Accelerate on Apple, independently of GGML_BLAS: the
+        #               separate GGML_ACCELERATE option (default ON) makes it call vDSP_*
+        #               (ggml/src/ggml-cpu/CMakeLists.txt lines 60-69). Without this the
+        #               --whisper=cpu link fails on _vDSP_vadd and friends even though no
+        #               BLAS backend was built at all
+        #   ggml-cuda   links CUDA::cudart, CUDA::cublas and the driver stub CUDA::cuda_driver
+        #               (ggml/src/ggml-cuda/CMakeLists.txt lines 176-182). /usr/local/cuda is
+        #               the same location build_nv_codec assumes
+        #   ggml-vulkan links Vulkan::Vulkan, i.e. the loader
+        if [ -f "${WORKSPACE}/lib/libggml-metal.a" ]; then
+            WHISPER_LIBS+=" -framework Foundation -framework Metal -framework MetalKit"
+        fi
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            if [ -f "${WORKSPACE}/lib/libggml-blas.a" ] || [ -f "${WORKSPACE}/lib/libggml-cpu.a" ]; then
+                WHISPER_LIBS+=" -framework Accelerate"
+            fi
+        fi
+        if [ -f "${WORKSPACE}/lib/libggml-cuda.a" ]; then
+            WHISPER_LIBS+=" -L/usr/local/cuda/lib64 -L/usr/local/cuda/lib64/stubs -lcudart -lcublas -lcuda"
+        fi
+        if [ -f "${WORKSPACE}/lib/libggml-vulkan.a" ]; then
+            WHISPER_LIBS+=" -lvulkan"
+        fi
+
+        # Replace the whole Libs: line rather than appending to it: the hardcoded one has the
+        # archives in the wrong order for a one-pass linker, so the -lggml it already contains
+        # would still be resolved before the backends were seen.
+        apply_inline_patch "${WORKSPACE}/lib/pkgconfig/whisper.pc" "s|^Libs:.*|Libs: -L\${libdir} ${WHISPER_LIBS}|"
+
+        build_done "whisper" "$CURRENT_PACKAGE_VERSION"
+    fi
+    CONFIGURE_OPTIONS+=("--enable-whisper")
+}

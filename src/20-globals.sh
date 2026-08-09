@@ -32,6 +32,13 @@ DISABLE_REQUESTS=()
 # two flags.
 # shellcheck disable=SC2034 # $TLS_BACKEND is read by later fragments
 TLS_BACKEND=""
+# The ggml backend whisper.cpp is compiled for: "cpu", "metal", "cuda" or
+# "vulkan". Empty means --whisper was not given, and then whisper.cpp is not
+# built at all - it is opt-in because exactly one backend is compiled into the
+# binary (see build_whisper) and only the user knows which one matches the
+# machine the binary will run on.
+# shellcheck disable=SC2034 # $WHISPER_BACKEND is read by later fragments
+WHISPER_BACKEND=""
 # shellcheck disable=SC2034 # $LIST_PACKAGES is read by later fragments
 LIST_PACKAGES=false
 # shellcheck disable=SC2034 # $MANPAGES is read by later fragments

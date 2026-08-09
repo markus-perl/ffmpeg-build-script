@@ -12,6 +12,13 @@ usage() {
     echo "                                 --list-packages shows every name that can be disabled."
     echo "      --tls=BACKEND              TLS backend for https/tls/dtls: gnutls or openssl"
     echo "                                 Default: openssl with --enable-gpl-and-non-free, gnutls otherwise."
+    echo "      --whisper=BACKEND          Build whisper.cpp for the af_whisper filter (speech to text)."
+    echo "                                 BACKEND is cpu, metal (macOS), cuda (Linux, needs nvcc)"
+    echo "                                 or vulkan (Linux, needs glslc and a Vulkan loader)."
+    echo "                                 Off by default: exactly one backend is compiled in, so"
+    echo "                                 it has to match the machine that runs the binary."
+    echo "                                 Speech models are not shipped - af_whisper takes a"
+    echo "                                 model=/path at runtime, see the README."
     echo "  -c, --cleanup                  Remove all working dirs"
     echo "      --small                    Prioritize small size over speed and usability; don't build manpages"
     echo "      --full-static              Build a full static FFmpeg binary (eg. glibc, pthreads etc...) **only Linux**"
@@ -66,6 +73,34 @@ while (($# > 0)); do
         gnutls | openssl) ;;
         *)
             echo "Error: --tls accepts \"gnutls\" or \"openssl\", not \"$TLS_BACKEND\"."
+            exit 1
+            ;;
+        esac
+        shift
+        ;;
+    --whisper=*)
+        # Same shape as --tls: one value, validated here so a typo costs a second
+        # instead of an hour. The OS checks are part of the validation and not a
+        # gate inside build_whisper, because the whole package is opt-in - asking
+        # for a backend this host cannot build is a mistake worth reporting up
+        # front, not something to silently skip.
+        WHISPER_BACKEND="${1#*=}"
+        case $WHISPER_BACKEND in
+        cpu) ;;
+        metal)
+            if [[ ! "$OSTYPE" == "darwin"* ]]; then
+                echo "Error: --whisper=metal is macOS only. Use cpu, cuda or vulkan here."
+                exit 1
+            fi
+            ;;
+        cuda | vulkan)
+            if [[ ! "$OSTYPE" == "linux-gnu"* ]]; then
+                echo "Error: --whisper=$WHISPER_BACKEND is Linux only. Use cpu, or metal on macOS."
+                exit 1
+            fi
+            ;;
+        *)
+            echo "Error: --whisper accepts \"cpu\", \"metal\", \"cuda\" or \"vulkan\", not \"$WHISPER_BACKEND\"."
             exit 1
             ;;
         esac
@@ -180,6 +215,10 @@ if [ "$TLS_BACKEND" = "gnutls" ]; then
     if $NONFREE_AND_GPL; then
         echo "Note: libsrt will be skipped - its encryption layer needs OpenSSL."
     fi
+fi
+
+if [ -n "$WHISPER_BACKEND" ]; then
+    echo "whisper.cpp backend: $WHISPER_BACKEND"
 fi
 
 if [ -n "$LDEXEFLAGS" ]; then
