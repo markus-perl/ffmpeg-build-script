@@ -56,6 +56,8 @@ X265_COMMIT=b81f650e21e8aacbe6a9ad04ce14aefc05b932c0
 # tag, and therefore every archive URL, carries the "v" prefix. 2.6.0 is the
 # newest tag, 2.5.1 is a later-published patch of the older 2.5 branch.
 VER_OPENH264=("2.6.0" "558544ad358283a7ab2930d69a9ceddf913f4a51ee9bf1bfb9e377322af81a69")
+# H.266/VVC encoder. Note the pkg-config module is libvvenc and ffmpeg requires >= 1.6.1.
+VER_VVENC=("1.14.0" "dd43d061d59dbc0d9b9ae5b99cb40672877dd811646228938f065798939ee174")
 VER_LIBVPX=("1.16.0" "7a479a3c66b9f5d5542a4c6a1b7d3768a983b1e5c14c60a9396edc9b649e015c")
 VER_XVIDCORE=("1.3.7" "abbdcbd39555691dd1c9b4d08f0a031376a3b211652c0d8b3b8aa9be1303ce2d")
 VER_VID_STAB=("1.1.2" "96db34d48a9e3aa13736a48744b56dfb76731ac9bb5193c716de8534c9fd709d")

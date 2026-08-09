@@ -520,6 +520,7 @@ on macOS. Always available on macOS, nothing to install:
 
 * `x264`: H.264 Video Codec (MPEG-4 AVC)
 * `x265`: H.265 Video Codec (HEVC)
+* `libvvenc`: H.266/VVC encoder (Fraunhofer VVenC). FFmpeg's own VVC decoder is built in, so this adds the encoding half. Encoder name: `libvvenc`.
 * `libsvtav1`: SVT-AV1 Encoder and Decoder
 * `aom`: AV1 Video Codec (Experimental and very slow!)
 * `librav1e`: rust based AV1 encoder (only available if [`cargo` is installed](https://doc.rust-lang.org/cargo/getting-started/installation.html))

@@ -38,6 +38,7 @@ PACKAGE_BUILD_ORDER=(
     x264
     x265
     openh264
+    vvenc
     libvpx
     xvidcore
     vid_stab
