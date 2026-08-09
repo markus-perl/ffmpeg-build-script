@@ -357,7 +357,7 @@ Environment variables:
 | Variable | Effect |
 | --- | --- |
 | `SKIPINSTALL=yes` | do not prompt for installing the binaries after the build |
-| `CUDA_COMPUTE_CAPABILITY=75` | tailor the CUDA build to your hardware, see [CUDA](#cuda-nvidia) |
+| `CUDA_COMPUTE_CAPABILITY=75` | override the auto-detected CUDA compute capability, see [CUDA](#cuda-nvidia) |
 
 ---
 
@@ -409,11 +409,21 @@ need a compatible NVIDIA GPU and the NVIDIA compiler nvcc from the CUDA toolkit.
   or [this blog](https://www.pugetsystems.com/labs/hpc/How-To-Install-CUDA-10-1-on-Ubuntu-19-04-1405/)
   to setup the CUDA toolkit.
 
-It is also beneficial to set the `CUDA_COMPUTE_CAPABILITY` environmental variable so the build is tailored to your hardware and its capabilities. There are many ways you can find your compute capability, for example by using [nvidia-smi](https://stackoverflow.com/questions/40695455/what-utility-binary-can-i-call-to-determine-an-nvidia-gpus-compute-capability).
+The build is tailored to your hardware automatically: the compute capability is read from the
+installed GPU with `nvidia-smi` and checked against your CUDA toolkit before it is used. FFmpeg
+cannot produce a multi-architecture CUDA build, so exactly one is compiled.
+
+Set the `CUDA_COMPUTE_CAPABILITY` environment variable to override that — when you build on one
+machine and run on another, when several GPUs are installed, or when detection reports a card
+your CUDA toolkit does not support. There are many ways to look yours up, for example with
+[nvidia-smi](https://stackoverflow.com/questions/40695455/what-utility-binary-can-i-call-to-determine-an-nvidia-gpus-compute-capability).
+Note that a binary built for a newer architecture than the GPU it runs on will not use the GPU at
+all, which is why detection is preferred over a fixed default.
 
 Supported codecs in [nv-codec](https://devblogs.nvidia.com/nvidia-ffmpeg-transcoding-guide/):
 
 * Decoders
+    * AV1 `av1_cuvid` (Ampere and newer)
     * H264 `h264_cuvid`
     * H265 `hevc_cuvid`
     * Motion JPEG `mjpeg_cuvid`
