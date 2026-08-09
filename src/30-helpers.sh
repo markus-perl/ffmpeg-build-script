@@ -215,17 +215,17 @@ build() {
     # shellcheck disable=SC2034 # read by download() callers in the package fragments
     CURRENT_PACKAGE_VERSION=$2
 
+    # The lockfile records the version the package was built at, so a mismatch
+    # means the pin in src/10-versions.sh moved since. That always rebuilds:
+    # skipping it left the old library in workspace/, and FFmpeg was then linked
+    # against a version the script no longer pins - a build that reported
+    # success while shipping something nobody asked for.
     if [ -f "$PACKAGES/$1.done" ]; then
         if grep -Fx "$2" "$PACKAGES/$1.done" >/dev/null; then
             echo "$1 version $2 already built. Remove $PACKAGES/$1.done lockfile to rebuild it."
             return 1
-        elif $LATEST; then
-            echo "$1 is outdated and will be rebuilt with latest version $2"
-            return 0
-        else
-            echo "$1 is outdated, but will not be rebuilt. Pass in --latest to rebuild it or remove $PACKAGES/$1.done lockfile."
-            return 1
         fi
+        echo "$1 was built at a different version and will be rebuilt at $2"
     fi
 
     return 0
