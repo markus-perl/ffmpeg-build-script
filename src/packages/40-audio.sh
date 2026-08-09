@@ -284,6 +284,30 @@ build_twolame() {
     # this script already passes --extra-libs="-ldl -lpthread -lm -lz". Do not remove
     # -lm from EXTRALIBS.
 }
+build_libmysofa() {
+    if build "libmysofa" "${VER_LIBMYSOFA[0]}"; then
+        download "https://github.com/hoene/libmysofa/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "libmysofa-$CURRENT_PACKAGE_VERSION.tar.gz"
+
+        # BUILD_TESTS defaults to ON and does find_package(CUnit REQUIRED), so leaving it alone
+        # fails configure outright on any host without CUnit. It also guards the mysofa2json
+        # tool, which is the only thing here that is not the library.
+        #
+        # BUILD_SHARED_LIBS and BUILD_STATIC_LIBS are separate options rather than the usual
+        # single switch, and both default to ON. Only the static one is wanted; the shared
+        # target additionally installs an import archive named mysofa_shared, which is dead
+        # weight in a static workspace.
+        #
+        # CMAKE_PREFIX_PATH points FindZLIB at the static libz.a that build_zlib already
+        # installed, so libmysofa does not read the SOFA files' compressed HDF5 chunks through
+        # a system zlib. Same reason as build_libgme.
+        execute cmake -DCMAKE_PREFIX_PATH="${WORKSPACE}" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DBUILD_STATIC_LIBS=ON -DBUILD_TESTS=OFF -B build/
+        execute cmake --build build --target install -j "$MJOBS"
+
+        build_done "libmysofa" "$CURRENT_PACKAGE_VERSION"
+    fi
+    CONFIGURE_OPTIONS+=("--enable-libmysofa")
+}
+
 build_rubberband() {
     # librubberband is in ffmpeg 9.0's EXTERNAL_LIBRARY_GPL_LIST (configure line 2036), so
     # --enable-librubberband implies --enable-gpl and must stay behind this script's flag.

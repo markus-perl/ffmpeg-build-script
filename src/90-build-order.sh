@@ -66,6 +66,7 @@ PACKAGE_BUILD_ORDER=(
     fdk_aac
     soxr
     twolame
+    libmysofa
     rubberband
     libopenmpt
     libgme

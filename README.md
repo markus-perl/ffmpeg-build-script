@@ -548,6 +548,7 @@ on macOS. Always available on macOS, nothing to install:
 * `webp`: Image format both lossless and lossy
 * `libjxl`: JPEG XL image format
 * `lcms2`: ICC profile support in the image decoders and the `iccdetect` and `iccgen` filters
+* `libmysofa`: SOFA HRTF reader for the `sofalizer` filter (binaural rendering)
 * `libsoxr`: SoX Resampler Library
 * `libzimg`: Scaling and colorspace conversion for the `zscale` filter
 * `vid.stab`: Video stabilization for the `vidstabdetect` and `vidstabtransform` filters
