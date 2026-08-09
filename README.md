@@ -343,6 +343,8 @@ Options:
       --update                   Update this script to the latest release and exit
   -b, --build                    Starts the build process
       --enable-gpl-and-non-free  Enable non-free codecs  - https://ffmpeg.org/legal.html
+      --tls=BACKEND              TLS backend for https/tls/dtls: gnutls or openssl
+                                 Default: openssl with --enable-gpl-and-non-free, gnutls otherwise.
   -c, --cleanup                  Remove all working dirs
       --small                    Prioritize small size over speed and usability; don't build manpages.
       --full-static              Complete static build of ffmpeg (eg. glibc, pthreads etc...) **only Linux**
@@ -351,6 +353,29 @@ Options:
 
 There is no option to rebuild dependencies: a package whose pinned version changed is
 rebuilt automatically on the next build.
+
+## TLS backend
+
+FFmpeg needs one TLS library to open `https://`, `tls://` and `dtls://` URLs, and its
+configure refuses to enable two at once. `--tls` picks which one is built:
+
+| | built | ffmpeg flag | also affected |
+| --- | --- | --- | --- |
+| `--tls=gnutls` | gmp, nettle, gnutls | `--enable-gnutls` | libssh and libsrt are skipped |
+| `--tls=openssl` | openssl | `--enable-openssl` | — |
+
+The default is `openssl` with `--enable-gpl-and-non-free` and `gnutls` otherwise, which is
+what the script always did — but the GnuTLS half used to be built and then never enabled, so
+LGPL Linux builds shipped with no TLS backend at all and could not open an `https://` URL.
+That is fixed; macOS was never affected, because FFmpeg autodetects SecureTransport there.
+
+Two packages are built against OpenSSL and are skipped under `--tls=gnutls`, which the script
+says up front rather than an hour into the build:
+
+- **libssh** (`sftp://`) — its build picks between OpenSSL, gcrypt and mbedTLS, with no GnuTLS
+  option.
+- **libsrt** — its GnuTLS backend still uses nettle's legacy `struct aes_ctx`, removed in
+  nettle 4.0.
 
 Environment variables:
 

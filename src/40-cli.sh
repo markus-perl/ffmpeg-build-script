@@ -9,6 +9,8 @@ usage() {
     echo "  -b, --build                    Starts the build process"
     echo "      --enable-gpl-and-non-free  Enable GPL and non-free codecs  - https://ffmpeg.org/legal.html"
     echo "      --disable-lv2              Disable LV2 libraries"
+    echo "      --tls=BACKEND              TLS backend for https/tls/dtls: gnutls or openssl"
+    echo "                                 Default: openssl with --enable-gpl-and-non-free, gnutls otherwise."
     echo "  -c, --cleanup                  Remove all working dirs"
     echo "      --small                    Prioritize small size over speed and usability; don't build manpages"
     echo "      --full-static              Build a full static FFmpeg binary (eg. glibc, pthreads etc...) **only Linux**"
@@ -55,6 +57,17 @@ while (($# > 0)); do
         CONFIGURE_OPTIONS+=("--enable-nonfree")
         CONFIGURE_OPTIONS+=("--enable-gpl")
         NONFREE_AND_GPL=true
+        shift
+        ;;
+    --tls=*)
+        TLS_BACKEND="${1#*=}"
+        case $TLS_BACKEND in
+        gnutls | openssl) ;;
+        *)
+            echo "Error: --tls accepts \"gnutls\" or \"openssl\", not \"$TLS_BACKEND\"."
+            exit 1
+            ;;
+        esac
         shift
         ;;
     --disable-lv2)
@@ -134,6 +147,31 @@ echo "Using $MJOBS make jobs simultaneously."
 
 if $NONFREE_AND_GPL; then
     echo "With GPL and non-free codecs"
+fi
+
+# Resolved here rather than in 20-globals.sh because it depends on an option that
+# may appear anywhere on the command line. OpenSSL stays the default for
+# --enable-gpl-and-non-free: libsrt and libssh are built against it there, and
+# neither has ever been built any other way in this script.
+if [ -z "$TLS_BACKEND" ]; then
+    if $NONFREE_AND_GPL; then
+        TLS_BACKEND="openssl"
+    else
+        TLS_BACKEND="gnutls"
+    fi
+fi
+echo "TLS backend: $TLS_BACKEND"
+
+# Two packages are built against the workspace OpenSSL and go away with it:
+# libssh, whose cmake picks between OpenSSL, gcrypt and mbedTLS and has no GnuTLS
+# backend at all, and libsrt, whose GnuTLS backend does not compile against the
+# pinned nettle (see build_srt). Said once here rather than as a surprise in the
+# build log an hour later, where their own guards report it.
+if [ "$TLS_BACKEND" = "gnutls" ]; then
+    echo "Note: libssh (sftp://) will be skipped - it needs OpenSSL."
+    if $NONFREE_AND_GPL; then
+        echo "Note: libsrt will be skipped - its encryption layer needs OpenSSL."
+    fi
 fi
 
 if [ -n "$LDEXEFLAGS" ]; then

@@ -21,6 +21,14 @@ CONFIGURE_OPTIONS=()
 NONFREE_AND_GPL=false
 # shellcheck disable=SC2034 # $DISABLE_LV2 is read by later fragments
 DISABLE_LV2=false
+# The TLS backend, "openssl" or "gnutls". Empty until the command line has been
+# parsed: the default depends on --enable-gpl-and-non-free, which may appear
+# after --tls, so it is resolved once at the end of 40-cli.sh rather than here.
+# ffmpeg's configure refuses both at once ("GnuTLS and OpenSSL must not be
+# enabled at the same time", configure line 4851), hence one variable and not
+# two flags.
+# shellcheck disable=SC2034 # $TLS_BACKEND is read by later fragments
+TLS_BACKEND=""
 # shellcheck disable=SC2034 # $LIST_PACKAGES is read by later fragments
 LIST_PACKAGES=false
 # shellcheck disable=SC2034 # $MANPAGES is read by later fragments
