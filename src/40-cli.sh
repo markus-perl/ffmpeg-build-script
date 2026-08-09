@@ -8,7 +8,8 @@ usage() {
     echo "      --list-packages            List the packages in build order, with versions"
     echo "  -b, --build                    Starts the build process"
     echo "      --enable-gpl-and-non-free  Enable GPL and non-free codecs  - https://ffmpeg.org/legal.html"
-    echo "      --disable-lv2              Disable LV2 libraries"
+    echo "      --disable=NAME[,NAME...]   Do not build these libraries. Repeatable."
+    echo "                                 --list-packages shows every name that can be disabled."
     echo "      --tls=BACKEND              TLS backend for https/tls/dtls: gnutls or openssl"
     echo "                                 Default: openssl with --enable-gpl-and-non-free, gnutls otherwise."
     echo "  -c, --cleanup                  Remove all working dirs"
@@ -70,9 +71,16 @@ while (($# > 0)); do
         esac
         shift
         ;;
-    --disable-lv2)
-        # shellcheck disable=SC2034 # read by the LV2 gates in src/packages/
-        DISABLE_LV2=true
+    --disable=*)
+        # Split on commas so both --disable=a,b and --disable=a --disable=b work.
+        # Validated in 90-build-order.sh, against the package list itself.
+        DISABLE_ARG="${1#*=}"
+        if [ -z "$DISABLE_ARG" ]; then
+            echo "Error: --disable needs at least one name, e.g. --disable=rav1e."
+            exit 1
+        fi
+        IFS=',' read -r -a DISABLE_ARG_NAMES <<<"$DISABLE_ARG"
+        DISABLE_REQUESTS+=("${DISABLE_ARG_NAMES[@]}")
         shift
         ;;
     -c | --cleanup)

@@ -174,7 +174,6 @@ build_svtav1() {
 
 build_rav1e() {
     if ! command_exists "cargo"; then return; fi
-    if [[ "$SKIPRAV1E" == "yes" ]]; then return; fi
 
     if build "rav1e" "${VER_RAV1E[0]}"; then
         echo "if you get the message 'cannot be built because it requires rustc x.xx or newer, try to run 'rustup update'"

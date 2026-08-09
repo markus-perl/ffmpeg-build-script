@@ -343,6 +343,8 @@ Options:
       --update                   Update this script to the latest release and exit
   -b, --build                    Starts the build process
       --enable-gpl-and-non-free  Enable non-free codecs  - https://ffmpeg.org/legal.html
+      --disable=NAME[,NAME...]   Do not build these libraries. Repeatable.
+                                 --list-packages shows every name that can be disabled.
       --tls=BACKEND              TLS backend for https/tls/dtls: gnutls or openssl
                                  Default: openssl with --enable-gpl-and-non-free, gnutls otherwise.
   -c, --cleanup                  Remove all working dirs
@@ -353,6 +355,35 @@ Options:
 
 There is no option to rebuild dependencies: a package whose pinned version changed is
 rebuilt automatically on the next build.
+
+## Leaving libraries out
+
+`--disable` takes any package name from `--list-packages`, comma-separated or repeated:
+
+```bash
+./build-ffmpeg --build --disable=rav1e,x265
+./build-ffmpeg --build --disable=lv2 --disable=vulkan
+```
+
+Four names stand for a group rather than one package, because disabling a single member of
+these is never what anyone means:
+
+| Group | Packages |
+| --- | --- |
+| `lv2` | lv2, waflib, serd, pcre, zix, sord, sratom, lilv |
+| `vulkan` | vulkan_headers, spirv_headers, spirv_tools, glslang, libplacebo |
+| `opencl` | opencl_headers, opencl_icd_loader |
+| `bluray` | libudfread, libbluray |
+
+Disabling a package also disables the ones that cannot build without it, and says so — for
+example `--disable=libogg` takes libvorbis and libtheora with it. That table only covers
+dependencies the build blocks state explicitly; it is not a general solver, so it is still
+possible to disable something another package quietly needs.
+
+The build tools and the TLS stack cannot be disabled — they are marked `always built` in
+`--list-packages`. Use `--tls` to choose between GnuTLS and OpenSSL.
+
+Names are validated before anything is built, so a typo costs a second rather than an hour.
 
 ## TLS backend
 

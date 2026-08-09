@@ -4,7 +4,6 @@
 ##
 
 build_lv2() {
-    if $DISABLE_LV2; then return; fi
     if ! command_exists "python3"; then return; fi
     if ! command_exists "meson"; then return; fi
 
@@ -18,7 +17,6 @@ build_lv2() {
 }
 
 build_waflib() {
-    if $DISABLE_LV2; then return; fi
     if ! command_exists "python3"; then return; fi
     if ! command_exists "meson"; then return; fi
 
@@ -29,7 +27,6 @@ build_waflib() {
 }
 
 build_serd() {
-    if $DISABLE_LV2; then return; fi
     if ! command_exists "python3"; then return; fi
     if ! command_exists "meson"; then return; fi
 
@@ -43,7 +40,6 @@ build_serd() {
 }
 
 build_pcre() {
-    if $DISABLE_LV2; then return; fi
     if ! command_exists "python3"; then return; fi
     if ! command_exists "meson"; then return; fi
 
@@ -57,7 +53,6 @@ build_pcre() {
 }
 
 build_zix() {
-    if $DISABLE_LV2; then return; fi
     if ! command_exists "python3"; then return; fi
     if ! command_exists "meson"; then return; fi
 
@@ -73,7 +68,6 @@ build_zix() {
 }
 
 build_sord() {
-    if $DISABLE_LV2; then return; fi
     if ! command_exists "python3"; then return; fi
     if ! command_exists "meson"; then return; fi
 
@@ -87,7 +81,6 @@ build_sord() {
 }
 
 build_sratom() {
-    if $DISABLE_LV2; then return; fi
     if ! command_exists "python3"; then return; fi
     if ! command_exists "meson"; then return; fi
 
@@ -101,7 +94,6 @@ build_sratom() {
 }
 
 build_lilv() {
-    if $DISABLE_LV2; then return; fi
     if ! command_exists "python3"; then return; fi
     if ! command_exists "meson"; then return; fi
 

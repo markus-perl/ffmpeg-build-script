@@ -19,8 +19,11 @@ MACOS_SILICON=false
 CONFIGURE_OPTIONS=()
 # shellcheck disable=SC2034 # $NONFREE_AND_GPL is read by later fragments
 NONFREE_AND_GPL=false
-# shellcheck disable=SC2034 # $DISABLE_LV2 is read by later fragments
-DISABLE_LV2=false
+# Names passed to --disable, as given on the command line. Group names are
+# expanded to the packages behind them in 90-build-order.sh, which is the first
+# point where PACKAGE_BUILD_ORDER exists to validate them against.
+# shellcheck disable=SC2034 # $DISABLE_REQUESTS is read by later fragments
+DISABLE_REQUESTS=()
 # The TLS backend, "openssl" or "gnutls". Empty until the command line has been
 # parsed: the default depends on --enable-gpl-and-non-free, which may appear
 # after --tls, so it is resolved once at the end of 40-cli.sh rather than here.

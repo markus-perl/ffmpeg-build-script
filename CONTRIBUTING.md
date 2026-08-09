@@ -173,8 +173,9 @@ $ SKIPINSTALL=yes ./build-ffmpeg --build
 ```
 
 Useful environment variables: `SKIPINSTALL=yes` (never touch system binaries), `NUMJOBS=n`,
-`SKIPRAV1E=yes` (skips the slow Rust build), `AUTOINSTALL=yes`. The equivalent flags are
-`--skip-install` and `--auto-install`.
+`AUTOINSTALL=yes`. The equivalent flags are `--skip-install` and `--auto-install`. To leave a
+package out entirely, use `--disable=name[,name...]` — `--disable=rav1e` skips the slow Rust
+build, and `--list-packages` prints every name it accepts.
 
 Before opening the pull request, do one full build from a clean tree in the license mode your
 change affects, and verify the result:
