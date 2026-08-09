@@ -8,7 +8,17 @@ usage() {
     echo "      --list-packages            List the packages in build order, with versions"
     echo "  -b, --build                    Starts the build process"
     echo "      --enable-gpl-and-non-free  Enable GPL and non-free codecs  - https://ffmpeg.org/legal.html"
-    echo "      --disable-lv2              Disable LV2 libraries"
+    echo "      --disable=NAME[,NAME...]   Do not build these libraries. Repeatable."
+    echo "                                 --list-packages shows every name that can be disabled."
+    echo "      --tls=BACKEND              TLS backend for https/tls/dtls: gnutls or openssl"
+    echo "                                 Default: openssl with --enable-gpl-and-non-free, gnutls otherwise."
+    echo "      --whisper=BACKEND          Build whisper.cpp for the af_whisper filter (speech to text)."
+    echo "                                 BACKEND is cpu, metal (macOS), cuda (Linux, needs nvcc)"
+    echo "                                 or vulkan (Linux, needs glslc and a Vulkan loader)."
+    echo "                                 Off by default: exactly one backend is compiled in, so"
+    echo "                                 it has to match the machine that runs the binary."
+    echo "                                 Speech models are not shipped - af_whisper takes a"
+    echo "                                 model=/path at runtime, see the README."
     echo "  -c, --cleanup                  Remove all working dirs"
     echo "      --small                    Prioritize small size over speed and usability; don't build manpages"
     echo "      --full-static              Build a full static FFmpeg binary (eg. glibc, pthreads etc...) **only Linux**"
@@ -57,9 +67,55 @@ while (($# > 0)); do
         NONFREE_AND_GPL=true
         shift
         ;;
-    --disable-lv2)
-        # shellcheck disable=SC2034 # read by the LV2 gates in src/packages/
-        DISABLE_LV2=true
+    --tls=*)
+        TLS_BACKEND="${1#*=}"
+        case $TLS_BACKEND in
+        gnutls | openssl) ;;
+        *)
+            echo "Error: --tls accepts \"gnutls\" or \"openssl\", not \"$TLS_BACKEND\"."
+            exit 1
+            ;;
+        esac
+        shift
+        ;;
+    --whisper=*)
+        # Same shape as --tls: one value, validated here so a typo costs a second
+        # instead of an hour. The OS checks are part of the validation and not a
+        # gate inside build_whisper, because the whole package is opt-in - asking
+        # for a backend this host cannot build is a mistake worth reporting up
+        # front, not something to silently skip.
+        WHISPER_BACKEND="${1#*=}"
+        case $WHISPER_BACKEND in
+        cpu) ;;
+        metal)
+            if [[ ! "$OSTYPE" == "darwin"* ]]; then
+                echo "Error: --whisper=metal is macOS only. Use cpu, cuda or vulkan here."
+                exit 1
+            fi
+            ;;
+        cuda | vulkan)
+            if [[ ! "$OSTYPE" == "linux-gnu"* ]]; then
+                echo "Error: --whisper=$WHISPER_BACKEND is Linux only. Use cpu, or metal on macOS."
+                exit 1
+            fi
+            ;;
+        *)
+            echo "Error: --whisper accepts \"cpu\", \"metal\", \"cuda\" or \"vulkan\", not \"$WHISPER_BACKEND\"."
+            exit 1
+            ;;
+        esac
+        shift
+        ;;
+    --disable=*)
+        # Split on commas so both --disable=a,b and --disable=a --disable=b work.
+        # Validated in 90-build-order.sh, against the package list itself.
+        DISABLE_ARG="${1#*=}"
+        if [ -z "$DISABLE_ARG" ]; then
+            echo "Error: --disable needs at least one name, e.g. --disable=rav1e."
+            exit 1
+        fi
+        IFS=',' read -r -a DISABLE_ARG_NAMES <<<"$DISABLE_ARG"
+        DISABLE_REQUESTS+=("${DISABLE_ARG_NAMES[@]}")
         shift
         ;;
     -c | --cleanup)
@@ -134,6 +190,35 @@ echo "Using $MJOBS make jobs simultaneously."
 
 if $NONFREE_AND_GPL; then
     echo "With GPL and non-free codecs"
+fi
+
+# Resolved here rather than in 20-globals.sh because it depends on an option that
+# may appear anywhere on the command line. OpenSSL stays the default for
+# --enable-gpl-and-non-free: libsrt and libssh are built against it there, and
+# neither has ever been built any other way in this script.
+if [ -z "$TLS_BACKEND" ]; then
+    if $NONFREE_AND_GPL; then
+        TLS_BACKEND="openssl"
+    else
+        TLS_BACKEND="gnutls"
+    fi
+fi
+echo "TLS backend: $TLS_BACKEND"
+
+# Two packages are built against the workspace OpenSSL and go away with it:
+# libssh, whose cmake picks between OpenSSL, gcrypt and mbedTLS and has no GnuTLS
+# backend at all, and libsrt, whose GnuTLS backend does not compile against the
+# pinned nettle (see build_srt). Said once here rather than as a surprise in the
+# build log an hour later, where their own guards report it.
+if [ "$TLS_BACKEND" = "gnutls" ]; then
+    echo "Note: libssh (sftp://) will be skipped - it needs OpenSSL."
+    if $NONFREE_AND_GPL; then
+        echo "Note: libsrt will be skipped - its encryption layer needs OpenSSL."
+    fi
+fi
+
+if [ -n "$WHISPER_BACKEND" ]; then
+    echo "whisper.cpp backend: $WHISPER_BACKEND"
 fi
 
 if [ -n "$LDEXEFLAGS" ]; then

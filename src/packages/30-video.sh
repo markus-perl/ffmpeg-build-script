@@ -174,7 +174,6 @@ build_svtav1() {
 
 build_rav1e() {
     if ! command_exists "cargo"; then return; fi
-    if [[ "$SKIPRAV1E" == "yes" ]]; then return; fi
 
     if build "rav1e" "${VER_RAV1E[0]}"; then
         echo "if you get the message 'cannot be built because it requires rustc x.xx or newer, try to run 'rustup update'"
@@ -346,6 +345,40 @@ build_openh264() {
         build_done "openh264" "$CURRENT_PACKAGE_VERSION"
     fi
     CONFIGURE_OPTIONS+=("--enable-libopenh264")
+}
+
+# H.266/VVC encoding (#179). FFmpeg 9.0 has a native VVC *decoder*, so only the encoder side
+# is missing, and there is no --enable-libvvdec to pair with this. Not licence-gated: vvenc is
+# BSD-3-Clause with a patent clause and ffmpeg lists libvvenc in the plain
+# EXTERNAL_LIBRARY_LIST (configure line 2143).
+build_vvenc() {
+    if build "vvenc" "${VER_VVENC[0]}"; then
+        download "https://github.com/fraunhoferhhi/vvenc/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "vvenc-$CURRENT_PACKAGE_VERSION.tar.gz"
+
+        # VVENC_LIBRARY_ONLY skips vvencapp, vvencFFapp and the three test binaries, which are
+        # the bulk of the build and none of which is installed anyway. BUILD_SHARED_LIBS is
+        # already OFF upstream and VVENC_ENABLE_INSTALL already ON; both are spelled out
+        # because they are the two defaults that would quietly change what this produces.
+        #
+        # Link-time optimisation is on by default for Release builds and is turned off here.
+        # It would leave GCC IR rather than machine code in libvvenc.a, which then only links
+        # if every consumer of the archive runs the LTO plugin - ffmpeg links with $CC, so
+        # that mostly holds, but --full-static and a plain binutils ld are exactly where it
+        # stops holding. No other package in this script ships LTO objects.
+        execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib \
+            -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF \
+            -DVVENC_LIBRARY_ONLY=ON -DVVENC_ENABLE_INSTALL=ON \
+            -DVVENC_ENABLE_LINK_TIME_OPT=OFF \
+            -B build/
+        execute cmake --build build --target install -j "$MJOBS"
+
+        build_done "vvenc" "$CURRENT_PACKAGE_VERSION"
+    fi
+    # No .pc fixup: vvencInstall.cmake builds Libs.private from
+    # CMAKE_CXX_IMPLICIT_LINK_LIBRARIES but already drops -lc and -lgcc_s from it, so the
+    # installed libvvenc.pc declares just the C++ runtime (-lstdc++, or -lc++ on macOS) and
+    # has none of the --full-static problem that x265.pc and srt.pc have.
+    CONFIGURE_OPTIONS+=("--enable-libvvenc")
 }
 
 build_libvpx() {

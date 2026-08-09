@@ -268,17 +268,33 @@ build_nv_codec() {
         # fi
 
         if [ -z "$CUDA_COMPUTE_CAPABILITY" ]; then
-            # Set default value if no compute capability was found
             # Note that multi-architecture builds are not supported in ffmpeg
             # see https://patchwork.ffmpeg.org/comment/62905/
             # CUDA 13 dropped Maxwell/Pascal/Volta, so compute_52 no longer
             # compiles there; Turing (75) is the oldest arch it still accepts.
             NVCC_MAJOR_VERSION=$(nvcc --version | grep -oE 'release [0-9]+' | awk '{print $2}')
             if [ -n "$NVCC_MAJOR_VERSION" ] && [ "$NVCC_MAJOR_VERSION" -ge 13 ]; then
-                export CUDA_COMPUTE_CAPABILITY=75
+                CUDA_COMPUTE_CAPABILITY_FALLBACK=75
             else
-                export CUDA_COMPUTE_CAPABILITY=52
+                CUDA_COMPUTE_CAPABILITY_FALLBACK=52
             fi
+
+            # Prefer the capability of the GPU actually in this machine over the fallback: a
+            # fallback that predates the card leaves its newest hardware decoders unusable, which
+            # is what kept av1_cuvid off Blackwell (compute_120). nvidia-smi reports it as "12.0",
+            # and only from driver 418 on, so an empty or unparsable answer just falls through.
+            CUDA_COMPUTE_CAPABILITY=$(nvidia_gpu_compute_capability)
+            if [ -z "$CUDA_COMPUTE_CAPABILITY" ] || ! nvcc_supports_compute_capability "$CUDA_COMPUTE_CAPABILITY"; then
+                # An unsupported card is either older than this CUDA toolkit (nvcc refuses the
+                # arch) or newer than it (nvcc has never heard of it). Neither is fixable here,
+                # so build the fallback and let the user override the variable.
+                if [ -n "$CUDA_COMPUTE_CAPABILITY" ]; then
+                    echo "nvcc does not support compute_$CUDA_COMPUTE_CAPABILITY; building for compute_$CUDA_COMPUTE_CAPABILITY_FALLBACK instead."
+                    echo "Set CUDA_COMPUTE_CAPABILITY yourself, or install a CUDA toolkit that matches the GPU."
+                fi
+                CUDA_COMPUTE_CAPABILITY=$CUDA_COMPUTE_CAPABILITY_FALLBACK
+            fi
+            export CUDA_COMPUTE_CAPABILITY
         fi
         CONFIGURE_OPTIONS+=("--nvccflags=-gencode arch=compute_$CUDA_COMPUTE_CAPABILITY,code=sm_$CUDA_COMPUTE_CAPABILITY -O2")
     else

@@ -130,11 +130,26 @@ build_avisynth() {
     CONFIGURE_OPTIONS+=("--enable-avisynth")
 }
 
+# SRT's AES encryption needs a crypto library. Upstream's USE_ENCLIB defaults to
+# "openssl-evp" and this builds against the workspace OpenSSL, so libsrt goes away under
+# --tls=gnutls - a dependency guard of the same shape as build_libssh's, not a licence one.
+#
+# USE_ENCLIB=gnutls is a first-class upstream option and does configure cleanly against the
+# workspace (it resolves "gnutls nettle" through pkg-config, CMakeLists.txt:372), but it does
+# not compile: haicrypt/cryspr-gnutls.h typedefs CRYSPR_AESCTX to nettle's "struct aes_ctx",
+# the legacy AES context that nettle 4.0 removed, so cryspr.c dies on an incomplete type.
+# Verified against srt 1.5.6 and nettle 4.0, the two versions pinned here. Building OpenSSL
+# anyway just for SRT would defeat the point of asking for GnuTLS, so SRT is skipped instead.
 build_srt() {
     if ! $NONFREE_AND_GPL; then return; fi
+    if [ "$TLS_BACKEND" != "openssl" ]; then
+        echo "Skipping libsrt: its encryption layer needs OpenSSL, and --tls=$TLS_BACKEND was requested."
+        return
+    fi
 
     if build "srt" "${VER_SRT[0]}"; then
         download "https://github.com/Haivision/srt/archive/v$CURRENT_PACKAGE_VERSION.tar.gz" "srt-$CURRENT_PACKAGE_VERSION.tar.gz"
+
         export OPENSSL_ROOT_DIR="${WORKSPACE}"
         export OPENSSL_LIB_DIR="${WORKSPACE}"/lib
         export OPENSSL_INCLUDE_DIR="${WORKSPACE}"/include/

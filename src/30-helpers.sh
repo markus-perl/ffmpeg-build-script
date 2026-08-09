@@ -235,6 +235,35 @@ library_exists() {
     pkg-config --exists "$1"
 }
 
+# The compute capability of the installed NVIDIA GPU, in the two-digit form nvcc wants
+# ("12.0" -> 120), or empty when it cannot be determined. Only the first GPU is looked at:
+# ffmpeg cannot produce a multi-architecture CUDA build anyway.
+nvidia_gpu_compute_capability() {
+    if ! command_exists "nvidia-smi"; then
+        return
+    fi
+
+    nvidia-smi --query-gpu=compute_cap --format=csv,noheader 2>/dev/null |
+        head -n 1 |
+        sed -n 's/^ *\([0-9]\{1,\}\)\.\([0-9]\)[0-9]* *$/\1\2/p'
+}
+
+# Whether this nvcc can generate code for a compute capability. Asked by compiling an empty
+# translation unit rather than by mapping toolkit versions to architectures, because the
+# mapping changes with every CUDA release in both directions: old architectures get dropped
+# and new ones added.
+nvcc_supports_compute_capability() {
+    NVCC_PROBE_DIR=$(mktemp -d)
+    : >"$NVCC_PROBE_DIR/probe.cu"
+    if nvcc -gencode "arch=compute_$1,code=sm_$1" -c "$NVCC_PROBE_DIR/probe.cu" \
+        -o "$NVCC_PROBE_DIR/probe.o" >/dev/null 2>&1; then
+        rm -rf "$NVCC_PROBE_DIR"
+        return 0
+    fi
+    rm -rf "$NVCC_PROBE_DIR"
+    return 1
+}
+
 # GCC 15, which Ubuntu 26.04 ships, defaults to -std=gnu23, where "bool", "true" and
 # "false" became keywords. Several of the older packages here use them as struct members
 # or enumeration constants, which C23 rejects outright rather than warning about. Build

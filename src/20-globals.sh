@@ -19,8 +19,26 @@ MACOS_SILICON=false
 CONFIGURE_OPTIONS=()
 # shellcheck disable=SC2034 # $NONFREE_AND_GPL is read by later fragments
 NONFREE_AND_GPL=false
-# shellcheck disable=SC2034 # $DISABLE_LV2 is read by later fragments
-DISABLE_LV2=false
+# Names passed to --disable, as given on the command line. Group names are
+# expanded to the packages behind them in 90-build-order.sh, which is the first
+# point where PACKAGE_BUILD_ORDER exists to validate them against.
+# shellcheck disable=SC2034 # $DISABLE_REQUESTS is read by later fragments
+DISABLE_REQUESTS=()
+# The TLS backend, "openssl" or "gnutls". Empty until the command line has been
+# parsed: the default depends on --enable-gpl-and-non-free, which may appear
+# after --tls, so it is resolved once at the end of 40-cli.sh rather than here.
+# ffmpeg's configure refuses both at once ("GnuTLS and OpenSSL must not be
+# enabled at the same time", configure line 4851), hence one variable and not
+# two flags.
+# shellcheck disable=SC2034 # $TLS_BACKEND is read by later fragments
+TLS_BACKEND=""
+# The ggml backend whisper.cpp is compiled for: "cpu", "metal", "cuda" or
+# "vulkan". Empty means --whisper was not given, and then whisper.cpp is not
+# built at all - it is opt-in because exactly one backend is compiled into the
+# binary (see build_whisper) and only the user knows which one matches the
+# machine the binary will run on.
+# shellcheck disable=SC2034 # $WHISPER_BACKEND is read by later fragments
+WHISPER_BACKEND=""
 # shellcheck disable=SC2034 # $LIST_PACKAGES is read by later fragments
 LIST_PACKAGES=false
 # shellcheck disable=SC2034 # $MANPAGES is read by later fragments

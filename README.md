@@ -341,23 +341,136 @@ Options:
   -h, --help                     Display usage information
       --version                  Display version information
       --update                   Update this script to the latest release and exit
+      --list-packages            List the packages in build order, with versions
   -b, --build                    Starts the build process
-      --enable-gpl-and-non-free  Enable non-free codecs  - https://ffmpeg.org/legal.html
+      --enable-gpl-and-non-free  Enable GPL and non-free codecs  - https://ffmpeg.org/legal.html
+      --disable=NAME[,NAME...]   Do not build these libraries. Repeatable.
+                                 --list-packages shows every name that can be disabled.
+      --tls=BACKEND              TLS backend for https/tls/dtls: gnutls or openssl
+                                 Default: openssl with --enable-gpl-and-non-free, gnutls otherwise.
+      --whisper=BACKEND          Build whisper.cpp for the af_whisper filter (speech to text).
+                                 BACKEND is cpu, metal (macOS), cuda (Linux, needs nvcc)
+                                 or vulkan (Linux, needs glslc and a Vulkan loader).
+                                 Off by default: exactly one backend is compiled in, so
+                                 it has to match the machine that runs the binary.
+                                 Speech models are not shipped - af_whisper takes a
+                                 model=/path at runtime, see the README.
   -c, --cleanup                  Remove all working dirs
-      --small                    Prioritize small size over speed and usability; don't build manpages.
-      --full-static              Complete static build of ffmpeg (eg. glibc, pthreads etc...) **only Linux**
+      --small                    Prioritize small size over speed and usability; don't build manpages
+      --full-static              Build a full static FFmpeg binary (eg. glibc, pthreads etc...) **only Linux**
                                  Note: Because of the NSS (Name Service Switch), glibc does not recommend static links.
+      --skip-install             Don't install FFmpeg, FFprobe, and FFplay binaries to your system
+      --auto-install             Install FFmpeg, FFprobe, and FFplay binaries to your system
+                                 Note: Without --skip-install or --auto-install the script will prompt you to install.
 ```
 
 There is no option to rebuild dependencies: a package whose pinned version changed is
 rebuilt automatically on the next build.
+
+## Leaving libraries out
+
+`--disable` takes any package name from `--list-packages`, comma-separated or repeated:
+
+```bash
+./build-ffmpeg --build --disable=rav1e,x265
+./build-ffmpeg --build --disable=lv2 --disable=vulkan
+```
+
+Four names stand for a group rather than one package, because disabling a single member of
+these is never what anyone means:
+
+| Group | Packages |
+| --- | --- |
+| `lv2` | lv2, waflib, serd, pcre, zix, sord, sratom, lilv |
+| `vulkan` | vulkan_headers, spirv_headers, spirv_tools, glslang, libplacebo |
+| `opencl` | opencl_headers, opencl_icd_loader |
+| `bluray` | libudfread, libbluray |
+
+Disabling a package also disables the ones that cannot build without it, and says so — for
+example `--disable=libogg` takes libvorbis and libtheora with it. That table only covers
+dependencies the build blocks state explicitly; it is not a general solver, so it is still
+possible to disable something another package quietly needs.
+
+The build tools and the TLS stack cannot be disabled — they are marked `always built` in
+`--list-packages`. Use `--tls` to choose between GnuTLS and OpenSSL.
+
+Names are validated before anything is built, so a typo costs a second rather than an hour.
+
+## TLS backend
+
+FFmpeg needs one TLS library to open `https://`, `tls://` and `dtls://` URLs, and its
+configure refuses to enable two at once. `--tls` picks which one is built:
+
+| | built | ffmpeg flag | also affected |
+| --- | --- | --- | --- |
+| `--tls=gnutls` | gmp, nettle, gnutls | `--enable-gnutls` | libssh and libsrt are skipped |
+| `--tls=openssl` | openssl | `--enable-openssl` | — |
+
+The default is `openssl` with `--enable-gpl-and-non-free` and `gnutls` otherwise, which is
+what the script always did — but the GnuTLS half used to be built and then never enabled, so
+LGPL Linux builds shipped with no TLS backend at all and could not open an `https://` URL.
+That is fixed; macOS was never affected, because FFmpeg autodetects SecureTransport there.
+
+Two packages are built against OpenSSL and are skipped under `--tls=gnutls`, which the script
+says up front rather than an hour into the build:
+
+- **libssh** (`sftp://`) — its build picks between OpenSSL, gcrypt and mbedTLS, with no GnuTLS
+  option.
+- **libsrt** — its GnuTLS backend still uses nettle's legacy `struct aes_ctx`, removed in
+  nettle 4.0.
 
 Environment variables:
 
 | Variable | Effect |
 | --- | --- |
 | `SKIPINSTALL=yes` | do not prompt for installing the binaries after the build |
-| `CUDA_COMPUTE_CAPABILITY=75` | tailor the CUDA build to your hardware, see [CUDA](#cuda-nvidia) |
+| `CUDA_COMPUTE_CAPABILITY=75` | override the auto-detected CUDA compute capability, see [CUDA](#cuda-nvidia) |
+
+## Speech recognition (whisper.cpp)
+
+`--whisper=BACKEND` builds [whisper.cpp](https://github.com/ggml-org/whisper.cpp) and enables
+FFmpeg's `af_whisper` filter, which turns speech into text (subtitles, `-f srt`, or JSON
+metadata) inside a filter graph:
+
+```bash
+./build-ffmpeg --build --whisper=metal
+```
+
+It is off by default, and that is deliberate: **exactly one compute backend is compiled into
+the binary.** whisper.cpp's ggml can also load backends at runtime, but only when it is built
+as a shared library — everything this script produces is statically linked, so the backend has
+to be chosen at build time and it has to match the machine that will run the binary.
+
+| `--whisper=` | Runs on | Needs |
+| --- | --- | --- |
+| `cpu` | anything | nothing extra (on Apple hardware it still uses Accelerate) |
+| `metal` | macOS | macOS only, rejected elsewhere |
+| `cuda` | Linux | Linux only, plus `nvcc` from the CUDA toolkit |
+| `vulkan` | Linux | Linux only, plus `glslc` (shaderc) and a Vulkan loader — the script builds only the Vulkan *headers* |
+
+An unusable combination is rejected while the command line is parsed, not an hour into the
+build.
+
+### Models are not included
+
+No speech model is downloaded or installed. `af_whisper` takes the model as a runtime option
+and the files are large — roughly 75 MB for `tiny` up to ~3 GB for `large-v3`:
+
+```bash
+# fetch a model once, with whisper.cpp's own script
+git clone https://github.com/ggml-org/whisper.cpp
+./whisper.cpp/models/download-ggml-model.sh base.en
+
+# transcribe to SRT
+ffmpeg -i input.mp4 -vn -af "aformat=sample_fmts=s16:sample_rates=16000:channel_layouts=mono,\
+whisper=model=./whisper.cpp/models/ggml-base.en.bin:language=en:format=srt:destination=output.srt" \
+    -f null -
+```
+
+`af_whisper` wants 16 kHz mono signed 16-bit audio, which is what the `aformat` above is for;
+it passes the audio through unchanged and writes the transcription to `destination` (stdout
+when empty) in `text`, `srt` or `json`. Run `ffmpeg -h filter=whisper` for the full option
+list.
 
 ---
 
@@ -409,11 +522,21 @@ need a compatible NVIDIA GPU and the NVIDIA compiler nvcc from the CUDA toolkit.
   or [this blog](https://www.pugetsystems.com/labs/hpc/How-To-Install-CUDA-10-1-on-Ubuntu-19-04-1405/)
   to setup the CUDA toolkit.
 
-It is also beneficial to set the `CUDA_COMPUTE_CAPABILITY` environmental variable so the build is tailored to your hardware and its capabilities. There are many ways you can find your compute capability, for example by using [nvidia-smi](https://stackoverflow.com/questions/40695455/what-utility-binary-can-i-call-to-determine-an-nvidia-gpus-compute-capability).
+The build is tailored to your hardware automatically: the compute capability is read from the
+installed GPU with `nvidia-smi` and checked against your CUDA toolkit before it is used. FFmpeg
+cannot produce a multi-architecture CUDA build, so exactly one is compiled.
+
+Set the `CUDA_COMPUTE_CAPABILITY` environment variable to override that — when you build on one
+machine and run on another, when several GPUs are installed, or when detection reports a card
+your CUDA toolkit does not support. There are many ways to look yours up, for example with
+[nvidia-smi](https://stackoverflow.com/questions/40695455/what-utility-binary-can-i-call-to-determine-an-nvidia-gpus-compute-capability).
+Note that a binary built for a newer architecture than the GPU it runs on will not use the GPU at
+all, which is why detection is preferred over a fixed default.
 
 Supported codecs in [nv-codec](https://devblogs.nvidia.com/nvidia-ffmpeg-transcoding-guide/):
 
 * Decoders
+    * AV1 `av1_cuvid` (Ampere and newer)
     * H264 `h264_cuvid`
     * H265 `hevc_cuvid`
     * Motion JPEG `mjpeg_cuvid`
@@ -520,6 +643,7 @@ on macOS. Always available on macOS, nothing to install:
 
 * `x264`: H.264 Video Codec (MPEG-4 AVC)
 * `x265`: H.265 Video Codec (HEVC)
+* `libvvenc`: H.266/VVC encoder (Fraunhofer VVenC). FFmpeg's own VVC decoder is built in, so this adds the encoding half. Encoder name: `libvvenc`.
 * `libsvtav1`: SVT-AV1 Encoder and Decoder
 * `aom`: AV1 Video Codec (Experimental and very slow!)
 * `librav1e`: rust based AV1 encoder (only available if [`cargo` is installed](https://doc.rust-lang.org/cargo/getting-started/installation.html))
@@ -537,6 +661,7 @@ on macOS. Always available on macOS, nothing to install:
 * `webp`: Image format both lossless and lossy
 * `libjxl`: JPEG XL image format
 * `lcms2`: ICC profile support in the image decoders and the `iccdetect` and `iccgen` filters
+* `libmysofa`: SOFA HRTF reader for the `sofalizer` filter (binaural rendering)
 * `libsoxr`: SoX Resampler Library
 * `libzimg`: Scaling and colorspace conversion for the `zscale` filter
 * `vid.stab`: Video stabilization for the `vidstabdetect` and `vidstabtransform` filters
@@ -552,6 +677,8 @@ on macOS. Always available on macOS, nothing to install:
   Built together with `fribidi` (bidirectional text), `harfbuzz` (text shaping), `libunibreak` (Unicode line
   breaking for CJK and Thai) and `fontconfig` (font lookup by name). The latter three also make `drawtext`
   accept `font=Helvetica` instead of only an explicit `fontfile=` path.
+* `whisper`: whisper.cpp speech recognition for the `whisper` audio filter. Only built with
+  [`--whisper=BACKEND`](#speech-recognition-whispercpp), and no speech model is shipped.
 * `libxml2`: XML parser required for the DASH and IMF demuxers
 * `avisynth`: Reading of [AviSynth+](http://avs-plus.net/) script files (only with `--enable-gpl-and-non-free`).
   Only the headers are built; the AviSynth+ library itself is loaded at runtime and has to be installed separately.

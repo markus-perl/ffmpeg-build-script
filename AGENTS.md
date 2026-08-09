@@ -174,9 +174,14 @@ Rules this shape encodes:
 | `if ! $NONFREE_AND_GPL; then return; fi` | GPL/non-free only (`--enable-gpl-and-non-free`). |
 | `if $NONFREE_AND_GPL; then return; fi` | LGPL path only. Used by the gmp/nettle/gnutls chain, which is the mirror image of openssl. |
 | `if [ -n "$LDEXEFLAGS" ]; then return; fi` | Skipped in `--full-static` builds. Used for packages whose filters `dlopen()` plugins at runtime (frei0r, ladspa), which a static binary cannot do. |
-| `if $DISABLE_LV2; then return; fi` | The LV2 stack (`--disable-lv2`). |
 | `if ! command_exists "x"; then return; fi` | Optional on hosts lacking a tool (python3, meson, cargo, nvcc). |
 | `if [[ ! "$OSTYPE" == "linux-gnu" ]]; then return; fi` | Linux-only hardware accel. |
+| `if [ -z "$WHISPER_BACKEND" ]; then return; fi` | Opt-in: built only when `--whisper=BACKEND` selects one. Used by whisper.cpp, where exactly one ggml compute backend is compiled into the static binary and only the user knows which one fits the target machine. |
+
+Packages are also skipped from outside the gates: `--disable=name[,name...]` removes them from
+the dispatch loop in `src/90-build-order.sh`, so the `build_` function never runs and never
+appends its `--enable-*` flag. The protected set (build tools and the TLS stack) and the group
+and dependency tables live next to that loop.
 
 Exactly one TLS stack is built per license mode, because FFmpeg's configure refuses both at
 once: `--enable-gpl-and-non-free` → gettext + openssl; default LGPL → gmp + nettle + gnutls.
@@ -218,7 +223,8 @@ A full build takes well over an hour, so do not casually run one.
 - **From scratch** — `./build-ffmpeg --cleanup` wipes `packages/` and `workspace/`. Note that
   this also discards every downloaded tarball.
 - **Useful env vars** — `SKIPINSTALL=yes` (never touch system binaries), `NUMJOBS=n`,
-  `SKIPRAV1E=yes` (skips the slow Rust build), `AUTOINSTALL=yes`.
+  `AUTOINSTALL=yes`. To skip packages, use `--disable=name[,name...]` (`--disable=rav1e`
+  drops the slow Rust build).
 - **Verifying the result** — `./workspace/bin/ffmpeg -buildconf` is what CI checks. Confirm that
   the feature you added actually shows up there; a missing dependency usually degrades silently
   into a dropped feature rather than a failed build.

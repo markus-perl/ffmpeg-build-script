@@ -56,6 +56,8 @@ X265_COMMIT=b81f650e21e8aacbe6a9ad04ce14aefc05b932c0
 # tag, and therefore every archive URL, carries the "v" prefix. 2.6.0 is the
 # newest tag, 2.5.1 is a later-published patch of the older 2.5 branch.
 VER_OPENH264=("2.6.0" "558544ad358283a7ab2930d69a9ceddf913f4a51ee9bf1bfb9e377322af81a69")
+# H.266/VVC encoder. Note the pkg-config module is libvvenc and ffmpeg requires >= 1.6.1.
+VER_VVENC=("1.14.0" "dd43d061d59dbc0d9b9ae5b99cb40672877dd811646228938f065798939ee174")
 VER_LIBVPX=("1.16.0" "7a479a3c66b9f5d5542a4c6a1b7d3768a983b1e5c14c60a9396edc9b649e015c")
 VER_XVIDCORE=("1.3.7" "abbdcbd39555691dd1c9b4d08f0a031376a3b211652c0d8b3b8aa9be1303ce2d")
 VER_VID_STAB=("1.1.2" "96db34d48a9e3aa13736a48744b56dfb76731ac9bb5193c716de8534c9fd709d")
@@ -94,6 +96,7 @@ VER_LIBTHEORA=("1.2.0" "279327339903b544c28a92aeada7d0dcfd0397b59c2f368cc698ac56
 VER_FDK_AAC=("2.0.3" "829b6b89eef382409cda6857fd82af84fabb63417b08ede9ea7a553f811cb79e")
 VER_SOXR=("0.1.3" "b111c15fdc8c029989330ff559184198c161100a59312f5dc19ddeb9b5a15889")
 VER_TWOLAME=("0.4.0" "cc35424f6019a88c6f52570b63e1baf50f62963a3eac52a03a800bb070d7c87d")
+VER_LIBMYSOFA=("1.3.5" "f29508c335c83d8703f943ffc9ca783ac39aca84e851357f13a55af0f8143137")
 VER_RUBBERBAND=("4.0.0" "24300f48a8014b7c863b573a9647e61b1b19b37875e2cdd92005e64c6424d266")
 VER_LIBOPENMPT=("0.8.7" "275c29ef47be9992f62a35fcc96f7ca05c06d2fd05c9298b8dee9f743f75b089")
 VER_LIBGME=("0.6.5" "a133f19278222136ba0d8c27b64a07987ba05fec9d2e6d293ccd8cabdd97ddbb")
@@ -163,3 +166,8 @@ VER_AMF=("1.5.2" "8a70b6dc85261e6e6e57769bd81ac1e09c0a4c96bbd5e358ffbc2dee51e8e5
 VER_LIBVPL=("2.17.0" "4de3e2faf1e8307fb282e4a43f443191810f6a6b0a484fffa7995ba1c814c6ec")
 VER_OPENCL_HEADERS=("2026.05.29" "d9e6c48357de5002da11ce45de600e0c3ffe6ab4f628a3b9fe2b38603161658a")
 VER_OPENCL_ICD_LOADER=("2026.05.29" "48fd0c5181db7cd046f4f731d5955694892e10998d49d09ee0d997e7e04fd939")
+
+## speech recognition
+# whisper.cpp, for the af_whisper filter. Built last - see the comment on the
+# "whisper" entry in PACKAGE_BUILD_ORDER - so its array sits last here too.
+VER_WHISPER=("1.9.2" "a6abd064fcca8b85e794d205abf328c522e9451db43a3eadc178b883b7d0e9cd")

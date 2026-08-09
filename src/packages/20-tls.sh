@@ -3,19 +3,27 @@
 ## TLS/crypto stack
 ##
 ## ffmpeg's configure refuses to enable GnuTLS and OpenSSL at the same time
-## ("GnuTLS and OpenSSL must not be enabled at the same time"), so exactly one
-## crypto stack is built per license mode. That is why the next five functions
-## come in two mirror-image groups, each gated on $NONFREE_AND_GPL:
+## ("GnuTLS and OpenSSL must not be enabled at the same time", configure line
+## 4851), so exactly one crypto stack is built. That is why the next five
+## functions come in two mirror-image groups, each gated on $TLS_BACKEND:
 ##
-##   --enable-gpl-and-non-free  ->  gettext, openssl
-##   default (LGPL)             ->  gmp, nettle, gnutls
+##   --tls=openssl  ->  gettext, openssl
+##   --tls=gnutls   ->  gmp, nettle, gnutls
 ##
-## OpenSSL is on the non-free side because its license has long been treated as
-## GPL-incompatible, so a GPL ffmpeg linked against it is not redistributable --
-## a build that already accepts --enable-gpl-and-non-free has given that up
-## anyway. libsrt, also non-free-gated here, needs OpenSSL as its crypto
-## backend. GnuTLS is LGPL and is therefore the default path, though see the
-## caveat in build_gnutls: it is currently built but never enabled.
+## $TLS_BACKEND defaults to openssl under --enable-gpl-and-non-free and to
+## gnutls otherwise, which is the split this file used to hardcode. It is now a
+## user choice (#178), because the licence argument for it was never absolute:
+## OpenSSL has been Apache-2.0 since 3.0 and ffmpeg 9.0 does not list it in
+## EXTERNAL_LIBRARY_NONFREE_LIST. What keeps OpenSSL the default on the
+## non-free path is dependencies rather than licensing - libssh has no GnuTLS
+## backend and libsrt has only ever been built against OpenSSL here.
+##
+## Neither backend is autodetected by ffmpeg: gnutls and openssl are both in
+## EXTERNAL_LIBRARY_LIST, not EXTERNAL_AUTODETECT_LIBRARY_LIST, so a build that
+## passes neither flag has no TLS at all and cannot open an https:// URL. That
+## was the state of every LGPL Linux build until this file started passing
+## --enable-gnutls; macOS was unaffected only because securetransport *is*
+## autodetected.
 
 # gettext is only needed on the non-free path, and not for OpenSSL itself: zvbi
 # is the one package built from a plain GitHub archive with no pre-generated
@@ -36,7 +44,7 @@ build_gettext() {
 }
 
 build_openssl() {
-    if ! $NONFREE_AND_GPL; then return; fi
+    if [ "$TLS_BACKEND" != "openssl" ]; then return; fi
 
     if build "openssl" "${VER_OPENSSL[0]}"; then
         download "https://github.com/openssl/openssl/archive/refs/tags/openssl-$CURRENT_PACKAGE_VERSION.tar.gz" "openssl-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -51,7 +59,7 @@ build_openssl() {
 # gmp and nettle exist only as GnuTLS dependencies, so they carry the inverse
 # gate of build_openssl above: skipped whenever OpenSSL is the chosen backend.
 build_gmp() {
-    if $NONFREE_AND_GPL; then return; fi
+    if [ "$TLS_BACKEND" != "gnutls" ]; then return; fi
 
     if build "gmp" "${VER_GMP[0]}"; then
         download "https://ftp.gnu.org/gnu/gmp/gmp-$CURRENT_PACKAGE_VERSION.tar.xz"
@@ -73,7 +81,7 @@ build_gmp() {
 }
 
 build_nettle() {
-    if $NONFREE_AND_GPL; then return; fi
+    if [ "$TLS_BACKEND" != "gnutls" ]; then return; fi
 
     if build "nettle" "${VER_NETTLE[0]}"; then
         download "https://ftp.gnu.org/gnu/nettle/nettle-$CURRENT_PACKAGE_VERSION.tar.gz"
@@ -84,29 +92,32 @@ build_nettle() {
     fi
 }
 
-# Two oddities here, both dating from Nov 2022 and neither explained in the
-# commits that introduced them (aea1ed7 "update", 3f61d36 "ubuntu update"):
+# Both of this function's long-standing oddities date from Nov 2022 and neither
+# was explained in the commits that introduced them (aea1ed7 "update", 3f61d36
+# "ubuntu update"). They are gone now; the history is worth keeping because both
+# were load-bearing.
 #
-#   1. The arm64 skip. GnuTLS was added without it (d7f9078) and the guard
-#      appeared later as `if ! $MACOS_M1`, i.e. GnuTLS 3.6.16 would not build on
-#      Apple Silicon. 3f61d36 rewrote the test in terms of $ARCH. Despite how it
-#      reads, that did not widen the skip to every arm64 host: ARCH is assigned
-#      in exactly one place, inside the "uname -m == arm64 AND darwin" branch
-#      near the top, so on Linux it is never set at all. Linux/aarch64 reports
-#      "aarch64" from uname -m, leaves ARCH empty, and does build GnuTLS -
-#      confirmed in an aarch64 Docker build. So this is still the Apple-Silicon-
-#      only skip it always was, just expressed less obviously.
-#      Worth revisiting: the pinned version is now 3.8.x, not 3.6.16.
-#   2. The commented-out CONFIGURE_OPTIONS below. Because of it, an LGPL build
-#      compiles the whole gmp/nettle/gnutls chain and then does not pass
-#      --enable-gnutls to ffmpeg, so the default build ends up with no TLS
-#      backend at all (no https support) unless ffmpeg's configure autodetects
-#      a system one. Re-enabling the flag means the arm64 skip above turns into
-#      a hard difference in features between architectures, which is presumably
-#      why it was commented out rather than fixed.
+#   1. The arm64 skip, `if [[ $ARCH == 'arm64' ]]; then return; fi`. GnuTLS was
+#      added without it (d7f9078) and the guard appeared later as
+#      `if ! $MACOS_M1`, i.e. GnuTLS 3.6.16 would not build on Apple Silicon.
+#      3f61d36 rewrote the test in terms of $ARCH, which despite how it reads
+#      never widened it beyond macOS: ARCH is assigned in exactly one place,
+#      inside the "uname -m == arm64 AND darwin" branch, so Linux/aarch64
+#      reports "aarch64", leaves ARCH empty and always did build GnuTLS.
+#      Removed because the pinned version is 3.8.x, not 3.6.16, and it builds:
+#      verified by configuring, compiling and installing 3.8.13 on macOS 15
+#      arm64 with these exact options, after which `pkg-config --static --libs
+#      gnutls` resolves to -lgnutls -lgmp -lhogweed -lnettle plus the Security
+#      and CoreFoundation frameworks.
+#   2. The commented-out CONFIGURE_OPTIONS at the end. Because of it, an LGPL
+#      build compiled the whole gmp/nettle/gnutls chain and then never passed
+#      --enable-gnutls, so it shipped with no TLS backend at all - see the note
+#      at the top of this file about neither backend being autodetected. The
+#      arm64 skip is presumably why: re-enabling the flag while it was in place
+#      would have turned it into a hard feature difference between
+#      architectures. With the skip gone the flag can go back.
 build_gnutls() {
-    if $NONFREE_AND_GPL; then return; fi
-    if [[ $ARCH == 'arm64' ]]; then return; fi
+    if [ "$TLS_BACKEND" != "gnutls" ]; then return; fi
 
     if build "gnutls" "${VER_GNUTLS[0]}"; then
         # Upstream files the tarballs under a major.minor series directory, so that
@@ -117,5 +128,10 @@ build_gnutls() {
         execute make install
         build_done "gnutls" "$CURRENT_PACKAGE_VERSION"
     fi
-    # CONFIGURE_OPTIONS+=("--enable-gmp" "--enable-gnutls")
+    # --enable-gmp is deliberately not passed alongside. It is a separate ffmpeg
+    # feature (bignum arithmetic for the ffrtmpcrypt protocol, configure line
+    # 4074) rather than part of the TLS stack, it is in
+    # EXTERNAL_LIBRARY_VERSION3_LIST so it would force --enable-version3, and
+    # GnuTLS links libgmp either way through its own .pc.
+    CONFIGURE_OPTIONS+=("--enable-gnutls")
 }
