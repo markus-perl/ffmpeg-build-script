@@ -70,6 +70,22 @@ jobs:
 
           exit $status
 
+      # The options block in README.md is a copy of --help, and the two drifted:
+      # --list-packages, --skip-install and --auto-install were all missing from
+      # the README. Comparing them here is cheap and keeps the copy honest.
+      - name: check the README option list matches --help
+        run: |
+          # usage() ends with an echo "", so the trailing blank line is trimmed
+          # from both sides rather than carried into the README.
+          ./build-ffmpeg --help | sed -n '/^Usage: build-ffmpeg/,$p' |
+            sed -e :a -e '/^\n*$/{$d;N;ba' -e '}' >/tmp/help.txt
+          sed -n '/^Usage: build-ffmpeg \[OPTIONS\]/,/^```$/p' README.md |
+            sed '$d' >/tmp/readme.txt
+          if ! diff -u /tmp/readme.txt /tmp/help.txt; then
+            echo "::error::the options block in README.md no longer matches ./build-ffmpeg --help"
+            exit 1
+          fi
+
   build-linux:
     name: build in native linux
     runs-on: ubuntu-24.04
