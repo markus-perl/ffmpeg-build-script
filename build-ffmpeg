@@ -34,6 +34,10 @@ while [ -L "$SCRIPT_SOURCE" ] && [ "$SCRIPT_LINK_HOPS" -lt 16 ]; do
     SCRIPT_LINK_HOPS=$((SCRIPT_LINK_HOPS + 1))
 done
 SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$SCRIPT_SOURCE")" && pwd)
+# Exported so the fragments see it too - do_update() in src/30-helpers.sh
+# replaces exactly this tree, and it is the only thing in the script that cares
+# where the script itself lives rather than where it was invoked.
+export SCRIPT_DIR
 unset SCRIPT_SOURCE SCRIPT_LINK_HOPS
 
 if [ ! -d "$SCRIPT_DIR/src" ]; then

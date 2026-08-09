@@ -4,6 +4,7 @@ usage() {
     echo "Options:"
     echo "  -h, --help                     Display usage information"
     echo "      --version                  Display version information"
+    echo "      --update                   Update this script to the latest release and exit"
     echo "      --list-packages            List the packages in build order, with versions"
     echo "  -b, --build                    Starts the build process"
     echo "      --enable-gpl-and-non-free  Enable GPL and non-free codecs  - https://ffmpeg.org/legal.html"
@@ -31,6 +32,13 @@ while (($# > 0)); do
     --version)
         echo "$SCRIPT_VERSION"
         exit 0
+        ;;
+    --update)
+        # Exits either way: the tree on disk no longer matches the functions
+        # this shell already sourced, so nothing may run after a successful
+        # update.
+        do_update
+        exit $?
         ;;
     --list-packages)
         # Only recorded here. The VER_ arrays live next to their build_

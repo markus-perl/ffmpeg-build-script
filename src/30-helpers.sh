@@ -280,3 +280,149 @@ cleanup() {
     echo "Cleanup done."
     echo ""
 }
+
+# Is $1 an older version than $2? Used only to recognize a tree that is ahead of
+# the newest release, so a wrong answer costs a warning and nothing else. Hosts
+# whose sort has no -V fall back to "not older", which reduces the check to the
+# plain equality test the caller already did.
+version_lt() {
+    if ! printf '1.0\n' | sort -V >/dev/null 2>&1; then
+        return 1
+    fi
+
+    [ "$1" != "$2" ] && [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -n 1)" = "$1" ]
+}
+
+# Replace this checkout with the newest release. Deliberately does not build:
+# the caller exits right afterwards, because half of the functions in this shell
+# would then be the old ones while the tree on disk is the new one.
+do_update() {
+    UPDATE_REPO='https://github.com/markus-perl/ffmpeg-build-script'
+
+    for UPDATE_REQUIRED in curl tar sed; do
+        if ! command_exists "$UPDATE_REQUIRED"; then
+            echo "$UPDATE_REQUIRED not installed." >&2
+            return 1
+        fi
+    done
+
+    # shellcheck disable=SC2154 # $SCRIPT_DIR is exported by the ../build-ffmpeg entry point
+    UPDATE_DIR="$SCRIPT_DIR"
+
+    # A working tree is not ours to overwrite: dropping a release tarball on top
+    # of it would throw away local commits, and git can do this properly anyway.
+    if [ -d "$UPDATE_DIR/.git" ]; then
+        echo "$UPDATE_DIR is a git checkout. Run 'git pull' there instead." >&2
+        return 1
+    fi
+
+    if [ ! -w "$UPDATE_DIR" ]; then
+        echo "$UPDATE_DIR is not writable." >&2
+        echo "Update as the user that owns it, or rerun with sudo." >&2
+        return 1
+    fi
+
+    # "/releases/latest" redirects to "/releases/tag/<tag>", so the tag falls out
+    # of the resolved URL. This is the same trick web-install.sh uses, and for
+    # the same reason: api.github.com is rate limited to 60/hour per IP, which
+    # breaks behind a shared address, and reading its answer would need jq.
+    if ! UPDATE_TAG=$(curl -fsSL -o /dev/null --write-out '%{url_effective}' \
+        "$UPDATE_REPO/releases/latest" | sed 's|.*/releases/tag/||'); then
+        UPDATE_TAG=""
+    fi
+
+    case "$UPDATE_TAG" in
+    v[0-9]*)
+        if [ "$UPDATE_TAG" != "${UPDATE_TAG#*/}" ]; then
+            UPDATE_TAG=""
+        fi
+        ;;
+    *)
+        UPDATE_TAG=""
+        ;;
+    esac
+
+    if [ -z "$UPDATE_TAG" ]; then
+        echo "Failed to resolve the latest release of $UPDATE_REPO" >&2
+        return 1
+    fi
+
+    UPDATE_VERSION="${UPDATE_TAG#v}"
+
+    if [ "$UPDATE_VERSION" = "$SCRIPT_VERSION" ]; then
+        echo "Already up to date ($UPDATE_TAG)."
+        return 0
+    fi
+
+    # SCRIPT_VERSION names the *next* release, so a tree built from master is
+    # routinely ahead of the newest tag. Updating then is a downgrade, which is
+    # a legitimate thing to ask for - just worth saying out loud.
+    if version_lt "$UPDATE_VERSION" "$SCRIPT_VERSION"; then
+        echo "Warning: the latest release $UPDATE_TAG is older than this tree (v$SCRIPT_VERSION)."
+    fi
+
+    echo "Updating from v$SCRIPT_VERSION to $UPDATE_TAG"
+
+    # Staged inside the tree being replaced so the final move is a rename within
+    # one filesystem rather than a copy across two.
+    if ! UPDATE_TMP=$(mktemp -d "$UPDATE_DIR/.update.XXXXXX"); then
+        echo "Failed to create a temporary directory in $UPDATE_DIR" >&2
+        return 1
+    fi
+
+    trap 'rm -rf "$UPDATE_TMP"' EXIT
+
+    if ! curl -fsSL -o "$UPDATE_TMP/release.tar.gz" "$UPDATE_REPO/archive/refs/tags/$UPDATE_TAG.tar.gz"; then
+        echo "Failed to download $UPDATE_REPO/archive/refs/tags/$UPDATE_TAG.tar.gz" >&2
+        return 1
+    fi
+
+    # --strip-components=1 (GNU and BSD tar) drops the archive's top-level
+    # directory, so the tree lands directly in the staging directory.
+    if ! tar -xzf "$UPDATE_TMP/release.tar.gz" -C "$UPDATE_TMP" --strip-components=1; then
+        echo "Failed to extract the release archive" >&2
+        return 1
+    fi
+
+    # Nothing is destroyed before the download is known to be complete. A
+    # truncated archive must leave the existing installation alone rather than
+    # half-replace it.
+    if [ ! -f "$UPDATE_TMP/build-ffmpeg" ] || [ ! -f "$UPDATE_TMP/src/00-header.sh" ]; then
+        echo "The downloaded release is incomplete, keeping the current version." >&2
+        return 1
+    fi
+
+    # src/ is replaced wholesale rather than overlaid: a fragment that the new
+    # release renamed or dropped would otherwise stay behind, and the entry
+    # point's source list is explicit precisely so such orphans stay inert.
+    # packages/ and workspace/ are the user's build state and are never touched.
+    rm -rf "$UPDATE_DIR/src"
+    if ! mv "$UPDATE_TMP/src" "$UPDATE_DIR/src"; then
+        echo "Failed to install the new src/ into $UPDATE_DIR" >&2
+        return 1
+    fi
+
+    # Overwriting build-ffmpeg under a running shell is safe - it was read in
+    # full at startup and is not consulted again - but the caller has to exit
+    # right after this rather than go on to build, because the functions already
+    # in memory are the old release's while src/ on disk is the new one.
+    # The second pattern picks up the dotfiles; both are guarded with -e because
+    # an unmatched glob expands to itself.
+    rm -f "$UPDATE_TMP/release.tar.gz"
+    for UPDATE_FILE in "$UPDATE_TMP"/* "$UPDATE_TMP"/.[!.]*; do
+        if [ -e "$UPDATE_FILE" ]; then
+            mv -f "$UPDATE_FILE" "$UPDATE_DIR/"
+        fi
+    done
+
+    chmod +x "$UPDATE_DIR/build-ffmpeg"
+
+    echo ""
+    echo "Updated to $UPDATE_TAG."
+    echo ""
+    echo "Packages whose version changed will be rebuilt automatically on the next"
+    echo "build. To start from a clean tree instead:"
+    echo ""
+    echo "  ./build-ffmpeg --cleanup --build"
+    echo ""
+}

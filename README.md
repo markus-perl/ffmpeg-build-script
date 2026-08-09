@@ -340,6 +340,7 @@ Usage: build-ffmpeg [OPTIONS]
 Options:
   -h, --help                     Display usage information
       --version                  Display version information
+      --update                   Update this script to the latest release and exit
   -b, --build                    Starts the build process
       --enable-gpl-and-non-free  Enable non-free codecs  - https://ffmpeg.org/legal.html
   -c, --cleanup                  Remove all working dirs
@@ -357,6 +358,20 @@ Environment variables:
 | --- | --- |
 | `SKIPINSTALL=yes` | do not prompt for installing the binaries after the build |
 | `CUDA_COMPUTE_CAPABILITY=75` | tailor the CUDA build to your hardware, see [CUDA](#cuda-nvidia) |
+
+---
+
+# Updating
+
+```bash
+$ ./build-ffmpeg --update
+```
+
+This fetches the latest release, replaces the script and its `src/` directory in place and
+exits without building. Your downloaded tarballs in `packages/` and the built libraries in
+`workspace/` are left alone, so the next build only redoes the packages whose version
+changed. If you cloned the repository with git, use `git pull` instead — the update refuses
+to overwrite a working tree.
 
 ---
 
