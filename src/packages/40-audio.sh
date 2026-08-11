@@ -323,7 +323,10 @@ build_rubberband() {
         # it from <math.h>, so mathmisc.cpp fails with "unknown type name 'size_t'" and
         # takes the whole ninja run with it. stddef.h rather than <cstddef> because the
         # uses are unqualified and only the C header is guaranteed to declare ::size_t.
-        apply_inline_patch src/common/mathmisc.h 's|^#include "sysutils.h"|#include "sysutils.h"\'$'\n''#include <stddef.h>|'
+        # The replacement carries a literal backslash-newline, which is the one form of
+        # multi-line replacement both GNU and BSD sed accept.
+        apply_inline_patch src/common/mathmisc.h 's|^#include "sysutils.h"|#include "sysutils.h"\
+#include <stddef.h>|'
 
         # Rubber Band needs an FFT and a resampler, and both options default to "auto", which is
         # where a stray host package would otherwise change what gets built. Pinning them keeps
