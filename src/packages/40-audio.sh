@@ -314,6 +314,17 @@ build_rubberband() {
     if build "rubberband" "${VER_RUBBERBAND[0]}"; then
         download "https://github.com/breakfastquay/rubberband/archive/refs/tags/v$CURRENT_PACKAGE_VERSION.tar.gz" "rubberband-$CURRENT_PACKAGE_VERSION.tar.gz"
 
+        # src/common/mathmisc.h declares roundUp()/roundUpDiv() in terms of an unqualified
+        # size_t but includes nothing that defines one. It only gets away with that by
+        # accident: its sole include is sysutils.h, whose platform block picks the
+        # "#elif defined(__GNUC__)" branch under clang (line 74) and so skips the stdlib.h
+        # that the other branches pull in, leaving <math.h> at the bottom as the only
+        # thing that ever supplied size_t transitively. Xcode 26's libc++ stopped leaking
+        # it from <math.h>, so mathmisc.cpp fails with "unknown type name 'size_t'" and
+        # takes the whole ninja run with it. stddef.h rather than <cstddef> because the
+        # uses are unqualified and only the C header is guaranteed to declare ::size_t.
+        apply_inline_patch src/common/mathmisc.h 's|^#include "sysutils.h"|#include "sysutils.h"\'$'\n''#include <stddef.h>|'
+
         # Rubber Band needs an FFT and a resampler, and both options default to "auto", which is
         # where a stray host package would otherwise change what gets built. Pinning them keeps
         # this to zero new dependencies:
