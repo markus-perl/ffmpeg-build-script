@@ -213,6 +213,16 @@ build_x265() {
     if build "x265" "${VER_X265[0]}"; then
         download "https://bitbucket.org/multicoreware/x265_git/get/$X265_COMMIT.tar.gz" "x265-$CURRENT_PACKAGE_VERSION.tar.gz"
 
+        # Every CXXFLAGS change below is x265-local and has to be undone before the next
+        # package builds, so the backup is taken here, before the first of them. In
+        # particular -DHAVE_NEON=1 must not escape: openh264's Makefile already defines
+        # HAVE_NEON_AARCH64 on arm64, its encoder.h picks a memzero declaration with an
+        # "#elif" chain that tests HAVE_NEON first (codec/encoder/core/inc/encoder.h line
+        # 133), and encoder.cpp calls the AArch64 entry point from a separate "#if"
+        # (line 185). With both macros defined the declaration is the plain NEON one and
+        # the AArch64 call does not compile.
+        X265_CXXFLAGS_BACKUP="$CXXFLAGS"
+
         if $MACOS_SILICON; then
             export CXXFLAGS="-DHAVE_NEON=1 ${CXXFLAGS}"
         fi
@@ -260,7 +270,6 @@ build_x265() {
         # This has to go through the environment: cmake seeds CMAKE_CXX_FLAGS from CXXFLAGS
         # and x265 appends its own -std=c++11 to it, whereas passing -DCMAKE_CXX_FLAGS on the
         # command line replaces that and the build then fails for want of C++11.
-        X265_CXXFLAGS_BACKUP="$CXXFLAGS"
         export CXXFLAGS="-include cstdint ${CXXFLAGS}"
 
         # source/CMakeLists.txt selects the language standard from ENABLE_HDR10_PLUS: on for
