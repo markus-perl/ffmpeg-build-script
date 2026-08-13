@@ -14,7 +14,7 @@
 ## still 3.2, where "declare -A" is a fatal error - indexed arrays are fine.
 ##
 # shellcheck disable=SC2034 # read indirectly by download(), see the note above
-VER_FFMPEG=("$FFMPEG_VERSION" "d97647ace36a307f17ba2bca052d68937487bed8682e1eb9b6737076a9c442b7")
+VER_FFMPEG=("$FFMPEG_VERSION" "195d54bebe1a27f84d77f4b989d193466f305b355da92292766a69f16880b18a")
 
 ## build tools
 VER_GIFLIB=("6.1.3" "b65b66b99f0424b93525f987386f22fc5efb9da2bfc92ad4a532249aaffbab0e")

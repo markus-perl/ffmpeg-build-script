@@ -39,6 +39,12 @@ TLS_BACKEND=""
 # machine the binary will run on.
 # shellcheck disable=SC2034 # $WHISPER_BACKEND is read by later fragments
 WHISPER_BACKEND=""
+# True once --ffmpeg-version has moved the build off the version pinned in
+# 00-header.sh. The checksum in 10-versions.sh only describes that one tarball,
+# so an override has to clear it, and everything that is louder about an
+# unverified download hangs off this flag.
+# shellcheck disable=SC2034 # $FFMPEG_UNPINNED is read by later fragments
+FFMPEG_UNPINNED=false
 # shellcheck disable=SC2034 # $LIST_PACKAGES is read by later fragments
 LIST_PACKAGES=false
 # shellcheck disable=SC2034 # $MANPAGES is read by later fragments

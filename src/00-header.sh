@@ -15,6 +15,6 @@
 # shellcheck disable=SC2034 # $PROGNAME is read by later fragments
 PROGNAME=$(basename "$0")
 # shellcheck disable=SC2034 # $FFMPEG_VERSION is read by later fragments
-FFMPEG_VERSION=9.0
+FFMPEG_VERSION=9.0.1
 # shellcheck disable=SC2034 # $SCRIPT_VERSION is read by later fragments
-SCRIPT_VERSION=9.0.5
+SCRIPT_VERSION=9.0.6

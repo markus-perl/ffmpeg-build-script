@@ -346,6 +346,11 @@ Options:
       --enable-gpl-and-non-free  Enable GPL and non-free codecs  - https://ffmpeg.org/legal.html
       --disable=NAME[,NAME...]   Do not build these libraries. Repeatable.
                                  --list-packages shows every name that can be disabled.
+      --ffmpeg-version=VERSION   Build this FFmpeg release instead of the pinned 9.0.1.
+                                 VERSION is a release number (e.g. 9.0.1) or "latest",
+                                 which is looked up at https://ffmpeg.org/releases/.
+                                 Only the pinned version is verified against a checksum
+                                 and tested against the library versions this script builds.
       --tls=BACKEND              TLS backend for https/tls/dtls: gnutls or openssl
                                  Default: openssl with --enable-gpl-and-non-free, gnutls otherwise.
       --whisper=BACKEND          Build whisper.cpp for the af_whisper filter (speech to text).
@@ -366,6 +371,28 @@ Options:
 
 There is no option to rebuild dependencies: a package whose pinned version changed is
 rebuilt automatically on the next build.
+
+## Choosing the FFmpeg version
+
+The script builds one pinned FFmpeg release, currently 9.0.1, whose tarball is verified
+against a checksum. `--ffmpeg-version` overrides that:
+
+```bash
+./build-ffmpeg --build --ffmpeg-version=latest   # newest release on ffmpeg.org
+./build-ffmpeg --build --ffmpeg-version=8.1.2    # a specific release
+```
+
+`latest` reads the release index at <https://ffmpeg.org/releases/> and takes the highest
+version listed there. The GitHub mirror is not consulted: it publishes no GitHub releases,
+so there is nothing there to ask for.
+
+Two things are given up by overriding it. The checksum in `src/10-versions.sh` describes
+the pinned tarball and no other, so an overridden version is downloaded without an
+integrity check; and the library versions this script pins were picked to build against the
+pinned FFmpeg, so an older or newer one may not configure or compile. The script says so
+before it starts, and a build that fails this way is worth retrying without the flag before
+reporting it. A version that does not exist is rejected up front rather than an hour later,
+when the FFmpeg download happens.
 
 ## Leaving libraries out
 

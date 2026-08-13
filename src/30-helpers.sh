@@ -59,6 +59,52 @@ verify_checksum() {
     return 0
 }
 
+latest_ffmpeg_version() {
+    # Prints the highest release version listed at https://ffmpeg.org/releases/,
+    # or fails if the index cannot be fetched or contains nothing usable.
+    #
+    # That directory listing is the canonical release index and needs nothing but
+    # curl, which the script already requires. The GitHub mirror is not usable for
+    # this: it publishes no GitHub releases at all, so
+    # /repos/FFmpeg/FFmpeg/releases/latest answers 404, and the tags API is
+    # rate limited to 60 requests an hour per IP for unauthenticated callers.
+    #
+    # The regexp only accepts purely numeric versions, which drops the release
+    # candidates and the pre-1.0 names ("ffmpeg-0.4.9-pre1") that also live in
+    # that directory. Comparison goes through version_gte rather than "sort -V"
+    # because BSD sort on macOS has no -V.
+    LATEST_INDEX=$(curl -L --fail --silent https://ffmpeg.org/releases/) || return 1
+
+    LATEST_FOUND=""
+    while read -r LATEST_CANDIDATE; do
+        [ -n "$LATEST_CANDIDATE" ] || continue
+        if [ -z "$LATEST_FOUND" ] || version_gte "$LATEST_CANDIDATE" "$LATEST_FOUND"; then
+            LATEST_FOUND="$LATEST_CANDIDATE"
+        fi
+    done <<<"$(printf '%s\n' "$LATEST_INDEX" |
+        grep -oE 'ffmpeg-[0-9]+(\.[0-9]+)*\.tar\.gz' |
+        sed -e 's/^ffmpeg-//' -e 's/\.tar\.gz$//')"
+
+    if [ -z "$LATEST_FOUND" ]; then
+        return 1
+    fi
+
+    printf '%s' "$LATEST_FOUND"
+}
+
+ffmpeg_tarball_url() {
+    # ffmpeg_tarball_url <version>
+    # The pinned version is fetched from the GitHub tag archive, which is what its
+    # checksum in 10-versions.sh was taken from. Any other version comes from
+    # ffmpeg.org, the same place --ffmpeg-version=latest discovers it, so that
+    # "this version exists" means one thing rather than two.
+    if $FFMPEG_UNPINNED; then
+        printf 'https://ffmpeg.org/releases/ffmpeg-%s.tar.gz' "$1"
+    else
+        printf 'https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n%s.tar.gz' "$1"
+    fi
+}
+
 download_with_retries() {
     # download_with_retries <url> <output-path> [expected-sha256]
     # --fail makes curl report an HTTP error instead of saving the error page as

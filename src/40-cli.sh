@@ -10,6 +10,11 @@ usage() {
     echo "      --enable-gpl-and-non-free  Enable GPL and non-free codecs  - https://ffmpeg.org/legal.html"
     echo "      --disable=NAME[,NAME...]   Do not build these libraries. Repeatable."
     echo "                                 --list-packages shows every name that can be disabled."
+    echo "      --ffmpeg-version=VERSION   Build this FFmpeg release instead of the pinned $FFMPEG_VERSION."
+    echo "                                 VERSION is a release number (e.g. 9.0.1) or \"latest\","
+    echo "                                 which is looked up at https://ffmpeg.org/releases/."
+    echo "                                 Only the pinned version is verified against a checksum"
+    echo "                                 and tested against the library versions this script builds."
     echo "      --tls=BACKEND              TLS backend for https/tls/dtls: gnutls or openssl"
     echo "                                 Default: openssl with --enable-gpl-and-non-free, gnutls otherwise."
     echo "      --whisper=BACKEND          Build whisper.cpp for the af_whisper filter (speech to text)."
@@ -65,6 +70,45 @@ while (($# > 0)); do
         CONFIGURE_OPTIONS+=("--enable-nonfree")
         CONFIGURE_OPTIONS+=("--enable-gpl")
         NONFREE_AND_GPL=true
+        shift
+        ;;
+    --ffmpeg-version=*)
+        FFMPEG_VERSION_REQUEST="${1#*=}"
+        if [ "$FFMPEG_VERSION_REQUEST" = "latest" ]; then
+            echo "Looking up the latest FFmpeg release on https://ffmpeg.org/releases/ ..."
+            if ! FFMPEG_VERSION_REQUEST=$(latest_ffmpeg_version); then
+                echo "Error: could not determine the latest FFmpeg release from https://ffmpeg.org/releases/." >&2
+                echo "Pass an explicit version instead, e.g. --ffmpeg-version=$FFMPEG_VERSION." >&2
+                exit 1
+            fi
+            echo "Latest FFmpeg release: $FFMPEG_VERSION_REQUEST"
+        fi
+
+        if [[ ! "$FFMPEG_VERSION_REQUEST" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
+            echo "Error: --ffmpeg-version accepts a release number such as 9.0.1, or \"latest\", not \"$FFMPEG_VERSION_REQUEST\"."
+            exit 1
+        fi
+
+        if [ "$FFMPEG_VERSION_REQUEST" != "$FFMPEG_VERSION" ]; then
+            FFMPEG_VERSION="$FFMPEG_VERSION_REQUEST"
+            FFMPEG_UNPINNED=true
+            # VER_FFMPEG[0] is what --list-packages prints, [1] is the checksum
+            # download() verifies against. The checksum belongs to the pinned
+            # tarball and to no other, and an empty one means "not pinned", which
+            # is exactly what this is - see verify_checksum.
+            # shellcheck disable=SC2034 # read indirectly by download(), see 10-versions.sh
+            VER_FFMPEG[0]="$FFMPEG_VERSION"
+            # shellcheck disable=SC2034 # read indirectly by download(), see 10-versions.sh
+            VER_FFMPEG[1]=""
+
+            # Fail here rather than after an hour of building dependencies: the
+            # ffmpeg download is the very last step of the run.
+            if ! curl -L --fail --silent --head -o /dev/null "$(ffmpeg_tarball_url "$FFMPEG_VERSION")"; then
+                echo "Error: FFmpeg $FFMPEG_VERSION is not available at $(ffmpeg_tarball_url "$FFMPEG_VERSION")." >&2
+                echo "Check https://ffmpeg.org/releases/ for the release numbers that exist." >&2
+                exit 1
+            fi
+        fi
         shift
         ;;
     --tls=*)
@@ -190,6 +234,15 @@ echo "Using $MJOBS make jobs simultaneously."
 
 if $NONFREE_AND_GPL; then
     echo "With GPL and non-free codecs"
+fi
+
+if $FFMPEG_UNPINNED; then
+    echo ""
+    echo "Note: building FFmpeg $FFMPEG_VERSION, which is not the version this script pins."
+    echo "      Its tarball is downloaded from ffmpeg.org without a checksum check, and the"
+    echo "      library versions below were neither chosen nor tested for it. If the build"
+    echo "      fails, retry without --ffmpeg-version before reporting it."
+    echo ""
 fi
 
 # Resolved here rather than in 20-globals.sh because it depends on an option that

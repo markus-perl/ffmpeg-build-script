@@ -37,7 +37,10 @@ echo "======================="
 # use for the integrity check.
 # shellcheck disable=SC2034 # read by download() in 30-helpers.sh
 CURRENT_PACKAGE_NAME="ffmpeg"
-download "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n$FFMPEG_VERSION.tar.gz" "FFmpeg-release-$FFMPEG_VERSION.tar.gz"
+# The URL depends on whether --ffmpeg-version moved the build off the pinned
+# version; see ffmpeg_tarball_url. The local filename carries the version either
+# way, so a cached tarball from a previous run is never mistaken for this one.
+download "$(ffmpeg_tarball_url "$FFMPEG_VERSION")" "FFmpeg-release-$FFMPEG_VERSION.tar.gz"
 # shellcheck disable=SC2086
 
 execute ./configure "${CONFIGURE_OPTIONS[@]}" \
