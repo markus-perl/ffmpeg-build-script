@@ -94,6 +94,11 @@ latest_ffmpeg_version() {
 
 ffmpeg_tarball_url() {
     # ffmpeg_tarball_url <version>
+    if [ "$1" = "snapshot" ]; then
+        printf 'https://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2'
+        return
+    fi
+
     # The pinned version is fetched from the GitHub tag archive, which is what its
     # checksum in 10-versions.sh was taken from. Any other version comes from
     # ffmpeg.org, the same place --ffmpeg-version=latest discovers it, so that

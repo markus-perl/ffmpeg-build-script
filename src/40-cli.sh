@@ -11,8 +11,9 @@ usage() {
     echo "      --disable=NAME[,NAME...]   Do not build these libraries. Repeatable."
     echo "                                 --list-packages shows every name that can be disabled."
     echo "      --ffmpeg-version=VERSION   Build this FFmpeg release instead of the pinned $FFMPEG_VERSION."
-    echo "                                 VERSION is a release number (e.g. 9.0.1) or \"latest\","
-    echo "                                 which is looked up at https://ffmpeg.org/releases/."
+    echo "                                 VERSION is a release number (e.g. 9.0.1), \"latest\","
+    echo "                                 or \"snapshot\" for the current FFmpeg master."
+    echo "                                 Release versions are looked up at https://ffmpeg.org/releases/."
     echo "                                 Only the pinned version is verified against a checksum"
     echo "                                 and tested against the library versions this script builds."
     echo "      --tls=BACKEND              TLS backend for https/tls/dtls: gnutls or openssl"
@@ -84,8 +85,9 @@ while (($# > 0)); do
             echo "Latest FFmpeg release: $FFMPEG_VERSION_REQUEST"
         fi
 
-        if [[ ! "$FFMPEG_VERSION_REQUEST" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
-            echo "Error: --ffmpeg-version accepts a release number such as 9.0.1, or \"latest\", not \"$FFMPEG_VERSION_REQUEST\"."
+        if [ "$FFMPEG_VERSION_REQUEST" != "snapshot" ] &&
+            [[ ! "$FFMPEG_VERSION_REQUEST" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
+            echo "Error: --ffmpeg-version accepts a release number such as 9.0.1, \"latest\" or \"snapshot\", not \"$FFMPEG_VERSION_REQUEST\"."
             exit 1
         fi
 
@@ -105,7 +107,7 @@ while (($# > 0)); do
             # ffmpeg download is the very last step of the run.
             if ! curl -L --fail --silent --head -o /dev/null "$(ffmpeg_tarball_url "$FFMPEG_VERSION")"; then
                 echo "Error: FFmpeg $FFMPEG_VERSION is not available at $(ffmpeg_tarball_url "$FFMPEG_VERSION")." >&2
-                echo "Check https://ffmpeg.org/releases/ for the release numbers that exist." >&2
+                echo "Check https://ffmpeg.org/releases/ for release numbers, or use \"snapshot\"." >&2
                 exit 1
             fi
         fi
