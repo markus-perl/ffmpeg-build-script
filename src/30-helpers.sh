@@ -266,17 +266,21 @@ build() {
     # shellcheck disable=SC2034 # read by download() callers in the package fragments
     CURRENT_PACKAGE_VERSION=$2
 
-    # The lockfile records the version the package was built at, so a mismatch
-    # means the pin in src/10-versions.sh moved since. That always rebuilds:
-    # skipping it left the old library in workspace/, and FFmpeg was then linked
-    # against a version the script no longer pins - a build that reported
-    # success while shipping something nobody asked for.
+    # The optional variant covers configure changes that leave the upstream version
+    # alone, such as the Intel macOS linker fixes.
+    BUILD_LOCK_VERSION="$2"
+    if [ -n "$3" ]; then
+        BUILD_LOCK_VERSION+=" $3"
+    fi
+
+    # A mismatch always rebuilds: skipping it leaves the old library in workspace/,
+    # and FFmpeg then links against something the script no longer requests.
     if [ -f "$PACKAGES/$1.done" ]; then
-        if grep -Fx "$2" "$PACKAGES/$1.done" >/dev/null; then
+        if grep -Fx "$BUILD_LOCK_VERSION" "$PACKAGES/$1.done" >/dev/null; then
             echo "$1 version $2 already built. Remove $PACKAGES/$1.done lockfile to rebuild it."
             return 1
         fi
-        echo "$1 was built at a different version and will be rebuilt at $2"
+        echo "$1 was built with different inputs and will be rebuilt at $2"
     fi
 
     return 0
@@ -334,7 +338,11 @@ pre_c23_cflag() {
 }
 
 build_done() {
-    echo "$2" >"$PACKAGES/$1.done"
+    if [ -n "$3" ]; then
+        printf '%s %s\n' "$2" "$3" >"$PACKAGES/$1.done"
+    else
+        echo "$2" >"$PACKAGES/$1.done"
+    fi
 }
 
 verify_binary_type() {

@@ -15,7 +15,12 @@ LDFLAGS="-L$WORKSPACE/lib"
 LDEXEFLAGS=""
 # shellcheck disable=SC2034 # $EXTRALIBS is read by later fragments
 EXTRALIBS="-ldl -lpthread -lm -lz"
+# shellcheck disable=SC2034 # $MACOS_SILICON is read by later fragments
 MACOS_SILICON=false
+# shellcheck disable=SC2034 # $MACOS_INTEL is read by later fragments
+MACOS_INTEL=false
+# shellcheck disable=SC2034 # $MACOS_INTEL_BUILD_VARIANT is read by package fragments
+MACOS_INTEL_BUILD_VARIANT=""
 CONFIGURE_OPTIONS=()
 # shellcheck disable=SC2034 # $NONFREE_AND_GPL is read by later fragments
 NONFREE_AND_GPL=false
@@ -133,13 +138,24 @@ cxx_supports_flag() {
         "${CXX:-c++}" "$1" -x c++ -c -o /dev/null - >/dev/null 2>&1
 }
 
+# Shared by both macOS branches below: they build C++ packages the same way.
+configure_apple_clangxx() {
+    CXX=$(which clang++)
+    export CXX
+
+    if command_exists "clang++"; then
+        echo "clang++ is installed. Version: $(clang++ --version | head -n 1)"
+    else
+        echo "clang++ is not installed. Please install Xcode."
+        exit 1
+    fi
+}
+
 # Check for Apple Silicon
 if [[ ("$(uname -m)" == "arm64") && ("$OSTYPE" == "darwin"*) ]]; then
     # If arm64 AND darwin (macOS)
     export ARCH=arm64
     export MACOSX_DEPLOYMENT_TARGET=11.0
-    CXX=$(which clang++)
-    export CXX
     # shellcheck disable=SC2034 # $MACOS_SILICON is read by later fragments
     MACOS_SILICON=true
     echo "Apple Silicon detected."
@@ -148,12 +164,23 @@ if [[ ("$(uname -m)" == "arm64") && ("$OSTYPE" == "darwin"*) ]]; then
     MACOS_VERSION=$(sw_vers -productVersion)
     echo "macOS Version: $MACOS_VERSION"
 
-    if command_exists "clang++"; then
-        echo "clang++ is installed. Version: $(clang++ --version | head -n 1)"
-    else
-        echo "clang++ is not installed. Please install Xcode."
-        exit 1
-    fi
+    configure_apple_clangxx
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    # Keeps Intel builds runnable on older macOS than the build host. Applies to
+    # every package, not just the ones MACOS_INTEL_BUILD_VARIANT covers, so a
+    # workspace built at a higher target needs --cleanup first: ld otherwise
+    # rejects it with "built for newer macOS version than being linked".
+    export MACOSX_DEPLOYMENT_TARGET=11.0
+    # shellcheck disable=SC2034 # $MACOS_INTEL is read by later fragments
+    MACOS_INTEL=true
+    echo "Apple Intel detected."
+    # Goes into the lockfiles of the affected packages, so the Intel-only
+    # configure changes take effect without rebuilding everything. Bump it when
+    # another Intel-specific build input changes.
+    # shellcheck disable=SC2034 # $MACOS_INTEL_BUILD_VARIANT is read by package fragments
+    MACOS_INTEL_BUILD_VARIANT="macos-intel-static-linking-v1"
+
+    configure_apple_clangxx
 fi
 
 # Speed up the process

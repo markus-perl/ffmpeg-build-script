@@ -290,24 +290,28 @@ mkdir -p "$WORKSPACE" "$WORKSPACE"/lib/pkgconfig "$WORKSPACE"/include "$WORKSPAC
 
 export PATH="${WORKSPACE}/bin:$PATH"
 
-# The Debian/Ubuntu multiarch directory, e.g. x86_64-linux-gnu or aarch64-linux-gnu. This
-# used to be hardcoded to x86_64-linux-gnu, which meant that on an arm64 Linux host none of
-# the system .pc files were on the search path at all: build_pkg_config configures its own
-# pkg-config with --with-pc-path pointing at the workspace, so PKG_CONFIG_PATH is the only
-# way system packages are ever found. Every library this script probes for rather than
-# builds - libva in build_vaapi, alsa in build_openal, libpulse in build_libpulse - silently
-# failed its check and disabled itself on arm64, with no message. Ask the compiler rather
-# than deriving it from uname: it is the same value dpkg-architecture reports, and it stays
-# empty on distributions that do not use multiarch, where the plain /usr/lib entries below
-# are what matches.
-MULTIARCH_DIR="$("${CC:-cc}" -print-multiarch 2>/dev/null)"
-
 PKG_CONFIG_PATH="$WORKSPACE/lib/pkgconfig"
-if [ -n "$MULTIARCH_DIR" ]; then
-    PKG_CONFIG_PATH+=":/usr/local/lib/${MULTIARCH_DIR}/pkgconfig:/usr/lib/${MULTIARCH_DIR}/pkgconfig"
+# Only Intel macOS skips the host dirs: its Homebrew installs into /usr/local and
+# collides with the workspace prefix. Silicon Homebrew lives in /opt/homebrew, which
+# is on neither list, so it keeps them.
+if ! $MACOS_INTEL; then
+    # The Debian/Ubuntu multiarch directory, e.g. x86_64-linux-gnu or aarch64-linux-gnu. This
+    # used to be hardcoded to x86_64-linux-gnu, which meant that on an arm64 Linux host none of
+    # the system .pc files were on the search path at all: build_pkg_config configures its own
+    # pkg-config with --with-pc-path pointing at the workspace, so PKG_CONFIG_PATH is the only
+    # way system packages are ever found. Every library this script probes for rather than
+    # builds - libva in build_vaapi, alsa in build_openal, libpulse in build_libpulse - silently
+    # failed its check and disabled itself on arm64, with no message. Ask the compiler rather
+    # than deriving it from uname: it is the same value dpkg-architecture reports, and it stays
+    # empty on distributions that do not use multiarch, where the plain /usr/lib entries below
+    # are what matches. Computed inside the guard because nothing outside it reads the value.
+    MULTIARCH_DIR="$("${CC:-cc}" -print-multiarch 2>/dev/null)"
+    if [ -n "$MULTIARCH_DIR" ]; then
+        PKG_CONFIG_PATH+=":/usr/local/lib/${MULTIARCH_DIR}/pkgconfig:/usr/lib/${MULTIARCH_DIR}/pkgconfig"
+    fi
+    PKG_CONFIG_PATH+=":/usr/local/lib/pkgconfig:/usr/local/share/pkgconfig"
+    PKG_CONFIG_PATH+=":/usr/lib/pkgconfig:/usr/share/pkgconfig:/usr/lib64/pkgconfig"
 fi
-PKG_CONFIG_PATH+=":/usr/local/lib/pkgconfig:/usr/local/share/pkgconfig"
-PKG_CONFIG_PATH+=":/usr/lib/pkgconfig:/usr/share/pkgconfig:/usr/lib64/pkgconfig"
 export PKG_CONFIG_PATH
 
 if ! command_exists "make"; then

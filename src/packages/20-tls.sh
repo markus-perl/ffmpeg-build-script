@@ -61,7 +61,7 @@ build_openssl() {
 build_gmp() {
     if [ "$TLS_BACKEND" != "gnutls" ]; then return; fi
 
-    if build "gmp" "${VER_GMP[0]}"; then
+    if build "gmp" "${VER_GMP[0]}" "$MACOS_INTEL_BUILD_VARIANT"; then
         download "https://ftp.gnu.org/gnu/gmp/gmp-$CURRENT_PACKAGE_VERSION.tar.xz"
         # GMP's compiler probe calls "void g(){}" with six arguments. C23 made an empty
         # parameter list mean (void), so GCC 15 rejects the call and configure concludes
@@ -69,14 +69,21 @@ build_gmp() {
         # rather than CFLAGS because GMP picks its own optimisation and ABI flags, and
         # setting CFLAGS discards that tuning.
         GMP_STD_FLAG="$(pre_c23_cflag)"
+        GMP_CONFIGURE_OPTIONS=(--prefix="${WORKSPACE}" --disable-shared --enable-static)
+        if $MACOS_INTEL; then
+            # GMP's asm build is unreliable on the Intel macOS toolchain. Generic C
+            # costs RSA/DH handshake speed but links. Never add --enable-fat next to
+            # it: gmp's configure hard-errors on that combination.
+            GMP_CONFIGURE_OPTIONS+=(--disable-assembly)
+        fi
         if [ -n "$GMP_STD_FLAG" ]; then
-            execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static CC="${CC:-gcc}$GMP_STD_FLAG"
+            execute ./configure "${GMP_CONFIGURE_OPTIONS[@]}" CC="${CC:-gcc}$GMP_STD_FLAG"
         else
-            execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+            execute ./configure "${GMP_CONFIGURE_OPTIONS[@]}"
         fi
         execute make -j "$MJOBS"
         execute make install
-        build_done "gmp" "$CURRENT_PACKAGE_VERSION"
+        build_done "gmp" "$CURRENT_PACKAGE_VERSION" "$MACOS_INTEL_BUILD_VARIANT"
     fi
 }
 
@@ -119,14 +126,22 @@ build_nettle() {
 build_gnutls() {
     if [ "$TLS_BACKEND" != "gnutls" ]; then return; fi
 
-    if build "gnutls" "${VER_GNUTLS[0]}"; then
+    if build "gnutls" "${VER_GNUTLS[0]}" "$MACOS_INTEL_BUILD_VARIANT"; then
         # Upstream files the tarballs under a major.minor series directory, so that
         # part of the path is derived from the pinned version rather than repeated.
         download "https://www.gnupg.org/ftp/gcrypt/gnutls/v${CURRENT_PACKAGE_VERSION%.*}/gnutls-$CURRENT_PACKAGE_VERSION.tar.xz"
-        execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-doc --disable-tools --disable-cxx --disable-tests --disable-gtk-doc-html --disable-libdane --disable-nls --enable-local-libopts --disable-guile --with-included-libtasn1 --with-included-unistring --without-p11-kit CPPFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}"
+        GNUTLS_CONFIGURE_OPTIONS=(--prefix="${WORKSPACE}" --disable-shared --enable-static --disable-doc --disable-tools --disable-cxx --disable-tests --disable-gtk-doc-html --disable-libdane --disable-nls --enable-local-libopts --disable-guile --with-included-libtasn1 --with-included-unistring --without-p11-kit)
+        if $MACOS_INTEL; then
+            # libidn2 and zstd are Homebrew dylibs on Intel macOS and would leak host
+            # libraries into this static build. Cost: no IDNA hostnames, no certificate
+            # compression. Verify the names against gnutls' configure when touching
+            # them - autoconf only warns on an unknown --without-*, so a typo passes.
+            GNUTLS_CONFIGURE_OPTIONS+=(--without-idn --without-zstd)
+        fi
+        execute ./configure "${GNUTLS_CONFIGURE_OPTIONS[@]}" CPPFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}"
         execute make -j "$MJOBS"
         execute make install
-        build_done "gnutls" "$CURRENT_PACKAGE_VERSION"
+        build_done "gnutls" "$CURRENT_PACKAGE_VERSION" "$MACOS_INTEL_BUILD_VARIANT"
     fi
     # --enable-gmp is deliberately not passed alongside. It is a separate ffmpeg
     # feature (bignum arithmetic for the ffrtmpcrypt protocol, configure line

@@ -10,13 +10,17 @@ build_libsdl() {
     # because configure just drops it from the program list instead of failing. The build still
     # reports success, but the docker images fail later when they copy the missing binary, and
     # a build host that happens to have its own SDL2 installed hides the problem entirely.
-    if build "libsdl" "${VER_LIBSDL[0]}"; then
+    if build "libsdl" "${VER_LIBSDL[0]}" "$MACOS_INTEL_BUILD_VARIANT"; then
         download "https://github.com/libsdl-org/SDL/releases/download/release-$CURRENT_PACKAGE_VERSION/SDL2-$CURRENT_PACKAGE_VERSION.tar.gz"
-        execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+        SDL_CONFIGURE_OPTIONS=(--prefix="${WORKSPACE}" --disable-shared --enable-static)
+        if $MACOS_INTEL; then
+            SDL_CONFIGURE_OPTIONS+=(--disable-video-x11)
+        fi
+        execute ./configure "${SDL_CONFIGURE_OPTIONS[@]}"
         execute make -j "$MJOBS"
         execute make install
 
-        build_done "libsdl" "$CURRENT_PACKAGE_VERSION"
+        build_done "libsdl" "$CURRENT_PACKAGE_VERSION" "$MACOS_INTEL_BUILD_VARIANT"
     fi
 }
 

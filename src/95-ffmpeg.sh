@@ -46,6 +46,16 @@ else
     FFMPEG_ARCHIVE="FFmpeg-release-$FFMPEG_VERSION.tar.gz"
 fi
 download "$(ffmpeg_tarball_url "$FFMPEG_VERSION")" "$FFMPEG_ARCHIVE"
+
+# Keyed on X11 actually being absent, not on the architecture: an Intel Mac with
+# XQuartz keeps x11grab/xcbgrab/xv. vaapi needs no disable - build_vaapi() in
+# 80-hwaccel.sh returns early off linux-gnu.
+if $MACOS_INTEL && ! { [ -d "/opt/X11/include" ] || library_exists "xcb"; }; then
+    echo "No X11 (XQuartz) installation found; disabling libxcb/xlib support in ffmpeg."
+    CONFIGURE_OPTIONS+=(--disable-libxcb --disable-libxcb-shm --disable-libxcb-shape --disable-libxcb-xfixes)
+    CONFIGURE_OPTIONS+=(--disable-xlib)
+fi
+
 # shellcheck disable=SC2086
 
 execute ./configure "${CONFIGURE_OPTIONS[@]}" \
