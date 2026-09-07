@@ -28,21 +28,28 @@ build_fribidi() {
     CONFIGURE_OPTIONS+=("--enable-libfribidi")
 }
 
-# harfbuzz dropped autotools, so it can only be built when meson and ninja are available.
-# Without it libass and drawtext still work, but complex scripts are not shaped.
+# harfbuzz dropped autotools, but it still ships a CMakeLists.txt next to its meson build, and
+# cmake is built into the workspace unconditionally. That matters because harfbuzz is not
+# optional: libass 0.17.5 requires it through PKG_CHECK_MODULES with no way to opt out
+# (configure.ac:107), so skipping harfbuzz when meson was missing killed the whole build in
+# libass configure instead of just losing complex-script shaping - see issue #268, a plain
+# macOS box without Homebrew.
 build_harfbuzz() {
-    if ! command_exists "meson"; then
-        echo "meson is missing, skipping harfbuzz. Complex scripts will not be shaped."
-        return
-    fi
-
     if build "harfbuzz" "${VER_HARFBUZZ[0]}"; then
         download "https://github.com/harfbuzz/harfbuzz/releases/download/$CURRENT_PACKAGE_VERSION/harfbuzz-$CURRENT_PACKAGE_VERSION.tar.xz"
-        execute meson setup build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib \
-            -Dfreetype=enabled -Dglib=disabled -Dgobject=disabled -Dcairo=disabled -Dchafa=disabled -Dicu=disabled \
-            -Dtests=disabled -Ddocs=disabled -Dbenchmark=disabled -Dutilities=disabled -Dintrospection=disabled
-        execute ninja -C build
-        execute ninja -C build install
+
+        # download() extracts over the existing package directory, so a build/ tree left by an
+        # earlier meson setup would still be there and cmake refuses to reuse it.
+        execute rm -rf build
+
+        # CoreText is off on purpose: cmake defaults HB_HAVE_CORETEXT to ON on Apple, which the
+        # meson build never enabled. Nothing here shapes through it, and it only adds a
+        # -framework ApplicationServices to harfbuzz.pc.
+        execute cmake -DCMAKE_PREFIX_PATH="${WORKSPACE}" -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib \
+            -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DHB_HAVE_FREETYPE=ON -DHB_HAVE_CORETEXT=OFF \
+            -DHB_HAVE_GLIB=OFF -DHB_HAVE_GOBJECT=OFF -DHB_HAVE_ICU=OFF -DHB_HAVE_INTROSPECTION=OFF \
+            -DHB_BUILD_UTILS=OFF -B build/
+        execute cmake --build build --target install -j "$MJOBS"
         build_done "harfbuzz" "$CURRENT_PACKAGE_VERSION"
     fi
     CONFIGURE_OPTIONS+=("--enable-libharfbuzz")

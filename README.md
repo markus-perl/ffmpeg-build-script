@@ -56,7 +56,7 @@ Optional, for extra features:
 
 | Tool | What you get | Install |
 | --- | --- | --- |
-| `python3`, `meson`, `ninja` | dav1d (fast AV1 decoding), LV2 filters, harfbuzz text shaping | `brew install python meson ninja` |
+| `python3`, `meson`, `ninja` | dav1d (fast AV1 decoding), LV2 filters | `brew install python meson ninja` |
 | `cargo` / `rust` | rav1e (AV1 encoding) | see [rust installation](https://doc.rust-lang.org/cargo/getting-started/installation.html) |
 
 ### 2. Build
@@ -128,7 +128,7 @@ and compiled by the script.
 
 | Tool | What is lost if missing |
 | --- | --- |
-| `python3` | meson/ninja bootstrap → no dav1d (AV1 decoding), no LV2 filters, no harfbuzz |
+| `python3` | meson/ninja bootstrap → no dav1d (AV1 decoding), no LV2 filters |
 | `meson`, `ninja` | same as above. Installing them from your package manager is more reliable than the script's `pip` fallback (see the [PEP 668 note](#meson-fails-with-externally-managed-environment)) |
 | `cargo` / `rust` | no rav1e (AV1 encoding) |
 | X11 development headers | `ffplay`. SDL is compiled from source and picks up whatever X11 headers it finds — a partial set makes the SDL build fail (`X11/extensions/Xext.h: No such file`), and no X11 at all leaves `ffplay` unable to open a video device |
