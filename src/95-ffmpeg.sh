@@ -37,9 +37,9 @@ echo "======================="
 # use for the integrity check.
 # shellcheck disable=SC2034 # read by download() in 30-helpers.sh
 CURRENT_PACKAGE_NAME="ffmpeg"
-# The URL depends on whether --ffmpeg-version moved the build off the pinned
-# version; see ffmpeg_tarball_url. The local filename carries the version either
-# way, so a cached tarball from a previous run is never mistaken for this one.
+# ffmpeg_tarball_url in 30-helpers.sh builds the actual download URL from
+# FFMPEG_VERSION; the local filename here just needs to carry the version too,
+# so a cached tarball from a previous run is never mistaken for this one.
 if [ "$FFMPEG_VERSION" = "snapshot" ]; then
     FFMPEG_ARCHIVE="FFmpeg-snapshot.tar.bz2"
 else

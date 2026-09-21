@@ -60,8 +60,13 @@ verify_checksum() {
 }
 
 latest_ffmpeg_version() {
+    # latest_ffmpeg_version [major]
     # Prints the highest release version listed at https://ffmpeg.org/releases/,
-    # or fails if the index cannot be fetched or contains nothing usable.
+    # or fails if the index cannot be fetched or contains nothing usable. With
+    # [major] given (e.g. "9"), only releases whose first version component
+    # matches it are considered - this is how the script resolves the latest
+    # release of the major version it supports (see FFMPEG_MAJOR_VERSION in
+    # 00-header.sh) instead of jumping to a newer, untested major version.
     #
     # That directory listing is the canonical release index and needs nothing but
     # curl, which the script already requires. The GitHub mirror is not usable for
@@ -73,11 +78,15 @@ latest_ffmpeg_version() {
     # candidates and the pre-1.0 names ("ffmpeg-0.4.9-pre1") that also live in
     # that directory. Comparison goes through version_gte rather than "sort -V"
     # because BSD sort on macOS has no -V.
-    LATEST_INDEX=$(curl -L --fail --silent https://ffmpeg.org/releases/) || return 1
+    LATEST_FILTER_MAJOR="$1"
+    LATEST_INDEX=$(curl -L --fail --silent --connect-timeout 10 --max-time 20 https://ffmpeg.org/releases/) || return 1
 
     LATEST_FOUND=""
     while read -r LATEST_CANDIDATE; do
         [ -n "$LATEST_CANDIDATE" ] || continue
+        if [ -n "$LATEST_FILTER_MAJOR" ] && [[ "$LATEST_CANDIDATE" != "$LATEST_FILTER_MAJOR".* ]]; then
+            continue
+        fi
         if [ -z "$LATEST_FOUND" ] || version_gte "$LATEST_CANDIDATE" "$LATEST_FOUND"; then
             LATEST_FOUND="$LATEST_CANDIDATE"
         fi
@@ -99,15 +108,10 @@ ffmpeg_tarball_url() {
         return
     fi
 
-    # The pinned version is fetched from the GitHub tag archive, which is what its
-    # checksum in 10-versions.sh was taken from. Any other version comes from
-    # ffmpeg.org, the same place --ffmpeg-version=latest discovers it, so that
-    # "this version exists" means one thing rather than two.
-    if $FFMPEG_UNPINNED; then
-        printf 'https://ffmpeg.org/releases/ffmpeg-%s.tar.gz' "$1"
-    else
-        printf 'https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n%s.tar.gz' "$1"
-    fi
+    # Every release, pinned or not, comes from the same place latest_ffmpeg_version
+    # discovers it - ffmpeg.org publishes no GitHub releases, so there is no
+    # GitHub tag archive to fall back to.
+    printf 'https://ffmpeg.org/releases/ffmpeg-%s.tar.gz' "$1"
 }
 
 download_with_retries() {
@@ -564,12 +568,18 @@ on_exit() {
     for EXIT_DIR in $EXIT_CLEANUP_DIRS; do
         rm -rf "$EXIT_DIR"
     done
-    # The bug-report hint is only for genuine failures of a supported build:
-    # an interrupted run was stopped deliberately, and an unpinned FFmpeg
-    # (snapshot, --ffmpeg-version) is a combination the pinned library versions
-    # were never tested against - 40-cli.sh already tells those users to retry
-    # with the pinned version before reporting anything.
-    if [ "$EXIT_STATUS" -ne 0 ] && ! $USER_INTERRUPTED && ! $FFMPEG_UNPINNED; then
+    # The bug-report hint is only for genuine failures of a supported build: an
+    # interrupted run was stopped deliberately, an explicit --ffmpeg-version
+    # (snapshot, or a release outside FFMPEG_MAJOR_VERSION.x) is a combination the
+    # pinned library versions were never tested against - 40-cli.sh already tells
+    # those users to retry with the default version before reporting anything -
+    # and SUPPRESS_FAILURE_REPORT covers an early exit whose cause 40-cli.sh
+    # already identified as external (e.g. the default FFmpeg version lookup
+    # failing because ffmpeg.org could not be reached). The default build itself
+    # (the latest FFMPEG_MAJOR_VERSION.x release) is still a supported build even
+    # though FFMPEG_UNPINNED is set for it too, so this checks
+    # FFMPEG_VERSION_EXPLICIT instead.
+    if [ "$EXIT_STATUS" -ne 0 ] && ! $USER_INTERRUPTED && ! $FFMPEG_VERSION_EXPLICIT && ! $SUPPRESS_FAILURE_REPORT; then
         report_failure
     fi
     stop_build_logging
@@ -588,11 +598,67 @@ version_lt() {
     [ "$1" != "$2" ] && [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -n 1)" = "$1" ]
 }
 
+# latest_script_release_tag
+# Prints the tag ("vX.Y.Z") of the latest ffmpeg-build-script release on GitHub,
+# or fails (nothing printed) if it cannot be resolved. Shared by do_update() and
+# check_for_script_update() so the two never disagree on what "latest" means.
+#
+# "/releases/latest" redirects to "/releases/tag/<tag>", so the tag falls out of
+# the resolved URL. This is the same trick web-install.sh uses, and for the same
+# reason: api.github.com is rate limited to 60/hour per IP, which breaks behind
+# a shared address, and reading its answer would need jq.
+latest_script_release_tag() {
+    LATEST_TAG=""
+    if LATEST_TAG=$(curl -fsSL --connect-timeout 10 --max-time 20 -o /dev/null --write-out '%{url_effective}' \
+        "$SCRIPT_REPO_URL/releases/latest" | sed 's|.*/releases/tag/||'); then
+        case "$LATEST_TAG" in
+        v[0-9]*)
+            [ "$LATEST_TAG" = "${LATEST_TAG#*/}" ] || LATEST_TAG=""
+            ;;
+        *)
+            LATEST_TAG=""
+            ;;
+        esac
+    else
+        LATEST_TAG=""
+    fi
+
+    [ -n "$LATEST_TAG" ] || return 1
+    printf '%s' "$LATEST_TAG"
+}
+
+# Prints a one-time notice if a newer ffmpeg-build-script release exists, and
+# how to get it. Called once at the start of a build. Never blocks or fails the
+# build: a network hiccup here just means the notice is silently skipped.
+check_for_script_update() {
+    UPDATE_CHECK_TAG=$(latest_script_release_tag) || return 0
+    UPDATE_CHECK_VERSION="${UPDATE_CHECK_TAG#v}"
+
+    # version_gte rather than version_lt/sort -V: BSD sort on macOS has no -V,
+    # which would make version_lt silently report "not older" and this would then
+    # advertise a downgrade as the latest release whenever the local tree is
+    # already ahead of the newest tag (SCRIPT_VERSION names the *next* release,
+    # so a tree built from master routinely is).
+    if version_gte "$SCRIPT_VERSION" "$UPDATE_CHECK_VERSION"; then
+        return 0
+    fi
+
+    echo ""
+    echo "A newer version of ffmpeg-build-script is available: $UPDATE_CHECK_TAG (you have v$SCRIPT_VERSION)."
+    # shellcheck disable=SC2154 # $SCRIPT_DIR is exported by the ../build-ffmpeg entry point
+    if [ -d "$SCRIPT_DIR/.git" ]; then
+        echo "Update with: git pull"
+    else
+        echo "Update with: $PROGNAME --update"
+    fi
+    echo ""
+}
+
 # Replace this checkout with the newest release. Deliberately does not build:
 # the caller exits right afterwards, because half of the functions in this shell
 # would then be the old ones while the tree on disk is the new one.
 do_update() {
-    UPDATE_REPO='https://github.com/markus-perl/ffmpeg-build-script'
+    UPDATE_REPO="$SCRIPT_REPO_URL"
 
     for UPDATE_REQUIRED in curl tar sed; do
         if ! command_exists "$UPDATE_REQUIRED"; then
@@ -617,27 +683,7 @@ do_update() {
         return 1
     fi
 
-    # "/releases/latest" redirects to "/releases/tag/<tag>", so the tag falls out
-    # of the resolved URL. This is the same trick web-install.sh uses, and for
-    # the same reason: api.github.com is rate limited to 60/hour per IP, which
-    # breaks behind a shared address, and reading its answer would need jq.
-    if ! UPDATE_TAG=$(curl -fsSL -o /dev/null --write-out '%{url_effective}' \
-        "$UPDATE_REPO/releases/latest" | sed 's|.*/releases/tag/||'); then
-        UPDATE_TAG=""
-    fi
-
-    case "$UPDATE_TAG" in
-    v[0-9]*)
-        if [ "$UPDATE_TAG" != "${UPDATE_TAG#*/}" ]; then
-            UPDATE_TAG=""
-        fi
-        ;;
-    *)
-        UPDATE_TAG=""
-        ;;
-    esac
-
-    if [ -z "$UPDATE_TAG" ]; then
+    if ! UPDATE_TAG=$(latest_script_release_tag); then
         echo "Failed to resolve the latest release of $UPDATE_REPO" >&2
         return 1
     fi

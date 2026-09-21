@@ -44,12 +44,17 @@ TLS_BACKEND=""
 # machine the binary will run on.
 # shellcheck disable=SC2034 # $WHISPER_BACKEND is read by later fragments
 WHISPER_BACKEND=""
-# True once --ffmpeg-version has moved the build off the version pinned in
-# 00-header.sh. The checksum in 10-versions.sh only describes that one tarball,
-# so an override has to clear it, and everything that is louder about an
-# unverified download hangs off this flag.
+# True once the FFmpeg version to build has been resolved to an actual release -
+# either the latest FFMPEG_MAJOR_VERSION.x release (the default, resolved in
+# 40-cli.sh) or an explicit --ffmpeg-version override. Either way there is no
+# single tarball to keep a checksum for in 10-versions.sh, so everything that is
+# louder about an unverified download hangs off this flag.
 # shellcheck disable=SC2034 # $FFMPEG_UNPINNED is read by later fragments
 FFMPEG_UNPINNED=false
+# True once --ffmpeg-version has been passed explicitly, so 40-cli.sh knows not to
+# also resolve the default "latest FFMPEG_MAJOR_VERSION.x release".
+# shellcheck disable=SC2034 # $FFMPEG_VERSION_EXPLICIT is read by later fragments
+FFMPEG_VERSION_EXPLICIT=false
 # shellcheck disable=SC2034 # $LIST_PACKAGES is read by later fragments
 LIST_PACKAGES=false
 # shellcheck disable=SC2034 # $MANPAGES is read by later fragments
@@ -60,6 +65,13 @@ CURRENT_PACKAGE_NAME=""
 CURRENT_PACKAGE_VERSION=0
 # shellcheck disable=SC2034 # $DOWNLOAD_MAX_RETRIES is read by later fragments
 DOWNLOAD_MAX_RETRIES=2
+# shellcheck disable=SC2034 # $SCRIPT_REPO_URL is read by later fragments
+SCRIPT_REPO_URL='https://github.com/markus-perl/ffmpeg-build-script'
+# Set right before an early, pre-build exit (e.g. the default FFmpeg version
+# lookup failing) whose cause is external - a network hiccup, not a script bug -
+# so on_exit() in 30-helpers.sh knows not to print the "please file a bug" hint.
+# shellcheck disable=SC2034 # $SUPPRESS_FAILURE_REPORT is read by later fragments
+SUPPRESS_FAILURE_REPORT=false
 
 # Version comparison function
 # Returns: 0 if v1 >= v2, 1 otherwise

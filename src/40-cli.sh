@@ -10,12 +10,15 @@ usage() {
     echo "      --enable-gpl-and-non-free  Enable GPL and non-free codecs  - https://ffmpeg.org/legal.html"
     echo "      --disable=NAME[,NAME...]   Do not build these libraries. Repeatable."
     echo "                                 --list-packages shows every name that can be disabled."
-    echo "      --ffmpeg-version=VERSION   Build this FFmpeg release instead of the pinned $FFMPEG_VERSION."
+    echo "      --ffmpeg-version=VERSION   Build this FFmpeg release instead of the latest $FFMPEG_MAJOR_VERSION.x release."
     echo "                                 VERSION is a release number (e.g. 9.0.2), \"latest\","
     echo "                                 or \"snapshot\" for the current FFmpeg master."
-    echo "                                 Release versions are looked up at https://ffmpeg.org/releases/."
-    echo "                                 Only the pinned version is verified against a checksum"
-    echo "                                 and tested against the library versions this script builds."
+    echo "                                 Default: the latest $FFMPEG_MAJOR_VERSION.x release, looked up at"
+    echo "                                 https://ffmpeg.org/releases/ at the start of every build."
+    echo "                                 \"latest\" here is the newest release of any major version,"
+    echo "                                 not just $FFMPEG_MAJOR_VERSION.x. No release is checksum-verified;"
+    echo "                                 the library versions this script builds were chosen and"
+    echo "                                 tested against $FFMPEG_MAJOR_VERSION.x."
     echo "      --tls=BACKEND              TLS backend for https/tls/dtls: gnutls or openssl"
     echo "                                 Default: openssl with --enable-gpl-and-non-free, gnutls otherwise."
     echo "      --whisper=BACKEND          Build whisper.cpp for the af_whisper filter (speech to text)."
@@ -74,12 +77,13 @@ while (($# > 0)); do
         shift
         ;;
     --ffmpeg-version=*)
+        FFMPEG_VERSION_EXPLICIT=true
         FFMPEG_VERSION_REQUEST="${1#*=}"
         if [ "$FFMPEG_VERSION_REQUEST" = "latest" ]; then
             echo "Looking up the latest FFmpeg release on https://ffmpeg.org/releases/ ..."
             if ! FFMPEG_VERSION_REQUEST=$(latest_ffmpeg_version); then
                 echo "Error: could not determine the latest FFmpeg release from https://ffmpeg.org/releases/." >&2
-                echo "Pass an explicit version instead, e.g. --ffmpeg-version=$FFMPEG_VERSION." >&2
+                echo "Pass an explicit version instead, e.g. --ffmpeg-version=$FFMPEG_MAJOR_VERSION.0.0." >&2
                 exit 1
             fi
             echo "Latest FFmpeg release: $FFMPEG_VERSION_REQUEST"
@@ -91,25 +95,21 @@ while (($# > 0)); do
             exit 1
         fi
 
-        if [ "$FFMPEG_VERSION_REQUEST" != "$FFMPEG_VERSION" ]; then
-            FFMPEG_VERSION="$FFMPEG_VERSION_REQUEST"
-            FFMPEG_UNPINNED=true
-            # VER_FFMPEG[0] is what --list-packages prints, [1] is the checksum
-            # download() verifies against. The checksum belongs to the pinned
-            # tarball and to no other, and an empty one means "not pinned", which
-            # is exactly what this is - see verify_checksum.
-            # shellcheck disable=SC2034 # read indirectly by download(), see 10-versions.sh
-            VER_FFMPEG[0]="$FFMPEG_VERSION"
-            # shellcheck disable=SC2034 # read indirectly by download(), see 10-versions.sh
-            VER_FFMPEG[1]=""
+        FFMPEG_VERSION="$FFMPEG_VERSION_REQUEST"
+        FFMPEG_UNPINNED=true
+        # VER_FFMPEG[0] is what --list-packages prints. VER_FFMPEG[1], the
+        # checksum download() verifies against, is left at its empty default
+        # from 10-versions.sh: there is no fixed tarball to checksum for an
+        # explicit override - see verify_checksum.
+        # shellcheck disable=SC2034 # read indirectly by download(), see 10-versions.sh
+        VER_FFMPEG[0]="$FFMPEG_VERSION"
 
-            # Fail here rather than after an hour of building dependencies: the
-            # ffmpeg download is the very last step of the run.
-            if ! curl -L --fail --silent --head -o /dev/null "$(ffmpeg_tarball_url "$FFMPEG_VERSION")"; then
-                echo "Error: FFmpeg $FFMPEG_VERSION is not available at $(ffmpeg_tarball_url "$FFMPEG_VERSION")." >&2
-                echo "Check https://ffmpeg.org/releases/ for release numbers, or use \"snapshot\"." >&2
-                exit 1
-            fi
+        # Fail here rather than after an hour of building dependencies: the
+        # ffmpeg download is the very last step of the run.
+        if ! curl -L --fail --silent --head -o /dev/null "$(ffmpeg_tarball_url "$FFMPEG_VERSION")"; then
+            echo "Error: FFmpeg $FFMPEG_VERSION is not available at $(ffmpeg_tarball_url "$FFMPEG_VERSION")." >&2
+            echo "Check https://ffmpeg.org/releases/ for release numbers, or use \"snapshot\"." >&2
+            exit 1
         fi
         shift
         ;;
@@ -232,6 +232,40 @@ if $LIST_PACKAGES; then
     return 0
 fi
 
+# Needed by both check_for_script_update() below and the default FFmpeg version
+# lookup further down, so it is checked here rather than with the other
+# preflight tools near the end of this fragment.
+if ! command_exists "curl"; then
+    echo "curl not installed."
+    exit 1
+fi
+
+# Best-effort, never fatal - see check_for_script_update() in 30-helpers.sh.
+check_for_script_update
+
+# No --ffmpeg-version override: resolve the latest release of the major version
+# this script supports, so a pinned FFMPEG_MAJOR_VERSION in 00-header.sh is all
+# that ever needs bumping across an entire release line. Done here rather than
+# earlier so it only runs for an actual build, never for --list-packages or a
+# --cleanup-only invocation.
+if ! $FFMPEG_VERSION_EXPLICIT; then
+    echo "Looking up the latest FFmpeg $FFMPEG_MAJOR_VERSION.x release on https://ffmpeg.org/releases/ ..."
+    if ! FFMPEG_VERSION_LOOKUP=$(latest_ffmpeg_version "$FFMPEG_MAJOR_VERSION"); then
+        echo "Error: could not determine the latest FFmpeg $FFMPEG_MAJOR_VERSION.x release from https://ffmpeg.org/releases/." >&2
+        echo "Pass an explicit release instead, e.g. --ffmpeg-version=$FFMPEG_MAJOR_VERSION.0.0." >&2
+        # This is a network hiccup, not a broken build - report_failure's "please
+        # file a bug" hint in on_exit() would be misleading here.
+        # shellcheck disable=SC2034 # read by on_exit() in 30-helpers.sh
+        SUPPRESS_FAILURE_REPORT=true
+        exit 1
+    fi
+    FFMPEG_VERSION="$FFMPEG_VERSION_LOOKUP"
+    FFMPEG_UNPINNED=true
+    # shellcheck disable=SC2034 # read indirectly by download(), see 10-versions.sh
+    VER_FFMPEG[0]="$FFMPEG_VERSION"
+    echo "Building FFmpeg $FFMPEG_VERSION, the latest $FFMPEG_MAJOR_VERSION.x release."
+fi
+
 echo "Using $MJOBS make jobs simultaneously."
 
 if $NONFREE_AND_GPL; then
@@ -240,10 +274,10 @@ fi
 
 if $FFMPEG_UNPINNED; then
     echo ""
-    echo "Note: building FFmpeg $FFMPEG_VERSION, which is not the version this script pins."
-    echo "      Its tarball is downloaded from ffmpeg.org without a checksum check, and the"
-    echo "      library versions below were neither chosen nor tested for it. If the build"
-    echo "      fails, retry without --ffmpeg-version before reporting it."
+    echo "Note: FFmpeg $FFMPEG_VERSION is downloaded from ffmpeg.org without a checksum check,"
+    echo "      since this script tracks the latest release of a major version rather than one"
+    echo "      pinned tarball. If the build fails, try an older $FFMPEG_MAJOR_VERSION.x release"
+    echo "      with --ffmpeg-version=X.Y.Z before reporting it."
     echo ""
 fi
 
@@ -321,11 +355,6 @@ fi
 
 if ! command_exists "g++"; then
     echo "g++ not installed."
-    exit 1
-fi
-
-if ! command_exists "curl"; then
-    echo "curl not installed."
     exit 1
 fi
 

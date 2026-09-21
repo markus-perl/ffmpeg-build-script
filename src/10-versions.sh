@@ -13,8 +13,11 @@
 ## download. Deliberately no associative arrays here: /bin/bash on macOS is
 ## still 3.2, where "declare -A" is a fatal error - indexed arrays are fine.
 ##
+# Unpinned on purpose: the script tracks the latest FFMPEG_MAJOR_VERSION.x release
+# rather than one fixed tarball, so there is no single checksum to pin here. See
+# FFMPEG_MAJOR_VERSION in 00-header.sh and the resolution in 40-cli.sh.
 # shellcheck disable=SC2034 # read indirectly by download(), see the note above
-VER_FFMPEG=("$FFMPEG_VERSION" "6e374ed621e48faa40639307dff48ba6fe574a509977956d2cce9669b7cc27e9")
+VER_FFMPEG=("$FFMPEG_VERSION" "")
 
 ## build tools
 VER_GIFLIB=("6.1.3" "b65b66b99f0424b93525f987386f22fc5efb9da2bfc92ad4a532249aaffbab0e")
