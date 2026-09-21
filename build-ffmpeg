@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # HOMEPAGE: https://github.com/markus-perl/ffmpeg-build-script
-# LICENSE: https://github.com/markus-perl/ffmpeg-build-script/blob/master/LICENSE
+# LICENSE: https://github.com/markus-perl/ffmpeg-build-script/blob/main/LICENSE
 
 # Entry point. The script itself lives in src/ and is sourced from here, in the
 # explicit order below - not through a glob, whose order depends on LC_COLLATE
@@ -47,7 +47,7 @@ if [ ! -d "$SCRIPT_DIR/src" ]; then
     echo "next to it. Downloading this file on its own cannot work."
     echo ""
     echo "Get the whole tree instead:"
-    echo "  curl -sSL https://raw.githubusercontent.com/markus-perl/ffmpeg-build-script/master/web-install.sh | bash"
+    echo "  curl -sSL https://raw.githubusercontent.com/markus-perl/ffmpeg-build-script/main/web-install.sh | bash"
     echo "or"
     echo "  git clone https://github.com/markus-perl/ffmpeg-build-script.git"
     exit 1

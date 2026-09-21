@@ -20,7 +20,7 @@ tarball, `git clone`, or the Dockerfiles' `COPY src`).
 | --- | --- |
 | `build-ffmpeg` | Entry point only: resolves `SCRIPT_DIR`, checks `src/` exists, sources the fragments in order. Edit it only to add, remove or reorder a fragment. |
 | `src/` | **The script.** Almost every change goes here — see the fragment list below. |
-| `web-install.sh`, `web-install-gpl-and-non-free.sh` | One-liner installers. They resolve the **latest release**, download GitHub's auto-generated archive for that tag, extract it and run `build-ffmpeg` from it. They do not fetch anything from `master`. |
+| `web-install.sh`, `web-install-gpl-and-non-free.sh` | One-liner installers. They resolve the **latest release**, download GitHub's auto-generated archive for that tag, extract it and run `build-ffmpeg` from it. They do not fetch anything from `main`. |
 | `Dockerfile`, `cuda-ubuntu.dockerfile`, `full-static.dockerfile`, `export.dockerfile` | Container builds, all exercised by CI. |
 | `.github/workflows/build.yml` | `lint`, then six full builds: `build-linux`, `build-linux-with-system-libs`, `build-macos`, `build-docker`, `build-cuda-ubuntu-docker`, `build-full-static`, then `release-version-check` on `v*` tags only. |
 | `README.md` | End-user documentation. Not contributor docs. |
@@ -32,9 +32,9 @@ tarball, `git clone`, or the Dockerfiles' `COPY src`).
 When searching the repo, restrict the search to the tracked files. `git ls-files` is the
 reliable filter; a bare `grep -r .` is not.
 
-## Releases vs master
+## Releases vs main
 
-`master` holds unreleased work; users get releases.
+`main` holds unreleased work; users get releases.
 
 **Releases are drafted and published by hand.** Nothing is uploaded to them and nothing
 needs to be: GitHub generates a source archive for every tag, so if the tag exists its
@@ -48,7 +48,7 @@ runners behind shared NAT, and would add a `jq` dependency.
 
 The `release-version-check` job asserts that a pushed tag matches `SCRIPT_VERSION` *in the
 tagged commit*, read from `src/00-header.sh` (`v9.0.3` requires `SCRIPT_VERSION=9.0.3`), so
-master carrying the next
+main carrying the next
 release's version is legal while a mismatched tag fails. It does not gate on the builds —
 there is no artifact to withhold, so it reports in seconds instead of after an hour.
 
@@ -204,7 +204,7 @@ once: `--enable-gpl-and-non-free` → gettext + openssl; default LGPL → gmp + 
    comment when you do).
 6. Bump `SCRIPT_VERSION` — but only if it is not already ahead of the latest release tag.
    It names the *next* release, not the current commit, so a whole batch of unreleased
-   commits shares one bump. Check `git tag | tail -1` first: bumping again while master is
+   commits shares one bump. Check `git tag | tail -1` first: bumping again while main is
    already ahead skips a version and makes the `release-version-check` job's tag assertion fail.
 
 Prefer `--disable-shared --enable-static` and disabling docs, tests, examples and CLI tools:

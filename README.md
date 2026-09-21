@@ -1,6 +1,6 @@
 [![build test](https://github.com/markus-perl/ffmpeg-build-script/workflows/build%20test/badge.svg)](https://github.com/markus-perl/ffmpeg-build-script/actions)
 
-![FFmpeg build script](https://raw.github.com/markus-perl/ffmpeg-build-script/master/ffmpeg-build-script.png)
+![FFmpeg build script](https://raw.github.com/markus-perl/ffmpeg-build-script/main/ffmpeg-build-script.png)
 
 ### If you like the script, please "★" this project!
 
@@ -65,16 +65,16 @@ Fastest way — download and build in one command:
 
 ```bash
 # Without GPL and non-free codecs, see https://ffmpeg.org/legal.html
-$ bash <(curl -s "https://raw.githubusercontent.com/markus-perl/ffmpeg-build-script/master/web-install.sh")
+$ bash <(curl -s "https://raw.githubusercontent.com/markus-perl/ffmpeg-build-script/main/web-install.sh")
 
 # With GPL and non-free codecs, see https://ffmpeg.org/legal.html
-$ bash <(curl -s "https://raw.githubusercontent.com/markus-perl/ffmpeg-build-script/master/web-install-gpl-and-non-free.sh")
+$ bash <(curl -s "https://raw.githubusercontent.com/markus-perl/ffmpeg-build-script/main/web-install-gpl-and-non-free.sh")
 ```
 
 The installer creates an `ffmpeg-build` directory, downloads the source archive of the latest
 release into it, extracts it and runs `build-ffmpeg --build` — the GPL and non-free variant
 appends `--enable-gpl-and-non-free`. To build a different revision, set
-`FFMPEG_BUILD_SCRIPT_REF` to a release tag (`v9.0.3`) or a branch name (`master`, for
+`FFMPEG_BUILD_SCRIPT_REF` to a release tag (`v9.0.3`) or a branch name (`main`, for
 unreleased work). It must be a single tag or branch name; slashes are rejected.
 
 Or clone the repository and build from it:
@@ -213,16 +213,16 @@ Fastest way — download and build in one command:
 
 ```bash
 # Without GPL and non-free codecs, see https://ffmpeg.org/legal.html
-$ bash <(curl -s "https://raw.githubusercontent.com/markus-perl/ffmpeg-build-script/master/web-install.sh")
+$ bash <(curl -s "https://raw.githubusercontent.com/markus-perl/ffmpeg-build-script/main/web-install.sh")
 
 # With GPL and non-free codecs, see https://ffmpeg.org/legal.html
-$ bash <(curl -s "https://raw.githubusercontent.com/markus-perl/ffmpeg-build-script/master/web-install-gpl-and-non-free.sh")
+$ bash <(curl -s "https://raw.githubusercontent.com/markus-perl/ffmpeg-build-script/main/web-install-gpl-and-non-free.sh")
 ```
 
 The installer creates an `ffmpeg-build` directory, downloads the source archive of the latest
 release into it, extracts it and runs `build-ffmpeg --build` — the GPL and non-free variant
 appends `--enable-gpl-and-non-free`. To build a different revision, set
-`FFMPEG_BUILD_SCRIPT_REF` to a release tag (`v9.0.3`) or a branch name (`master`, for
+`FFMPEG_BUILD_SCRIPT_REF` to a release tag (`v9.0.3`) or a branch name (`main`, for
 unreleased work). It must be a single tag or branch name; slashes are rejected.
 
 Or clone the repository and build from it:

@@ -1,6 +1,6 @@
 # shellcheck shell=bash
 # HOMEPAGE: https://github.com/markus-perl/ffmpeg-build-script
-# LICENSE: https://github.com/markus-perl/ffmpeg-build-script/blob/master/LICENSE
+# LICENSE: https://github.com/markus-perl/ffmpeg-build-script/blob/main/LICENSE
 
 # Sourced by ../build-ffmpeg. Every fragment is linted as its own file, so a
 # global defined here and read from a later fragment looks unused; each one

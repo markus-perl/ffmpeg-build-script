@@ -115,7 +115,7 @@ order, and it has to keep running everywhere it currently runs:
 - **Bump `SCRIPT_VERSION`** (in `src/00-header.sh`) when you change build behaviour — but only
   if it is not already ahead of the latest release tag. It names the *next* release, not the
   current commit, so a batch of unreleased commits shares one bump. Check `git tag | tail -1`
-  first: bumping again while master is already ahead skips a version, and the release workflow
+  first: bumping again while main is already ahead skips a version, and the release workflow
   refuses to publish a tag that does not match `SCRIPT_VERSION`.
 
   Since 9.0.3 the version has tracked the FFmpeg release line the script builds. Before this
@@ -196,7 +196,7 @@ modes build different TLS stacks and are not interchangeable.
 
 ## Pull requests
 
-- Branch off `master` and target `master`.
+- Branch off `main` and target `main`.
 - One logical change per pull request.
 - Say in the description **which systems you built on** and paste the relevant part of
   `-buildconf` when you added or changed a feature.

@@ -11,13 +11,13 @@ That shape determines what is in scope below.
 
 ## Supported versions
 
-Only the latest commit on `master` is supported. Please confirm that the issue still exists
+Only the latest commit on `main` is supported. Please confirm that the issue still exists
 there before reporting — checksums, package versions and download URLs change often.
 
 | Version | Supported |
 | --- | --- |
-| `master` | yes |
-| tagged releases | no, upgrade to `master` |
+| `main` | yes |
+| tagged releases | no, upgrade to `main` |
 
 ## Reporting a vulnerability
 
@@ -41,7 +41,7 @@ Please include:
 ### Response
 
 This project is maintained in spare time, so please expect a first response within about two
-weeks. Fixes ship as a normal commit to `master`; if the issue warrants it, a GitHub Security
+weeks. Fixes ship as a normal commit to `main`; if the issue warrants it, a GitHub Security
 Advisory is published alongside it, crediting you unless you ask otherwise.
 
 ## In scope

@@ -638,7 +638,7 @@ check_for_script_update() {
     # which would make version_lt silently report "not older" and this would then
     # advertise a downgrade as the latest release whenever the local tree is
     # already ahead of the newest tag (SCRIPT_VERSION names the *next* release,
-    # so a tree built from master routinely is).
+    # so a tree built from main routinely is).
     if version_gte "$SCRIPT_VERSION" "$UPDATE_CHECK_VERSION"; then
         return 0
     fi
@@ -695,7 +695,7 @@ do_update() {
         return 0
     fi
 
-    # SCRIPT_VERSION names the *next* release, so a tree built from master is
+    # SCRIPT_VERSION names the *next* release, so a tree built from main is
     # routinely ahead of the newest tag. Updating then is a downgrade, which is
     # a legitimate thing to ask for - just worth saying out loud.
     if version_lt "$UPDATE_VERSION" "$SCRIPT_VERSION"; then

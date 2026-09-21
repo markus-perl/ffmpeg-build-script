@@ -5,7 +5,7 @@ on:
     paths-ignore:
       - '*.md'
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
 
 jobs:
   lint:
@@ -275,7 +275,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
 
-      # Checked against the tagged commit only, so master carrying the next
+      # Checked against the tagged commit only, so main carrying the next
       # release's version stays legal. The tag has a v prefix, SCRIPT_VERSION
       # does not.
       - name: check the tag matches SCRIPT_VERSION
