@@ -4,7 +4,8 @@
 ##
 
 build_libzmq() {
-    if build "libzmq" "${VER_LIBZMQ[0]}"; then
+    # The "no-ws" variant forces a rebuild of archives cached from before --disable-ws.
+    if build "libzmq" "${VER_LIBZMQ[0]}" "no-ws"; then
         download "https://github.com/zeromq/libzmq/releases/download/v$CURRENT_PACKAGE_VERSION/zeromq-$CURRENT_PACKAGE_VERSION.tar.gz"
         if [[ "$OSTYPE" == "darwin"* ]]; then
             export XML_CATALOG_FILES=/usr/local/etc/xml/catalog
@@ -27,7 +28,7 @@ build_libzmq() {
         apply_inline_patch src/proxy.cpp "s/stats_proxy stats = {0}/stats_proxy stats = {{{0, 0}, {0, 0}}, {{0, 0}, {0, 0}}}/g"
         execute make -j "$MJOBS"
         execute make install
-        build_done "libzmq" "$CURRENT_PACKAGE_VERSION"
+        build_done "libzmq" "$CURRENT_PACKAGE_VERSION" "no-ws"
     fi
     CONFIGURE_OPTIONS+=("--enable-libzmq")
 }
