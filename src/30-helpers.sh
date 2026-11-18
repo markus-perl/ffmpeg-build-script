@@ -79,7 +79,10 @@ latest_ffmpeg_version() {
     # that directory. Comparison goes through version_gte rather than "sort -V"
     # because BSD sort on macOS has no -V.
     LATEST_FILTER_MAJOR="$1"
-    LATEST_INDEX=$(curl -L --fail --silent --connect-timeout 10 --max-time 20 https://ffmpeg.org/releases/) || return 1
+    # Retries cover the flaky fetches seen from CI runners; --show-error keeps the
+    # cause visible, because --silent alone made those failures undiagnosable.
+    LATEST_INDEX=$(curl -L --fail --silent --show-error --retry 5 --retry-delay 5 --retry-connrefused --retry-max-time 120 \
+        --connect-timeout 10 --max-time 30 https://ffmpeg.org/releases/) || return 1
 
     LATEST_FOUND=""
     while read -r LATEST_CANDIDATE; do
