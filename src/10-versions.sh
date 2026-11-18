@@ -29,49 +29,49 @@ VER_PKG_CONFIG=("0.29.2" "6fc69c01688c9458a57eb9a1664c9aba372ccda420a02bf4429fe6
 # build_yasm bootstraps with autogen.sh and the entry sits after automake below.
 VER_YASM=("09d1bc90ed53d0ec3e9b074f111058cbf262ed56" "5908256a2db37ca6f6b60025ee2a4a81a52ff8588e08776ce37c2551f00ab2e0")
 VER_NASM=("3.02" "87336eba53b4acfe917424ab5d500d2b0054d9f5148d35c2273ccf2cfb712f0d")
-VER_ZLIB=("1.3.2" "bb329a0a2cd0274d05519d61c667c062e06990d72e125ee2dfa8de64f0119d16")
+VER_ZLIB=("1.4" "02dd159783677a749c04adbdd02b55b8a2bcc7e054f51b76b549199a916ad584")
 # xz, for liblzma. Note 5.6.0 and 5.6.1 carried the xz-utils backdoor (CVE-2024-3094);
 # this is well past both, and the tarball is pinned by checksum like every other package.
-VER_XZ=("5.8.3" "3d3a1b973af218114f4f889bbaa2f4c037deaae0c8e815eec381c3d546b974a0")
+VER_XZ=("5.8.4" "0014c7886930454fe8bd4228665b51af55eeae560ea135c9c4cd33f55b2591d9")
 # 1.0.8 is the last release from sourceware and has been current since 2019; the successor
 # repository at gitlab.com/bzip2/bzip2 has never tagged one.
 VER_BZIP2=("1.0.8" "ab5a03176ee106d3f0fa90e381da478ddae405918153cca248e682cd0c4a2269")
 VER_M4=("1.4.21" "38ae59f7a30bf9c108193cc5c25fbb06014f21e230c7ede2eff614f7b7c37ed8")
 VER_AUTOCONF=("2.73" "259ddfa3bddc799cfb81489cc0f17dfdf1bd6d1505dda53c0f45ff60d6a4f9a7")
-VER_AUTOMAKE=("1.18.1" "63e585246d0fc8772dffdee0724f2f988146d1a3f1c756a3dc5cfbefa3c01915")
+VER_AUTOMAKE=("1.20" "00c0e397a3c0096b1b9167eb4a5ecb87a66fe50888d939c4e02111e603936570")
 VER_LIBTOOL=("2.6.2" "24adb3aa9ae035c70faba344af57d73215eb89281045af6c7ccd307751f8b0bf")
 VER_GETTEXT=("1.0" "85d99b79c981a404874c02e0342176cf75c7698e2b51fe41031cf6526d974f1a")
-VER_OPENSSL=("4.0.1" "d8dee4712f66b113ab2060ca693febcfbf81edb08c323c1a87e7526364d0fef8")
+VER_OPENSSL=("4.1.0" "2a54158eb6861c07cefc92f1a1d68b12d5ecc0883d53c61a092995b221c7d5fe")
 VER_GMP=("6.3.0" "a3c2b80201b89e68616f4ad30bc66aee4927c3ce50e33929ca819d5c43538898")
 VER_NETTLE=("4.0" "3addbc00da01846b232fb3bc453538ea5468da43033f21bb345cb1e9073f5094")
 VER_GNUTLS=("3.8.13" "ffed8ec1bf09c2426d4f14aae377de4753b53e537d685e604e99a8b16ca9c97e")
-VER_CMAKE=("4.4.2" "1db9e61e60b6e0874c86386340b910382f3c5e75b9fbfb44d122063129a2789d")
+VER_CMAKE=("4.5.0" "424352d6133e8455e020da787008e8dc67abb18820af3532572ab35657e49213")
 
 ## video library
 VER_DAV1D=("1.5.4" "a1d5b63d2d38ec9bd03acf643caa51fa22edd1e89c5a109c4807717216bbec07")
-VER_SVTAV1=("4.2.0" "c7b13c4a84bd3751aa35fcc72be13e6875467e7c2216879251a486e5b1e4e740")
+VER_SVTAV1=("4.3.0" "95ce8fc2381ba707e65ac8b9b2e165915bfbe9cd4d2f7b0f58d64ce31bd98f6d")
 VER_RAV1E=("0.8.1" "06d1523955fb6ed9cf9992eace772121067cca7e8926988a1ee16492febbe01e")
 VER_X264=("0480cb05" "b336cdb04eeca5d15a53db323bc716fd7a1dae7bf19df0a8a41379d2d65e05d0")
 VER_X265=("b81f650" "540de59b5004274f70a4fe229e86c7602d49b5b1a96112fd95a9dcdb5c9f1dc9")
 # The bitbucket archive URL needs the full commit hash, VER_X265 is its short form.
 X265_COMMIT=b81f650e21e8aacbe6a9ad04ce14aefc05b932c0
 # openh264 tags "2.5.1" without a "v" exist as GitHub *releases* only; every git
-# tag, and therefore every archive URL, carries the "v" prefix. 2.6.0 is the
+# tag, and therefore every archive URL, carries the "v" prefix. 2.7.0 is the
 # newest tag, 2.5.1 is a later-published patch of the older 2.5 branch.
-VER_OPENH264=("2.6.0" "558544ad358283a7ab2930d69a9ceddf913f4a51ee9bf1bfb9e377322af81a69")
+VER_OPENH264=("2.7.0" "5178775c8b440073e70920e97d195efff721c0e56d0a78cc82c919e95d54924d")
 # H.266/VVC encoder. Note the pkg-config module is libvvenc and ffmpeg requires >= 1.6.1.
 VER_VVENC=("1.14.0" "dd43d061d59dbc0d9b9ae5b99cb40672877dd811646228938f065798939ee174")
-VER_LIBVPX=("1.16.0" "7a479a3c66b9f5d5542a4c6a1b7d3768a983b1e5c14c60a9396edc9b649e015c")
+VER_LIBVPX=("1.17.0" "1020f184046187baa2985dbde38e0691f49c44088bca7a1842b0236c6081dc0a")
 VER_XVIDCORE=("1.3.7" "abbdcbd39555691dd1c9b4d08f0a031376a3b211652c0d8b3b8aa9be1303ce2d")
 VER_VID_STAB=("1.1.2" "96db34d48a9e3aa13736a48744b56dfb76731ac9bb5193c716de8534c9fd709d")
 # Homebrew patch that vid_stab needs on Apple Silicon, pinned by URL to a commit.
 VER_VID_STAB_PATCH=("" "45c16a2b64ba67f7ca5335c2f602d8d5186c29b38188b3cc7aff5df60aecaf60")
-VER_FREI0R=("3.2.3" "898f80e5fdae6108a2d9b2317649af576a4b5e636c73429ee11b64397a596e12")
+VER_FREI0R=("3.7.1" "5543917de48d2e8cc2fa02794240a3613447d00458bc2cf606aef20f4b8da515")
 # The official AOM release tarball is published at a stable storage URL and is
 # checksum-pinned like every other package in the script.
-VER_AV1=("3.14.1" "44bf90dbd23e734d50e70a8c41c285193922938bd0d3bc2ee56764d181d55ef5")
+VER_AV1=("3.15.3" "12c01dc731ed7b5a999e28120b45bf58a002ba3435a4ba2cfbc1e084a27c9c04")
 VER_ZIMG=("3.0.6" "be89390f13a5c9b2388ce0f44a5e89364a20c1c57ce46d382b1fcc3967057577")
-VER_LIBVMAF=("3.2.0" "a28f93f3b4fa65601be324587072e32a6a704a304ba7b1aec9b70b3f709bc1dc")
+VER_LIBVMAF=("3.2.1" "5df7386911bc15fd1ca783132528748d219768ae4fc5f8e0b61184f041648092")
 
 ## audio library
 VER_LV2=("1.18.10" "78c51bcf21b54e58bb6329accbb4dae03b2ed79b520f9a01e734bd9de530953f")
@@ -96,44 +96,44 @@ VER_OPUS=("1.6.1" "6ffcb593207be92584df15b32466ed64bbec99109f007c82205f019457241
 VER_LIBOGG=("1.3.6" "5c8253428e181840cd20d41f3ca16557a9cc04bad4a3d04cce84808677fa1061")
 VER_LIBVORBIS=("1.3.7" "0e982409a9c3fc82ee06e08205b1355e5c6aa4c36bca58146ef399621b0ce5ab")
 VER_LIBTHEORA=("1.2.0" "279327339903b544c28a92aeada7d0dcfd0397b59c2f368cc698ac56f515906e")
-VER_FDK_AAC=("2.0.3" "829b6b89eef382409cda6857fd82af84fabb63417b08ede9ea7a553f811cb79e")
+VER_FDK_AAC=("3.0.0" "70b95857b958fb8f794489307a87845dde4cc1fcea060f3f29f40e4b2fe16c82")
 VER_SOXR=("0.1.3" "b111c15fdc8c029989330ff559184198c161100a59312f5dc19ddeb9b5a15889")
 VER_TWOLAME=("0.4.0" "cc35424f6019a88c6f52570b63e1baf50f62963a3eac52a03a800bb070d7c87d")
 VER_LIBMYSOFA=("1.3.5" "f29508c335c83d8703f943ffc9ca783ac39aca84e851357f13a55af0f8143137")
 VER_RUBBERBAND=("4.0.0" "24300f48a8014b7c863b573a9647e61b1b19b37875e2cdd92005e64c6424d266")
-VER_LIBOPENMPT=("0.8.7" "275c29ef47be9992f62a35fcc96f7ca05c06d2fd05c9298b8dee9f743f75b089")
+VER_LIBOPENMPT=("0.8.10" "976d259288c40cd285771f77d09eff3d02514511d5677ecfcfb53be5013317e2")
 VER_LIBGME=("0.6.5" "a133f19278222136ba0d8c27b64a07987ba05fec9d2e6d293ccd8cabdd97ddbb")
-VER_CHROMAPRINT=("1.6.1" "7065ec9db48ac1fa929ec6c42afcd966605b1bfe48b6d5e64c25378a05f4fb02")
+VER_CHROMAPRINT=("1.6.2" "7f92ea1141429b43f695a1ba56d5058132f89fae5f137ce705afc57734f6b5fa")
 VER_OPENAL=("1.25.2" "fb27e5839aa11f0e5b9d33756965291fad5d6909ab928ea1f796f4a1a6877894")
 # libpulse is not built from source (see build_libpulse); this only feeds the .done
 # guard, the same way VER_VAAPI does.
 VER_LIBPULSE=("1" "")
 
 ## image library
-VER_LIBPNG=("1.6.58" "8c9b05b675ca7301a458df2c2e46f26e1d41ff36b8863f8c33530bc58c2e6225")
-VER_LCMS2=("2.19.1" "bfc54f7bab59fbc921012014a8032e4cba4abd46db47d46b76416a8c0b2815c8")
-VER_LIBJXL=("0.12.0" "03e9be69a30be4011f559da75328b6d7cea8ad921fabfbd551ce10bf45cdc992")
+VER_LIBPNG=("1.6.59" "86a3e4b501f7f50e392c4e456ea158893e9a595b1c63eb88c7bb9f6cf8772dad")
+VER_LCMS2=("2.20" "18ff5504fa9cc8a2b1f3591180d90ead16c8a2ea78e530523b46eab70e1ca6b9")
+VER_LIBJXL=("0.13.0" "24d18c9af2d1f5a17730b3f8d3f70a5c16e5ac303f5d9d5fe9dc00cf7ca82af2")
 VER_LIBWEBP=("1.6.0" "e4ab7009bf0629fd11982d4c2aa83964cf244cffba7347ecd39019a9e38c4564")
 VER_OPENJPEG=("2.5.4" "a695fbe19c0165f295a8531b1e4e855cd94d0875d2f88ec4b61080677e27188a")
 
 ## other library
 VER_LIBSDL=("2.32.10" "5f5993c530f084535c65a6879e9b26ad441169b3e25d789d83287040a9ca5165")
-VER_FREETYPE2=("2.14.3" "36bc4f1cc413335368ee656c42afca65c5a3987e8768cc28cf11ba775e785a5f")
-VER_LIBSNAPPY=("1.2.2" "90f74bc1fbf78a6c56b3c4a082a05103b3a56bb17bca1a27e052ea11723292dc")
+VER_FREETYPE2=("2.15.0" "93cd47eb719c325107f2d3cf087d06299e944c3b48a40b55537302304dea1dd5")
+VER_LIBSNAPPY=("1.3.1" "893f708a0bf4b5529d555ffcee390e940e932fcf90261f682604475a76cd0247")
 VER_LIBSSH=("0.12.2" "49560f677d96e3706a904ac2de1116e25f3680937d51e5c92198fcba4a1c1e9f")
 
 ## text shaping and subtitle library
-VER_LIBXML2=("2.15.3" "78262a6e7ac170d6528ebfe2efccdf220191a5af6a6cd61ea4a9a9a5042c7a07")
-VER_FRIBIDI=("1.0.16" "1b1cde5b235d40479e91be2f0e88a309e3214c8ab470ec8a2744d82a5a9ea05c")
-VER_HARFBUZZ=("14.3.0" "16070d77cfc4ba1f1e7327e83bf9b3f55898081cabdb94e56a33e04fc8874eae")
+VER_LIBXML2=("2.15.4" "98087fd181d9070724f3fbc65c7377db03038eb92bd882374daff44940138821")
+VER_FRIBIDI=("1.0.18" "1de5e8073d035388b71d0b2d452b1da1f8caeea8a7702997b401fe1b6250727f")
+VER_HARFBUZZ=("15.1.0" "0fc7c565443a5f4be7da65ac5ee5bd737d9b158dc908708b7689a0a5796b0c8d")
 VER_GPERF=("3.3" "fd87e0aba7e43ae054837afd6cd4db03a3f2693deb3619085e6ed9d8d9604ad8")
 VER_FONTCONFIG=("2.18.3" "4f7b554a38cdf78c033f666c8871f3749e14a094f65a07f630c91ed0b43d35e3")
-VER_LIBUNIBREAK=("7.0" "8c9a6e121736cd0d5c890ae3ae96f3f4010a19aa040f1dbded833a62a87717d3")
+VER_LIBUNIBREAK=("8.0.1" "ac0dcc96c395bc86ff7f86f6b91d8b45bc8c39db775f3f1e73f947a11520737b")
 VER_LIBASS=("0.17.5" "2dca25c0e0c837ddf00b52011b3f82cac1e4ddd3ad018227806b0c2288864acc")
-VER_VAPOURSYNTH=("78" "cbd5aa49d43a9e5061c5ea4b03a682322065f3d9b8870c36bfb8afa0f635e066")
-VER_AVISYNTH=("3.7.5" "2533fafe5b5a8eb9f14d84d89541252a5efd0839ef62b8ae98f40b9f34b3f3d5")
-VER_SRT=("1.5.6" "2c4980c2c4cfd142d21b829d939dc51db9c6628af5967fff62fd7290769569c7")
-VER_ZVBI=("0.2.44" "bca620ab670328ad732d161e4ce8d9d9fc832533cb7440e98c50e112b805ac5e")
+VER_VAPOURSYNTH=("82" "8994fbcfa2fcaa5dc94109e547060521f60829a0899747e98e351bed72bd9611")
+VER_AVISYNTH=("3.7.6" "8c019a934189688e73fe1cd85e6768cc0bc120fe1f4a3310c889060283c9e083")
+VER_SRT=("1.5.7" "017cd1e437ef2073a4dd10ddf7b55e86bc3d6ebac0393d13bd22f6a57055d32b")
+VER_ZVBI=("0.2.46" "817a26118e2654155ee761cd39414885986a4315fdb6617af5314090ddfffd10")
 # libbluray's only mandatory dependency, and a separate package because it cannot be
 # anything else: see the comment on build_libudfread.
 VER_LIBUDFREAD=("1.2.0" "bb477cbd4cfbfc7787d9d05b71ee5e70430f5cfebf1297497f7e83547958050f")
@@ -143,18 +143,18 @@ VER_LIBBLURAY=("1.5.0" "f676408e91a5d321abf8b8d4dfdae36205c297dab5c54c3ec5196390
 VER_LIBZMQ=("4.3.5" "6653ef5910f17954861fe72332e68b03ca6e4d9c7160eb3a8de5a5a913bfab43")
 
 ## HWaccel library
-VER_VULKAN_HEADERS=("1.4.358" "a4a92dcd138cece5722d87e26419442a432a819eb0a07b2e93d89d8b7628761f")
+VER_VULKAN_HEADERS=("1.4.368" "5c5c6f64fcce28a24cc934143a048707af036a858e4ed11d7f71fe016006ecda")
 # SPIRV-Headers is tagged "vulkan-sdk-<version>", so the version here carries no
 # "v" prefix and build_spirv_headers prepends the tag prefix instead.
-VER_SPIRV_HEADERS=("1.4.357.0" "4d703067a7e06331ccb37bdfed3f9b7879cc61969a2689ae95c95db34a47ff07")
-VER_SPIRV_TOOLS=("1.4.357.0" "d31e7109b6ef3559067e53e520870eafed7c9534d00db9728814b6df03fa4a5e")
-VER_GLSLANG=("16.5.0" "01af17195fbeb59e39e31e9506de35bb39dfd35807ea0c9a1a99d7d1183ddd45")
-VER_LIBPLACEBO=("7.360.1" "d05fdf90bea2f629eaa2d115e909fd356388ac639e54f77b87a018a6d76224bd")
+VER_SPIRV_HEADERS=("1.4.363.0" "5b3a0d099f5c7649e29c0938476c462e71d66ad89a0bde42fa1ba3eb476956c9")
+VER_SPIRV_TOOLS=("1.4.363.0" "e6c83a215538fbfd265ccf398d3877985055df1273dbed73912bd05307664688")
+VER_GLSLANG=("16.6.0" "9c09b901149c729df745057dafa815278aaa101b84d2b6e14f16a42de52f97f2")
+VER_LIBPLACEBO=("7.387.0" "f9e62d3774a9c4cfd198ec3abaa88294aaade2e31c04d5ab02bcf4abc98b1df5")
 # libplacebo's git submodules, which the GitHub tag archive does not contain and
 # for which upstream publishes no bundled release tarball. Pinned here as ordinary
 # downloads so nothing has to be fetched unpinned (or with pip) during the build -
 # see build_libplacebo for which of the six submodules are needed and why. The
-# versions are the exact commits the v7.360.1 gitlink points at, resolved to their
+# versions are the exact commits the v7.387.0 gitlink points at, resolved to their
 # upstream tags: jinja 15206881 = 3.1.6, markupsafe 297fc8e3 = 3.0.3,
 # fast_float 97b54ca9 = v8.2.2.
 VER_LIBPLACEBO_JINJA=("3.1.6" "2074b22a72caa65474902234b320d73463d6d4c223ee49f4b433495758356337")
@@ -163,7 +163,7 @@ VER_LIBPLACEBO_FAST_FLOAT=("8.2.2" "e64b5fff88e04959154adbd5fb83331d91f2e04ac064
 VER_NV_CODEC=("13.1.15.0" "52532ceade3d5c1af62624986f13cf01b63c910576b08c0c278756c5e4b41ad0")
 # vaapi is a marker package: nothing is downloaded, so it has no checksum.
 VER_VAAPI=("1" "")
-VER_AMF=("1.5.2" "8a70b6dc85261e6e6e57769bd81ac1e09c0a4c96bbd5e358ffbc2dee51e8e50a")
+VER_AMF=("1.5.3" "eb7d7d14c239117478f229cf174dc359fa2ba1e0817a7cb16277cc5251709f0f")
 # The oneVPL dispatcher, renamed from oneVPL to libvpl upstream (github.com/intel/oneVPL
 # now 301s to intel/libvpl). ffmpeg 9.0 wants "vpl >= 2.6"; this is 2.17.
 VER_LIBVPL=("2.17.0" "4de3e2faf1e8307fb282e4a43f443191810f6a6b0a484fffa7995ba1c814c6ec")
@@ -173,4 +173,4 @@ VER_OPENCL_ICD_LOADER=("2026.05.29" "48fd0c5181db7cd046f4f731d5955694892e10998d4
 ## speech recognition
 # whisper.cpp, for the af_whisper filter. Built last - see the comment on the
 # "whisper" entry in PACKAGE_BUILD_ORDER - so its array sits last here too.
-VER_WHISPER=("1.9.2" "a6abd064fcca8b85e794d205abf328c522e9451db43a3eadc178b883b7d0e9cd")
+VER_WHISPER=("1.9.5" "ff1a9053feb509ff9d7729703355541ae9690073a6b1c40eb692c962e0dc1720")

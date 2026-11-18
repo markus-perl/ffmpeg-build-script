@@ -522,7 +522,9 @@ build_av1() {
         make_dir "$PACKAGES"/aom_build
         cd "$PACKAGES"/aom_build || exit
         if $MACOS_SILICON; then
-            execute cmake -DENABLE_TESTS=0 -DENABLE_EXAMPLES=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCONFIG_RUNTIME_CPU_DETECT=0 "$AOM_SOURCE_DIR"
+            # Without runtime CPU detection the SVE/SVE2 kernels get hard-wired in whenever the
+            # compiler has the SVE headers (Apple clang 21 does), and Apple M chips raise SIGILL.
+            execute cmake -DENABLE_TESTS=0 -DENABLE_EXAMPLES=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCONFIG_RUNTIME_CPU_DETECT=0 -DENABLE_SVE=0 -DENABLE_SVE2=0 "$AOM_SOURCE_DIR"
         else
             execute cmake -DENABLE_TESTS=0 -DENABLE_EXAMPLES=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib "$AOM_SOURCE_DIR"
         fi

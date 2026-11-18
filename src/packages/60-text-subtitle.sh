@@ -21,8 +21,10 @@ build_fribidi() {
     if build "fribidi" "${VER_FRIBIDI[0]}"; then
         download "https://github.com/fribidi/fribidi/releases/download/v$CURRENT_PACKAGE_VERSION/fribidi-$CURRENT_PACKAGE_VERSION.tar.xz"
         execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-debug --disable-deprecated
-        execute make -j "$MJOBS"
-        execute make install
+        # Only the library is needed. Since 1.0.18 the bin/ man page is always rebuilt with
+        # help2man, which is not installed everywhere, so bin/, doc/ and test/ are skipped.
+        execute make -j "$MJOBS" SUBDIRS="gen.tab lib"
+        execute make install SUBDIRS="gen.tab lib"
         build_done "fribidi" "$CURRENT_PACKAGE_VERSION"
     fi
     CONFIGURE_OPTIONS+=("--enable-libfribidi")
@@ -149,7 +151,7 @@ build_avisynth() {
 # workspace (it resolves "gnutls nettle" through pkg-config, CMakeLists.txt:372), but it does
 # not compile: haicrypt/cryspr-gnutls.h typedefs CRYSPR_AESCTX to nettle's "struct aes_ctx",
 # the legacy AES context that nettle 4.0 removed, so cryspr.c dies on an incomplete type.
-# Verified against srt 1.5.6 and nettle 4.0, the two versions pinned here. Building OpenSSL
+# Verified against srt 1.5.7 and nettle 4.0 (the typedef is unchanged). Building OpenSSL
 # anyway just for SRT would defeat the point of asking for GnuTLS, so SRT is skipped instead.
 build_srt() {
     if ! $NONFREE_AND_GPL; then return; fi

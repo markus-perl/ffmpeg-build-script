@@ -30,8 +30,8 @@ build_libsdl() {
 # EXTERNAL_LIBRARY_GPL_LIST, and snappy itself is BSD-3-Clause.
 build_libsnappy() {
     if build "libsnappy" "${VER_LIBSNAPPY[0]}"; then
-        # The tag archive is named after the bare tag ("1.2.2.tar.gz"), so the filename has to
-        # be given explicitly or download() would derive a directory called "1.2".
+        # The tag archive is named after the bare tag ("1.3.1.tar.gz"), so the filename has to
+        # be given explicitly or download() would derive a directory named after the bare version.
         download "https://github.com/google/snappy/archive/refs/tags/$CURRENT_PACKAGE_VERSION.tar.gz" "snappy-$CURRENT_PACKAGE_VERSION.tar.gz"
 
         # SNAPPY_BUILD_TESTS and SNAPPY_BUILD_BENCHMARKS both default to ON and both pull in

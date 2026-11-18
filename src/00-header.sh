@@ -25,4 +25,4 @@ FFMPEG_MAJOR_VERSION=9
 # shellcheck disable=SC2034 # $FFMPEG_VERSION is read by later fragments
 FFMPEG_VERSION="$FFMPEG_MAJOR_VERSION.x"
 # shellcheck disable=SC2034 # $SCRIPT_VERSION is read by later fragments
-SCRIPT_VERSION=9.0.11
+SCRIPT_VERSION=9.0.12
