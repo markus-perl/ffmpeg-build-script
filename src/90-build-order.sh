@@ -277,6 +277,22 @@ if [ ${#DISABLE_REQUESTS[@]} -gt 0 ]; then
     echo "Disabled:$DISABLED_PACKAGES"
 fi
 
+case "$DISABLED_PACKAGES" in
+*" nv_codec "*)
+    # Not built, so build_nv_codec never adds this. Headers left in a reused workspace
+    # would let FFmpeg autodetect NVENC anyway, with or without nvcc on PATH.
+    CONFIGURE_OPTIONS+=("--disable-ffnvcodec")
+    ;;
+*)
+    # NVENC/CUVID dlopen() the NVIDIA driver, which a static glibc binary cannot do (issue #270).
+    if [ -n "$LDEXEFLAGS" ] && command_exists "nvcc"; then
+        echo "Error: --full-static cannot include NVIDIA NVENC/CUVID: the driver is loaded with dlopen()." >&2
+        echo "Build without --full-static, or add --disable=nv_codec to build a static binary without CUDA." >&2
+        exit 1
+    fi
+    ;;
+esac
+
 for PACKAGE in "${PACKAGE_BUILD_ORDER[@]}"; do
     case "$DISABLED_PACKAGES" in
     *" $PACKAGE "*) continue ;;

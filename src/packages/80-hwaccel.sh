@@ -381,8 +381,11 @@ build_libvpl() {
     # Without vaapi the build still succeeds, but -hwaccel qsv fails at runtime (issue #272).
     if [[ " ${CONFIGURE_OPTIONS[*]} " != *" --enable-vaapi "* ]]; then
         echo "Warning: QSV is built without VAAPI, so -hwaccel qsv and -init_hw_device qsv will fail"
-        echo "with 'No supported child device type is enabled'. Install libva-dev (Debian/Ubuntu) or"
-        echo "libva-devel (Fedora) and build again."
+        echo "with 'No supported child device type is enabled'."
+        case "$DISABLED_PACKAGES" in
+        *" vaapi "*) echo "vaapi was disabled with --disable; leave it enabled to use QSV." ;;
+        *) echo "Install libva-dev (Debian/Ubuntu) or libva-devel (Fedora) and build again." ;;
+        esac
     fi
 
     # NOTE: deliberately not paired with --enable-libmfx. ffmpeg 9.0 refuses both at once

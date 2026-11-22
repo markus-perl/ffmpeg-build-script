@@ -589,6 +589,10 @@ your CUDA toolkit does not support. There are many ways to look yours up, for ex
 Note that a binary built for a newer architecture than the GPU it runs on will not use the GPU at
 all, which is why detection is preferred over a fixed default.
 
+CUDA cannot be combined with `--full-static`: NVENC and CUVID load the NVIDIA driver with `dlopen()`,
+which a static glibc binary cannot do. The script stops with an error if `nvcc` is found. Add
+`--disable=nv_codec` to build the static binary without CUDA.
+
 Supported codecs in [nv-codec](https://devblogs.nvidia.com/nvidia-ffmpeg-transcoding-guide/):
 
 * Decoders
@@ -782,6 +786,8 @@ X11 headers entirely — then `ffplay` is built without video device support.
 - Because of the NSS (Name Service Switch), glibc does **not recommend** static links. See [more details here](https://sourceware.org/glibc/wiki/FAQ#Even_statically_linked_programs_need_some_shared_libraries_which_is_not_acceptable_for_me.__What_can_I_do.3F).
 - The libnpp in the CUDA SDK cannot be statically linked.
 - Vaapi cannot be statically linked.
+- NVENC and CUVID cannot be statically linked: the NVIDIA driver is loaded with `dlopen()`. `--full-static` stops
+  when `nvcc` is found; add `--disable=nv_codec` to build without CUDA.
 
 ---
 
