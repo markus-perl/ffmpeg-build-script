@@ -552,6 +552,7 @@ Hardware encoders and decoders are only compiled in if the corresponding SDK or 
 | --- | --- | --- |
 | [CUDA / NVENC / NVDEC](#cuda-nvidia) | Linux (NVIDIA GPU) | install the CUDA toolkit |
 | [VAAPI](#vaapi-most-gpus) | Linux (most GPUs) | install the libva driver |
+| [Intel QSV](#intel-quick-sync-video-qsv) | Linux x86_64 (Intel GPU) | install libva and the Intel media runtime |
 | [AMF](#amf-amd) | Linux (AMD GPU) | install the AMD GPU Pro drivers |
 | [Vulkan](#vulkan) | Linux, macOS (MoltenVK) | install Vulkan drivers |
 | [OpenCL](#opencl) | Linux | install an OpenCL runtime |
@@ -628,6 +629,26 @@ Supported codecs in vaapi:
     * VP9 `vp9_vaapi`
 
 Note: vaapi cannot be statically linked.
+
+### Intel Quick Sync Video (QSV)
+
+QSV is built through [libvpl](https://github.com/intel/libvpl) on Linux x86_64, except in
+`--full-static` builds. On Linux, FFmpeg opens a QSV device through VAAPI, so the
+[VAAPI](#vaapi-most-gpus) development package must be installed **before** you build. Without it,
+`-hwaccel qsv` and `-init_hw_device qsv` fail with `No supported child device type is enabled`.
+The build prints a warning when this happens.
+
+On the machine that runs ffmpeg, you also need the Intel media driver and the oneVPL GPU runtime:
+
+```bash
+# Debian and Ubuntu
+$ sudo apt install libva-dev intel-media-va-driver-non-free libmfx-gen1.2
+
+# Fedora (intel-media-driver comes from RPM Fusion)
+$ sudo dnf install libva-devel intel-media-driver intel-vpl-gpu-rt
+```
+
+Check that `ffmpeg -buildconf` lists both `--enable-libvpl` and `--enable-vaapi`.
 
 ### AMF (AMD)
 
